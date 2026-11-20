@@ -29,6 +29,7 @@ import { botMembersFullError, planBotMemberAdds } from '../bots/bot-member-capac
 import { HANDED_WORKSPACES_MAX, HandedWorkspaceSchema } from '../bots/bot-made-for-workspaces'
 import { BotProposalSchema, BotProposalSeedSchema } from '../bots/bot-proposal'
 import { BotTakeOverSchema } from '../bots/bot-take-over'
+import { BotCliqBotsUpdateSchema, withCliqMembersIn } from '../bots/bot-cliq-members'
 import { BotLookAroundSchema, botLookAround, patchLookAround } from '../bots/bot-look-around'
 import { BotLaunchSchema } from '../bots/bot-launch'
 import {
@@ -159,6 +160,8 @@ export const BotUpdate = z.object({
       linear: BotLinearSchema.nullable().optional(),
       linearWorkspaces: z.array(BotLinearSchema).max(BOT_MAX_CONNECTOR_WORKSPACES).optional(),
       github: BotGitHubSchema.nullable().optional(),
+      /** Every organization the bot has a Cliq bot in; an org's people go with it. */
+      cliqBots: BotCliqBotsUpdateSchema,
       skillProjects: z.array(z.string().min(1)).max(BOT_MAX_SKILL_PROJECTS).optional(),
       // Only the changed fields; the host merges them into the saved setting.
       lookAround: BotLookAroundSchema.omit({ since: true }).partial().optional(),
@@ -401,5 +404,5 @@ export function applyBotUpdates(bot: Bot, updates: BotHostUpdates): Bot {
   } else if (launch === null || (rest.agent !== undefined && rest.agent !== bot.agent)) {
     delete next.launch
   }
-  return next
+  return withCliqMembersIn(next)
 }
