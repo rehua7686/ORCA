@@ -15,6 +15,7 @@ import type { CommitMessageAgentEnvironmentResolvers } from '../../text-generati
 import { registerFilesystemWatcherHandlers } from '../filesystem/watchers/filesystem-watcher-handlers'
 import { registerGitHubHandlers } from '../source-control/github'
 import { registerGitLabHandlers } from '../source-control/gitlab'
+import { registerGiteaHandlers } from '../source-control/gitea'
 import { registerHostedReviewHandlers } from '../source-control/hosted-review'
 import { registerLinearHandlers } from '../linear/register-handlers'
 import { registerJiraHandlers } from '../jira/register-handlers'
@@ -162,6 +163,7 @@ export async function registerCoreHandlers(
     registerRateLimitHandlers(rateLimits, codexAccounts, () => store.getSettings())
     registerGitHubHandlers(store, stats, runtime)
     registerGitLabHandlers(store)
+    registerGiteaHandlers(store)
     registerHostedReviewHandlers(store, stats)
     registerLinearHandlers()
     registerJiraHandlers()
