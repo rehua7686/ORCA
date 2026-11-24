@@ -5,6 +5,8 @@ import { RuntimeGitHubRepositoryQueryCommands } from '../integrations/github/run
 import { RuntimeGitLabQueryCommands } from '../integrations/gitlab/runtime-gitlab-query-commands'
 import { recordGitLabProjectRecent } from '../../gitlab/projects/gitlab-project-recents'
 import { RuntimeGitLabMutationCommands } from '../integrations/gitlab/runtime-gitlab-mutation-commands'
+import { RuntimeGiteaCommands } from '../integrations/gitea/runtime-gitea-commands'
+import type { RuntimeReviewCommandOwners } from './runtime-review-command-surface'
 import { RuntimeGitHubReviewQueryCommands } from '../integrations/github/runtime-github-review-query-commands'
 import { RuntimeGitHubReviewMutationCommands } from '../integrations/github/runtime-github-review-mutation-commands'
 import { RuntimeGitHubIssueCommentCommands } from '../integrations/github/runtime-github-issue-comment-commands'
@@ -139,6 +141,11 @@ export abstract class OrcaRuntimeWithRepositoryCommands extends OrcaRuntimeWithF
     getLocalGitArgs: (repo) => this.getLocalGitExecutionOptionArgs(repo)
   })
 
+  protected readonly giteaCommands = new RuntimeGiteaCommands({
+    resolveRepo: (selector) => this.resolveRepoSelector(selector),
+    getLocalGitArgs: (repo) => this.getLocalGitExecutionOptionArgs(repo)
+  })
+
   protected readonly gitHubReviewQueries = new RuntimeGitHubReviewQueryCommands({
     resolveRepo: (selector) => this.resolveRepoSelector(selector),
     getLocalGitArgs: (repo) => this.getLocalGitExecutionOptionArgs(repo)
@@ -156,6 +163,18 @@ export abstract class OrcaRuntimeWithRepositoryCommands extends OrcaRuntimeWithF
   })
 
   protected readonly gitHubProjectCommands = new RuntimeGitHubProjectCommands()
+
+  protected reviewCommandOwners(): RuntimeReviewCommandOwners {
+    return {
+      gitLabQueries: this.gitLabQueryCommands,
+      gitLabMutations: this.gitLabMutationCommands,
+      gitea: this.giteaCommands,
+      gitHubReviewQueries: this.gitHubReviewQueries,
+      gitHubReviewMutations: this.gitHubReviewMutations,
+      gitHubIssueComments: this.gitHubIssueComments,
+      gitHubProjects: this.gitHubProjectCommands
+    }
+  }
 
   protected readonly repositoryHooks = new RuntimeRepositoryHooksCommands({
     resolveRepo: (selector) => this.resolveRepoSelector(selector),
