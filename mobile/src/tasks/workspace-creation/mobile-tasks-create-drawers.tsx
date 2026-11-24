@@ -49,7 +49,9 @@ export function renderMobileTasksCreateDrawer(model: ConnectionPresentationModel
     >
       <View style={styles.sheetHeader}>
         <View style={styles.sheetTitleRow}>
-          <TaskProviderLogo provider={provider} size={16} color={colors.textPrimary} />
+          {provider === 'gitea' ? null : (
+            <TaskProviderLogo provider={provider} size={16} color={colors.textPrimary} />
+          )}
           <Text style={styles.sheetTitle}>
             {translate('tasks.tasksCreateDrawers.newIssueTitle', 'New {{providerLabel}} Issue', {
               providerLabel
