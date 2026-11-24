@@ -1,7 +1,15 @@
 import { isRenderableImageUri } from '../../visual/mobile-native-chat-image-preview'
 import type { Translate } from '../../../../i18n/mobile-i18n'
 import { useMobileTranslation } from '../../../../i18n/use-mobile-translation'
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View
+} from 'react-native'
 import { FileText, Image as ImageIcon, X } from 'lucide-react-native'
 import {
   colors,
