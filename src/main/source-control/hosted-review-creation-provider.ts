@@ -127,7 +127,8 @@ export async function isProviderAuthenticated(
   if (provider === 'gitea') {
     return isGiteaReviewCreationAuthenticated(
       repoPath,
-      hostedReviewSshConnectionId(executionHostId)
+      hostedReviewSshConnectionId(executionHostId),
+      getHostedReviewLocalGitOptions(options)
     )
   }
   if (provider === 'bitbucket') {
