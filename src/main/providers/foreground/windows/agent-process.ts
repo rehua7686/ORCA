@@ -15,7 +15,7 @@ import {
   type WindowsProcessCandidate,
   type WindowsProcessRow
 } from './process-rows'
-import { isWindowsAnchorPidForeign } from './anchor-pid-reuse'
+import { isWindowsAnchorPidForeign, unavailableWindowsForeground } from './anchor-pid-reuse'
 import { findOrphanOnInheritedConsole } from './exited-root-orphans'
 
 export type AgentForegroundResolutionOptions = {
@@ -40,6 +40,8 @@ export type WindowsAgentForegroundResolution = {
   processName: string | null
   /** Unambiguous recognized-name anchor; use the outer wrapper PID so embedded-child restarts do not imply exit. */
   processId?: number
+  /** The anchor's creation time, so a later check can tell it from a process that reused its pid. */
+  processCreationTimeMs?: number
   /** True when the scan proves `anchorProcessId` now belongs to a non-agent. */
   anchorPidForeign?: boolean
 }
@@ -72,12 +74,7 @@ export async function resolveWindowsAgentForegroundProcessWithAvailability(
     return { available: false, processName: null }
   }
   const anchorPidForeign = isWindowsAnchorPidForeign(inventory.anchorRow, options.anchorProcessName)
-  // PID-reuse proof outlives an unavailable identity, so the cached agent is not restored over it.
-  const unavailable = {
-    available: false,
-    processName: null,
-    ...(anchorPidForeign ? { anchorPidForeign: true } : {})
-  }
+  const unavailable = unavailableWindowsForeground(anchorPidForeign)
   const candidates = inventory.candidates
   // Filter console membership before ambiguity checks so detached agents cannot suppress the attached input owner.
   const hasRecognizedCandidate = windowsCandidatesContainRecognizedAgent(
@@ -109,7 +106,14 @@ export async function resolveWindowsAgentForegroundProcessWithAvailability(
   if (inventory.rootExited && !identity.processName) {
     return unavailable
   }
-  return { available: true, ...identity, ...(anchorPidForeign ? { anchorPidForeign: true } : {}) }
+  const identityRow = candidates.find((candidate) => candidate.pid === identity.processId)
+  const processCreationTimeMs = identityRow?.creationTimeMs
+  return {
+    available: true,
+    ...identity,
+    ...(processCreationTimeMs !== undefined ? { processCreationTimeMs } : {}),
+    ...(anchorPidForeign ? { anchorPidForeign: true } : {})
+  }
 }
 
 function windowsCandidatesContainRecognizedAgent(

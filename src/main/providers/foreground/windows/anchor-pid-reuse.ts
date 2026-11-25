@@ -18,3 +18,16 @@ export function isWindowsAnchorPidForeign(
     : // Query-denied command === name is inconclusive, never foreign proof.
       anchorRow.command !== anchorRow.name
 }
+
+/** PID-reuse proof outlives an unavailable identity, so the cached agent is not restored over it. */
+export function unavailableWindowsForeground(anchorPidForeign: boolean): {
+  available: false
+  processName: null
+  anchorPidForeign?: true
+} {
+  return {
+    available: false,
+    processName: null,
+    ...(anchorPidForeign ? { anchorPidForeign: true } : {})
+  }
+}
