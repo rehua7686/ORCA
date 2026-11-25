@@ -53,6 +53,31 @@ describe('buildPluginWorkerEnv', () => {
     expect(env.GIT_TERMINAL_PROMPT).toBe('0')
   })
 
+  it('passes TLS trust settings only when set, keeping default behavior unchanged', () => {
+    const defaultEnv = buildPluginWorkerEnv(sessionEnv, 'linux')
+    expect(defaultEnv).not.toHaveProperty('NODE_EXTRA_CA_CERTS')
+    expect(defaultEnv).not.toHaveProperty('NODE_USE_SYSTEM_CA')
+    expect(defaultEnv).not.toHaveProperty('SSL_CERT_FILE')
+    expect(defaultEnv).not.toHaveProperty('SSL_CERT_DIR')
+
+    const env = buildPluginWorkerEnv(
+      {
+        ...sessionEnv,
+        NODE_EXTRA_CA_CERTS: '/etc/ssl/corp-ca.pem',
+        NODE_USE_SYSTEM_CA: '1',
+        SSL_CERT_FILE: '/etc/ssl/certs/ca-certificates.crt',
+        SSL_CERT_DIR: '/etc/ssl/certs',
+        NODE_OPTIONS: '--require /tmp/x.js'
+      },
+      'linux'
+    )
+    expect(env.NODE_EXTRA_CA_CERTS).toBe('/etc/ssl/corp-ca.pem')
+    expect(env.NODE_USE_SYSTEM_CA).toBe('1')
+    expect(env.SSL_CERT_FILE).toBe('/etc/ssl/certs/ca-certificates.crt')
+    expect(env.SSL_CERT_DIR).toBe('/etc/ssl/certs')
+    expect(env).not.toHaveProperty('NODE_OPTIONS')
+  })
+
   it('reads Windows variables case-insensitively and restores SystemRoot casing', () => {
     expect(
       buildPluginWorkerEnv(
