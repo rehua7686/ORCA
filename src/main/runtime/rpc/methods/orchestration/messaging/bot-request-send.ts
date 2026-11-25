@@ -38,10 +38,13 @@ import {
   type ReceivingBot
 } from './bot-recipient'
 import { exposeMessage } from './mailbox-message-receipt'
+import { botRequestDuplicateReceipt } from './bot-request-duplicate'
 import { recordReceiptForPostCommitNudge } from './mutation-replay-nudge'
 import { botRequestChain, botRequestSendKey } from './bot-request-chain'
 import { answersRequest, askedInConversation, botRequestSender } from './bot-request-record'
 import type { PairedSender } from '../../../../../../shared/orchestration/mailbox/paired-sender-name'
+import * as limits from '../../../../../bots/bot-request-limits'
+import type { ItemMailFiles } from './bot-item-mail-files'
 import { resolveBareOrchestrationRecipient } from './recipient-routing'
 import { sessionCallerOf } from '../../../../orchestration/addressing/orchestration-caller-identity'
 
@@ -74,6 +77,7 @@ export async function sendToBot(
     messageId?: string
     /** The recipient isn't woken until the caller runs `nudge`: an item it names is made first. */
     holdNudge?: boolean
+    files?: ItemMailFiles<SendParamsInput>
   } & Pick<SendBotRequestArgs, 'senderSnapshot' | 'pairedSender' | 'images' | 'onAdmitted'>
 ): Promise<{ receipt: unknown; nudge: () => void } | null> {
   const { runtime } = context
@@ -128,6 +132,8 @@ type SendBotRequestArgs = {
   pairedSender?: PairedSender
   /** Store images claimed for the receiving chat (`send --item --file`). */
   images?: readonly string[]
+  /** The mail's files (`send --item --file`), made ready only once the send is held. */
+  files?: ItemMailFiles<SendParamsInput>
   /** Nudges the sender runs later instead of now. */
   held?: (() => void)[]
   /** Commits with the request's admission, before anyone is woken for it. */
@@ -139,7 +145,7 @@ async function sendBotRequest(args: SendBotRequestArgs): Promise<unknown> {
   const asked = askedInConversation(args.runtime, args.acting)
   const card = ownerChatCard(args.acting, args.receiving, args.params, asked)
   try {
-    return await admitBotRequestMail(args, card, asked)
+    return await limits.holdingUntilSettled((held) => admitBotRequestMail(args, card, asked, held))
   } catch (error) {
     card.refused(error)
     throw error
@@ -149,9 +155,10 @@ async function sendBotRequest(args: SendBotRequestArgs): Promise<unknown> {
 async function admitBotRequestMail(
   args: SendBotRequestArgs,
   card: ReturnType<typeof ownerChatCard>,
-  asked: Pick<BotRequestRecord, 'askedInConversation'>
+  asked: Pick<BotRequestRecord, 'askedInConversation'>,
+  quota: (() => void)[]
 ): Promise<unknown> {
-  const { runtime, db, params, receiving, acting } = args
+  const { runtime, db, receiving, acting } = args
   const chain = botRequestChain(db, acting.sessionId, acting.turn)
   /** Checked now and again just before storing, after every wait, against the bot as it is then. */
   const check = () => {
@@ -162,14 +169,14 @@ async function admitBotRequestMail(
           target: bot,
           senderBotId: acting.bot?.id ?? null,
           toOtherChat: toOtherChat(receiving, acting.sessionId),
-          type: params.type,
+          type: args.params.type,
           fromWorker: acting.worker !== undefined
         })
       : botNotFound(receiving.bot.name, runtime.bots.list())
-    if (refusal || !bot || !isBotRequestPurpose(params.type)) {
+    if (refusal || !bot || !isBotRequestPurpose(args.params.type)) {
       return refuse(refusal ?? BOT_REQUEST_TYPE_REFUSAL)
     }
-    return { bot, purpose: params.type }
+    return { bot, purpose: args.params.type }
   }
   const { bot: target, purpose } = check()
   const groupScope = isBotGroupMemberSession(acting.sessionId)
@@ -209,41 +216,38 @@ async function admitBotRequestMail(
     ...asked,
     ...answersRequest(db, acting)
   }
+  const messageId = args.messageId ?? generateId('msg')
   // A worker's send is its own: another worker asking the same still gets an answer.
   const sendTurn = acting.worker ? `dispatch:${acting.worker}` : chain.turnKey
+  // Its files as named are part of the send, so its duplicate is found before any is copied.
+  const named = { ...args.params, files: args.files?.sources }
   const key = {
     rootKey: chain.rootKey ?? `send:${randomUUID()}`,
     // Only this same send again is a duplicate; a new request to a bot the chain reached is delivered.
-    ...(sendTurn ? { sendKey: botRequestSendKey(sendTurn, target.id, purpose, params) } : {}),
+    ...(sendTurn ? { sendKey: botRequestSendKey(sendTurn, target.id, purpose, named) } : {}),
     toBotId: target.id,
     purpose
   }
-  const blockedReceipt = (
-    blocked: Exclude<BotRequestAdmission, { kind: 'sent' }>
-  ): { sent: false; receipt: unknown } => {
-    const earlier = db.getMessageById(blocked.messageId)
-    return {
-      sent: false,
-      receipt: {
-        ...(earlier ? { message: exposeMessage(earlier) } : {}),
-        duplicate: true,
-        next: `${target.name} already has this request, so no second message was sent.`
-      }
-    }
-  }
-  const messageId = args.messageId ?? generateId('msg')
+  const blockedReceipt = botRequestDuplicateReceipt(db, target.name)
   // Checked before a conversation is made for it; the store checks again as it stores.
   const blocked = db.botRequestBlocked(key)
   if (blocked) {
     return blockedReceipt(blocked).receipt
   }
+  // Held, or the send refused, before its files are copied or claimed or any chat is made or shown.
+  const send = { ...key, messageId }
+  const pairLimit = limits.holdUnderLimits(db, acting, target, chain.depth, send, quota)
+  // Copies its files made go again unless the send is stored, whatever stops it after this.
+  const stored = limits.giveBackUnlessStored(quota, args.files?.giveBack)
+  const { params, images } = args.files ? await args.files.prepare() : args
   // The whole payload is Orca's, so the receiving bot never reads the sender's own fields as these.
-  const payload = botRequestPayload(record, messageId, args.images)
+  const payload = botRequestPayload(record, messageId, images)
   const request = {
     ...key,
     fromBotId: record.fromBotId,
     depth: record.depth,
-    record: JSON.stringify(record)
+    record: JSON.stringify(record),
+    pairLimit
   }
   /** `reserved`: the request's place is already held, so only its mail is stored. */
   /** `held`: the chat a failed turn holds that this request queues in, named to the sender. */
@@ -285,6 +289,7 @@ async function admitBotRequestMail(
       return blockedReceipt(admission)
     }
     const { message } = admission
+    stored()
     runtimeBotGroups(runtime).noteMailed(groupScope?.operationId, target.id)
     card.write({ messageId: message.id })
     const sent = recordReceiptForPostCommitNudge(

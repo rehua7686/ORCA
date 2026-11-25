@@ -37,6 +37,9 @@ export type BotItemCommentAttachmentDeps = {
   claim: AgentSessionAttachmentClaimer | null
   /** The item's chat's live session and title; null when that chat is gone. */
   chat: () => Promise<{ sessionId: string; title: string | null } | null>
+  /** Told the store uploads this call copied in (fresh, named by nothing else) once they are, and
+   *  the chat it then claimed them for: what a caller that drops the comment later gives back. */
+  copied?: (copied: { paths: readonly string[]; claimedFor: string | null }) => void
 }
 
 export type BotItemCommentAttached = { text: string; images: BotItemCommentImage[] }
@@ -76,6 +79,11 @@ export async function admitBotItemCommentAttachments(
       : local,
     Promise.all(others.map((path) => copyLocalAttachmentToStore(store, path, refused, true)))
   ])
+  const copiedPaths = [
+    ...stored.filter((path, index) => path !== local[index]),
+    ...storedFiles.filter((path, index) => path !== others[index])
+  ]
+  deps.copied?.({ paths: copiedPaths, claimedFor: null })
   const images = await admitStoredAttachmentImages(store, stored, COMMENT_IMAGE_LABELS, refused)
   const references = storedFiles.map(formatNativeChatFileReference).join('\n')
   const text = !references
@@ -106,6 +114,7 @@ export async function admitBotItemCommentAttachments(
     retry: botFailure('commentAttachFailed'),
     refused
   })
+  deps.copied?.({ paths: copiedPaths, claimedFor: chat.sessionId })
   return { text, images }
 }
 

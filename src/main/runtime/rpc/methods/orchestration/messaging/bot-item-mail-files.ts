@@ -6,9 +6,13 @@ import { formatNativeChatFileReference } from '../../../../../../shared/native-c
 import { parseBotAddress, botOfAddress } from '../../../../../../shared/bot-roster'
 import { admitBotItemCommentAttachments } from '../../../../../bots/bot-item-comment-attachments'
 import { BotItemError } from '../../../../../bots/bot-item-error'
+import { rm } from 'node:fs/promises'
+import { basename, dirname } from 'node:path'
 import {
   getAgentSessionAttachmentClaimer,
-  getAgentSessionAttachmentStore
+  getAgentSessionAttachmentClaimPruner,
+  getAgentSessionAttachmentStore,
+  publishAgentSessionUploadRemoval
 } from '../../../../../native-chat/agent-session-attachments/agent-session-attachment-store-registry'
 import { OrchestrationError } from '../../../../orchestration/orchestration-error'
 import type { OrcaRuntimeService } from '../../../../orca-runtime'
@@ -22,9 +26,21 @@ type ItemMail = {
   images?: readonly string[]
 }
 
+/** A bot request's files as the sender named them (part of what makes it the same send), how they
+ *  are made ready for the receiving chat, and how a send never stored gives back what that copied. */
+export type ItemMailFiles<Params> = {
+  sources: readonly string[]
+  prepare: () => Promise<{ params: Params; images?: readonly string[] }>
+  giveBack: () => Promise<void>
+}
+
+/** What a send copied into the store for its mail, and the chat it claimed it for. */
+export type ItemMailCopies = { paths: readonly string[]; claimedFor: string | null }
+
 export async function withItemMailFiles<T extends ItemMail>(
   runtime: OrcaRuntimeService,
-  mail: T
+  mail: T,
+  copied?: (copies: ItemMailCopies) => void
 ): Promise<T> {
   const local = mail.params.files ?? []
   const uploaded = mail.attachments ?? []
@@ -51,7 +67,8 @@ export async function withItemMailFiles<T extends ItemMail>(
         store: getAgentSessionAttachmentStore(),
         local: local.length > 0,
         claim: getAgentSessionAttachmentClaimer(),
-        chat: () => botChatTakingMail(runtime, bot, item.chatId)
+        chat: () => botChatTakingMail(runtime, bot, item.chatId),
+        ...(copied ? { copied } : {})
       },
       body,
       uploaded.filter(isAgentInlineImagePath),
@@ -67,6 +84,24 @@ export async function withItemMailFiles<T extends ItemMail>(
       throw new OrchestrationError('invalid_argument', `${error.message} Nothing was sent.`)
     }
     throw error
+  }
+}
+
+/** Gives back what a send that was never stored copied in: each fresh upload's folder, then its claim
+ *  for the receiving chat. Only copies it made itself, which nothing else names, so a store file the
+ *  sender named and any other chat's or message's claim are left as they are. */
+export async function giveBackItemMailFiles({ paths, claimedFor }: ItemMailCopies): Promise<void> {
+  const uploadDirs = [...new Set(paths.map((path) => dirname(path)))]
+  await Promise.all(
+    uploadDirs.map((uploadDir) => rm(uploadDir, { recursive: true, force: true }).catch(() => {}))
+  )
+  uploadDirs.forEach(publishAgentSessionUploadRemoval)
+  const prune = getAgentSessionAttachmentClaimPruner()
+  if (claimedFor && prune && uploadDirs.length > 0) {
+    // A claim left behind is still dropped by the store's next sweep, its upload being gone.
+    await prune(
+      uploadDirs.map((uploadDir) => ({ uploadId: basename(uploadDir), sessionId: claimedFor }))
+    ).catch((error: unknown) => console.warn('[bots] could not drop an unsent mail claim', error))
   }
 }
 

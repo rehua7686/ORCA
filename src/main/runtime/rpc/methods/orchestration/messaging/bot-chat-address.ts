@@ -15,7 +15,12 @@ import type { Bot } from '../../../../../../shared/bot-types'
 import { resolveItem } from '../../bots-items-write-support'
 import { refuse } from './bot-recipient'
 import { mayReachBot, sendToBot } from './bot-request-send'
-import { itemMailFilesBody, withItemMailFiles } from './bot-item-mail-files'
+import {
+  giveBackItemMailFiles,
+  itemMailFilesBody,
+  withItemMailFiles,
+  type ItemMailCopies
+} from './bot-item-mail-files'
 
 /** `--chat new`: the receiving bot starts a new chat for a handoff or question. */
 export const BOT_NEW_CHAT = 'new'
@@ -42,21 +47,30 @@ export async function routeBotMail(
   }
 ): Promise<{ to: string; body?: string } | { receipt: unknown }> {
   const chat = await chatForItem(context.runtime, input.to, input.params)
-  const mail = await withItemMailFiles(context.runtime, input)
+  const sources = [...(input.params.files ?? []), ...(input.attachments ?? [])]
+  let copies: ItemMailCopies = { paths: [], claimedFor: null }
+  const files = {
+    sources,
+    prepare: () => withItemMailFiles(context.runtime, input, (made) => (copies = made)),
+    giveBack: () => giveBackItemMailFiles(copies)
+  }
   const newChat = chat === BOT_NEW_CHAT
-  let to = mail.to
+  let to = input.to
   if (newChat) {
-    assertNewChatAddress(to, mail.params.type)
+    assertNewChatAddress(to, input.params.type)
   } else if (chat) {
     to = await botChatAddress(context.runtime, to, chat)
   }
-  // Checked first so other mail keeps sending without a pause before it is stored.
+  // Checked first so other mail keeps sending without a pause before it is stored. A bot's send
+  // makes its files ready only after its duplicate check and limits, and gives back what it copied
+  // if it is then not stored (bot-request-send).
   const toBot =
-    mayReachBot(context.runtime, to, mail.sender) &&
-    (await sendToBot(context, { ...mail, to, newChat }))
+    mayReachBot(context.runtime, to, input.sender) &&
+    (await sendToBot(context, { ...input, to, newChat, ...(sources.length > 0 ? { files } : {}) }))
   if (toBot) {
     return { receipt: toBot.receipt }
   }
+  const mail = await files.prepare()
   // Ordinary mail takes no image blocks: its admitted files all go in its body.
   return mail.images === input.images ? { to } : { to, body: itemMailFilesBody(mail) }
 }
