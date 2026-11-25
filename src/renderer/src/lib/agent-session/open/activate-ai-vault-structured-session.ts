@@ -75,7 +75,9 @@ export const structuredSessionOpenFeedback: StructuredSessionOpenFeedback = {
 export async function activateAiVaultStructuredSession(
   session: Pick<AiVaultSession, 'structuredSession'> & { agent?: string },
   deps?: StructuredSessionActivationDeps,
-  target?: RuntimeClientTarget
+  target?: RuntimeClientTarget,
+  /** What Retry repeats; absent, this same open. A caller with a prerequisite step repeats it too. */
+  retry?: () => Promise<unknown>
 ): Promise<boolean> {
   if (!session.structuredSession) {
     return false
@@ -88,7 +90,11 @@ export async function activateAiVaultStructuredSession(
   }
   await openDesktopStructuredSession(
     { kind: 'history', structuredSession: session.structuredSession, agent: session.agent },
-    { target, deps, retry: () => activateAiVaultStructuredSession(session, deps, target) }
+    {
+      target,
+      deps,
+      retry: retry ?? (() => activateAiVaultStructuredSession(session, deps, target))
+    }
   )
   return true
 }
