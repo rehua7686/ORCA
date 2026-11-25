@@ -2,6 +2,7 @@ import React, { useEffect, useMemo } from 'react'
 import { ChevronDown, GitBranch } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AttachedWorktreeCards } from '@/components/sidebar/AttachedWorktreeCards'
+import { selectHighlightedSidebarWorkspaceId } from '@/components/sidebar/highlighted-sidebar-workspace'
 import { useTranslate } from '@/i18n/use-translate'
 import { cn } from '@/lib/class-names'
 import { useAppStore } from '@/store'
@@ -11,10 +12,7 @@ import type { Worktree } from '../../../../shared/worktree/types'
 import { isActiveSidebarWorkspace } from '../../../../shared/sidebar-list/selection/active-workspace'
 import type { FolderWorkspace } from '../../../../shared/folder-workspaces/folder-workspace-types'
 import { getLineageGroupKey } from '../../../../shared/sidebar-list/sections/group-keys'
-import {
-  folderWorkspaceKey,
-  getActiveSidebarWorkspaceId
-} from '../../../../shared/workspace/identity/workspace-scope'
+import { folderWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import {
   BOT_ACTIVE_WORKSPACE_LINE_LIMIT,
   capBotWorkspaceLines,
@@ -74,12 +72,7 @@ export function BotSidebarEntry({
   const folded = useAppStore((s) => s.collapsedGroups.has(groupKey))
   const toggleCollapsedGroup = useAppStore((s) => s.toggleCollapsedGroup)
   const newCardStyle = useAppStore(selectDrawsNewWorktreeCards)
-  // Full-page Tasks/Activity views have no open workspace line, as in AttachedWorktreeCards.
-  const activeWorktreeId = useAppStore((s) =>
-    s.activeView === 'tasks' || s.activeView === 'activity'
-      ? null
-      : getActiveSidebarWorkspaceId(s.activeWorkspaceKey, s.activeWorktreeId)
-  )
+  const activeWorktreeId = useAppStore(selectHighlightedSidebarWorkspaceId)
   const activeHostId = useAppStore((s) => s.activeWorkspaceExecutionHostId ?? null)
   const { childWorktrees, lineageChildrenByParentIdentity } = useBotWorkerWorkspaces(home)
   const ordered = useBotWorkspaceOrder(childWorktrees)
