@@ -56,6 +56,10 @@ describe('colon-form truecolor SGR parsing (#43868)', () => {
     expect(await bgColorAfter('48:2:0:26:43:60')).toBe(rgb(26, 43, 60))
   })
 
+  it('semicolon-then-colon form with colorspace id 2 keeps blue', async () => {
+    expect(await bgColorAfter('48;2:2:26:43:60')).toBe(rgb(26, 43, 60))
+  })
+
   it('semicolon form is unchanged', async () => {
     expect(await bgColorAfter('48;2;26;43;60')).toBe(rgb(26, 43, 60))
   })

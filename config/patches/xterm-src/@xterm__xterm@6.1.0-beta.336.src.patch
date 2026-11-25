@@ -1811,7 +1811,7 @@ index d45938515e7a9903de0da0d61716fd42e4deea0c..17d6577e388eb2e4397338093e353738
    private _ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D;
  
 diff --git a/src/common/InputHandler.ts b/src/common/InputHandler.ts
-index 30657812f49d3dd2ec706b5e0084788afa968168..900c3fd58fceb5606a4c531cc6a2e6691119636d 100644
+index 30657812f49d3dd2ec706b5e0084788afa968168..da28ff55bbfe1a7bfee2072309f19f7252cf2b2d 100644
 --- a/src/common/InputHandler.ts
 +++ b/src/common/InputHandler.ts
 @@ -2432,10 +2432,22 @@ export class InputHandler extends Disposable implements IInputHandler {
@@ -1831,7 +1831,7 @@ index 30657812f49d3dd2ec706b5e0084788afa968168..900c3fd58fceb5606a4c531cc6a2e669
              cSpace = 1;
            }
 +          // Orca (#43868): 48:2:r:g:b - mode is subparams[0], written at i === 0.
-+          else if (accu[1] === 2 && i >= 1 && subparams.length === 4 && subparams[0] === 2) {
++          else if (advance === 0 && accu[1] === 2 && i >= 1 && subparams.length === 4 && subparams[0] === 2) {
 +            cSpace = 1;
 +          }
            accu[advance + i + 1 + cSpace] = subparams[i];
