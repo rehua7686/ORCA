@@ -98,6 +98,8 @@ export const BotItemsList = z.object({
   here: OptionalBoolean,
   /** Only items linking this PR, URL or file (a PR URL and `owner/repo#n` match). */
   link: OptionalString,
+  /** Only items made for this request: their origin's `rootKey`. */
+  rootKey: OptionalString,
   limit: OptionalPositiveInt,
   cursor: OptionalString
 })
