@@ -14,6 +14,8 @@ export type WorkerDockRowView = WorkerDockEntry & {
   providerId?: string
   /** The open question a needs-you worker asked: the row's title while it waits. */
   question?: string
+  /** A running workflow's phase progress, under the title. */
+  progress?: string
 }
 
 /** What a row and the pill call the worker: its question while it waits on you, else its title
@@ -84,7 +86,15 @@ export const WorkerDockRow = memo(function WorkerDockRow({
     row.reason
       ? row.reason
       : ''
-  const label = [mixed && row ? workerDockKindLabel(t, row.kind) : '', title, state, reason, remote]
+  const progress = row?.progress ?? ''
+  const label = [
+    mixed && row ? workerDockKindLabel(t, row.kind) : '',
+    title,
+    progress,
+    state,
+    reason,
+    remote
+  ]
     .filter(Boolean)
     .join(' · ')
   const tooltip = row
@@ -116,6 +126,9 @@ export const WorkerDockRow = memo(function WorkerDockRow({
         </span>
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="line-clamp-3 break-words">{title}</span>
+          {progress ? (
+            <span className="truncate text-xs text-muted-foreground">{progress}</span>
+          ) : null}
           {row && (row.model || row.changedAt !== null) ? (
             <span className="truncate text-xs text-muted-foreground">
               {row.model}
