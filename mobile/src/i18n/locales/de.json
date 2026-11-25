@@ -1475,12 +1475,7 @@
       "openFolder": "Ordner {{name}} öffnen",
       "previewFile": "Vorschau der Datei {{name}} anzeigen",
       "retryLoading": "{{path}} erneut laden",
-      "searchAll": "Alle durchsuchen",
-      "searchAllIn": "Ganz {{folder}} durchsuchen",
-      "searched": "{{loaded}} von {{total}} in {{folder}} durchsucht.",
-      "searching": "{{folder}} wird durchsucht… {{loaded}} von {{total}}",
-      "showMore": "{{rows}} weitere anzeigen",
-      "unavailable": "Auf Mobilgeräten nicht verfügbar"
+      "showMore": "{{rows}} weitere anzeigen"
     },
     "fileExplorerRowActions": {
       "copyName": "Namen kopieren",
@@ -4466,7 +4461,6 @@
     }
   },
   "bots": {
-    "section": {},
     "link": {
       "pairTitle": "Computer koppeln",
       "pairRequired": "Kopple dieses Telefon mit einem Computer, um diesen Link zu öffnen, und öffne den Link dann erneut.",
