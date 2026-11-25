@@ -3502,8 +3502,7 @@
     },
     "pagination": {
       "pageUnreachable": "Seite {{page}} liegt außerhalb des Bereichs der GitHub-Suche.",
-      "loadPageFailed": "Seite {{page}} konnte nicht von GitHub geladen werden.",
-      "noMoreResults": "Keine weiteren Ergebnisse auf Seite {{page}}."
+      "loadPageFailed": "Seite {{page}} konnte nicht von GitHub geladen werden."
     },
     "composerSource": {
       "baseFailed": "Der Basis-Branch konnte nicht ermittelt werden.",
@@ -3524,23 +3523,10 @@
     "filterPickers": {
       "allTeams": "Alle Teams",
       "changeStatus": "Status ändern",
-      "fieldHidden": "Auf Karten ausgeblendet",
-      "fieldShown": "Auf Karten angezeigt",
-      "fieldsSubtitle": "Auswählen, welche Projektfelder auf Eintragskarten angezeigt werden.",
-      "fieldsTitle": "Projektfelder",
-      "gitlabFilter": "GitLab-Filter",
-      "gitlabView": "GitLab-Ansicht",
-      "jiraFilter": "Jira-Filter",
-      "jiraSite": "Jira-Site",
-      "linearFilter": "Linear-Filter",
       "linearIssue": "Linear-Issue",
-      "linearWorkspace": "Linear-Arbeitsbereich",
       "loadingStates": "Statusoptionen werden geladen…",
-      "noFields": "Diese Ansicht enthält keine zusätzlichen Felder.",
       "noStates": "Keine Statusoptionen verfügbar",
       "switchWorkspaceFailed": "Arbeitsbereich konnte nicht gewechselt werden.",
-      "teamsSubtitle": "Auswählen, welche Teams unter „Aufgaben“ angezeigt werden.",
-      "teamsTitle": "Linear-Teams",
       "teams_one": "{{count}} Team",
       "teams_other": "{{count}} Teams"
     },
@@ -3587,32 +3573,15 @@
     },
     "itemActions": {
       "changeStatus": "Status ändern",
-      "copyGitHubLink": "GitHub-Link kopieren",
-      "copyLinearLink": "Linear-Link kopieren",
-      "creating": "Wird erstellt…",
       "mergeConflicts": "GitHub meldet Merge-Konflikte.",
       "mergeMergeRequest": "Merge Request mergen",
       "mergePullRequest": "Pull Request mergen"
     },
     "itemDetailContent": {
-      "addSubIssue": "Unter-Issue hinzufügen",
       "checks": "Checks",
       "description": "Beschreibung",
       "discussion": "Diskussion",
-      "noChecks": "Keine Checks gefunden.",
-      "noComments": "Keine Kommentare.",
-      "noPipelineRuns": "Keine Pipeline-Ausführungen für diesen MR.",
-      "noSubIssues": "Keine untergeordneten Issues.",
-      "none": "Keine",
-      "pipeline": "Pipeline",
-      "pipelineJobs_one": "{{count}} Job",
-      "pipelineJobs_other": "{{count}} Jobs",
-      "rerunAll": "Alle erneut ausführen",
-      "subIssueTitle": "Titel des Unter-Issues",
       "subIssues": "Untergeordnete Issues"
-    },
-    "itemDetailDrawer": {
-      "refreshDetails": "Details aktualisieren"
     },
     "itemFieldEditors": {
       "addLabels": "Labels hinzufügen, kommagetrennt",
@@ -3665,9 +3634,6 @@
     },
     "linearList": {
       "changeStatusFrom": "Status ändern (aktuell: {{status}})"
-    },
-    "listDisplayPickers": {
-      "displayPropertiesTitle": "Angezeigte Eigenschaften"
     },
     "listSurface": {
       "connectLinearButton": "Linear verbinden",
@@ -3722,7 +3688,6 @@
       "projectMergeRequests": "Projekt-MRs",
       "projectMergeRequestsDescription": "Merge Requests und Issues nach Repository",
       "projects": "Projekte",
-      "pullRequests": "PRs",
       "repository": "Repository",
       "repositorySortDescription": "Nach Repository gruppieren, dann neueste Aktivität zuerst",
       "reviewRequestsDescription": "Review-Anfragen, die dir zugewiesen sind",
@@ -3841,37 +3806,8 @@
       "reviewers": "Prüfer",
       "viewFile": "Anzeigen"
     },
-    "providerControls": {
-      "myTodos": "Meine To-dos",
-      "projectMergeRequests": "Projekt-MRs"
-    },
-    "providerItemList": {
-      "intoBranch": "in {{base}}",
-      "nextPage": "Nächste Seite",
-      "page": "Seite {{page}}",
-      "pageOfTotal": "Seite {{page}} von {{total}}",
-      "previousPage": "Vorherige Seite",
-      "selectPage": "Seite auswählen, Seite {{page}}",
-      "selectPageOfTotal": "Seite auswählen, Seite {{page}} von {{total}}"
-    },
     "providerPickers": {
-      "allRepositories": "Alle Repositorys",
-      "githubView": "GitHub-Ansicht",
-      "issueSources": "GitHub-Issue-Quellen",
-      "issueSourcesDescription": "Für jedes Repository auswählen, ob upstream oder origin für das Abfragen und Erstellen von Issues verwendet wird.",
-      "issues": "Issues",
-      "noIssueSources": "Keine alternativen Issue-Quellen verfügbar.",
-      "origin": "Origin",
-      "pageHint": "Zu einer geladenen oder verfügbaren Ergebnisseite wechseln.",
-      "pageLoaded": "Geladen",
-      "pageNotLoaded": "Lädt ältere Ergebnisse",
-      "pageNumber": "Seite {{page}}",
-      "pages": "GitHub-Seiten",
-      "pullRequests": "Pull Requests",
-      "queryingSource": "Abfrage von {{source}}",
-      "repoDescription": "Abzufragende Repositorys auswählen.",
-      "repos": "Repositorys",
-      "upstream": "Upstream"
+      "allRepositories": "Alle Repositorys"
     },
     "providerViewProjection": {
       "all": "Alle",
@@ -3880,7 +3816,6 @@
       "allWorkspaces": "Alle Arbeitsbereiche",
       "chooseProject": "Projekt auswählen",
       "default": "Standard",
-      "defaultSubtitle": "{{subtitle}} · Standard",
       "issues": "Issues",
       "openState": "Offen",
       "projects": "Projekte",
@@ -3896,15 +3831,7 @@
     "screenChrome": {
       "newGitHubIssue": "Neues GitHub-Issue",
       "newLinearIssue": "Neues Linear-Issue",
-      "refreshGitHub": "GitHub-Aufgaben aktualisieren",
-      "refreshGitLab": "GitLab-Arbeitselemente aktualisieren",
-      "refreshJira": "Jira-Issues aktualisieren",
-      "refreshLinear": "Linear aktualisieren",
       "title": "Aufgaben"
-    },
-    "searchControl": {
-      "projectPlaceholder": "Projektansicht durchsuchen…",
-      "providerPlaceholder": "{{provider}}-Aufgaben suchen…"
     },
     "smartSourceModes": {
       "allStates": "Alle",
@@ -3961,16 +3888,13 @@
       "advanced": "Erweitert",
       "agent": "Agent",
       "connectFirst": "Zuerst Repository verbinden",
-      "connectRepository": "Repository verbinden",
       "defaultBranch": "Standard-Branch",
       "detectingAgents": "Agenten werden erkannt…",
       "remoteRepository": "Entferntes Repository",
       "repository": "Repository",
       "repositoryNotFound": "Repository nicht gefunden.",
       "selectRepository": "Repository auswählen",
-      "startFrom": "Ausgangspunkt",
-      "title": "Arbeitsbereich erstellen",
-      "workspaceName": "Arbeitsbereichsname"
+      "startFrom": "Ausgangspunkt"
     },
     "workspaceCreateProjection": {
       "nameAlreadyExists": "„{{name}}“ ist bereits vorhanden.",
@@ -4348,7 +4272,6 @@
         }
       },
       "TaskPage": {
-        "99c2755218": "Issues suchen oder JQL eingeben, z. B. project = ABC",
         "jiraTextMatchesNotice": "Texttreffer werden angezeigt. Jira konnte diese Suche nicht als JQL ausführen."
       },
       "editor": {
@@ -4466,7 +4389,6 @@
     }
   },
   "bots": {
-    "section": {},
     "link": {
       "pairTitle": "Computer koppeln",
       "pairRequired": "Kopple dieses Telefon mit einem Computer, um diesen Link zu öffnen, und öffne den Link dann erneut.",
