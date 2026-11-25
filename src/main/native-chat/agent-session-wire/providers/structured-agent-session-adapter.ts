@@ -1,3 +1,4 @@
+import type { JournalHandoverIdentity } from '../../agent-session-journal/journal-store-contracts'
 import type { StructuredMessageSteeringInputs } from '../../../../shared/agent-session/options/codex-message-compiler'
 import type {
   AgentSessionMcpOperation,
@@ -77,6 +78,7 @@ export type AgentSessionAcquisition = {
 
 /** The host creates the command’s running turn; the child translator ends it and writes its result. */
 export type StructuredAgentSessionCommandRun = {
+  handover?: JournalHandoverIdentity
   clientMessageId: string
   turnId: string
   identity: AgentJournalItemIdentity
@@ -217,6 +219,8 @@ export type StructuredAgentSessionAdapter = AdapterControls & {
     /** Abort only before provider write, preserving the original signal reason so the host knows it was unwritten. */
     signal?: AbortSignal
     fence: number
+    /** Read at provider enqueue, after any fresh handover replaced the initial attempt. */
+    handover?: () => JournalHandoverIdentity | undefined
     /** Preserve submission time as the opened turn’s requestedAt. */
     requestedAt?: number
     beforeDispatch?: () => Promise<void>

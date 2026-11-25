@@ -1,4 +1,6 @@
 import type { CodexTurnHost, CodexTurnInput } from './codex-structured-turn-contract'
+import type { JournalHandoverIdentity } from '../../../native-chat/agent-session-journal/journal-store-contracts'
+import type { StructuredAgentSessionTransitionSink } from '../../../native-chat/agent-session-wire/journal-ingress/structured-agent-session-transition'
 import { captureCodexMessageCompilerInputs } from '../catalog/codex-structured-service-tier'
 import {
   codexMessageInputOptions,
@@ -28,6 +30,7 @@ export async function startCodexTurn(
   input: CodexTurnInput & {
     timeoutMs?: number
     onReply?: () => void
+    captureStartReceipt?: () => (() => void) | undefined
   }
 ): Promise<{ turnId: string | null; via: AgentJournalTurnJoin } | false> {
   // Arm before writing: echoes and turn/started can arrive before the reply.
@@ -133,6 +136,7 @@ export async function startCodexTurn(
     if (host.permissions && mode) {
       host.permissions.appliedMode = mode
     }
+    const recordReceipt = input.captureStartReceipt?.()
     return {
       kind: 'sent' as const,
       response: host.connection
@@ -151,8 +155,11 @@ export async function startCodexTurn(
             onReply: (reply) => {
               // Record before the rest of the reply's stdout chunk is translated.
               const turnId = readCodexTurnId(reply)
-              if (turnId) {
+              if (
+                turnId &&
                 host.dispatchEchoes.repliedTurn(input.clientMessageId, host.threadId, turnId)
+              ) {
+                recordReceipt?.()
               }
               input.onReply?.()
             }
@@ -217,8 +224,11 @@ export async function startCodexTurn(
 
 /** Replies establish admission; exact echoes establish identity. Timeouts cannot disprove delivery. */
 export async function dispatchCodexTurn(
-  session: CodexTurnHost,
-  input: CodexTurnInput & { sessionId: string },
+  session: CodexTurnHost & { fence: number; events?: StructuredAgentSessionTransitionSink },
+  input: CodexTurnInput & {
+    sessionId: string
+    handover?: () => JournalHandoverIdentity | undefined
+  },
   timeoutMs: number | undefined
 ): Promise<AgentSessionDispatchOutcome> {
   let answer: { turnId: string | null; via: AgentJournalTurnJoin } | false
@@ -227,8 +237,26 @@ export async function dispatchCodexTurn(
   const onReply = (): void => {
     answeredAt = session.dispatchEchoes.tick()
   }
+  const captureStartReceipt = () => {
+    // A refused steer can re-handover before turn/start while the journal still sees its old turn.
+    const handover = input.handover?.()
+    const fence = session.fence
+    if (!handover) {
+      return undefined
+    }
+    return () => {
+      if (input.isCurrent?.() !== false) {
+        session.events?.recordProviderReceipt?.({
+          clientMessageId: input.clientMessageId,
+          ...handover,
+          fence,
+          observedAt: Date.now()
+        })
+      }
+    }
+  }
   try {
-    answer = await startCodexTurn(session, { ...input, timeoutMs, onReply })
+    answer = await startCodexTurn(session, { ...input, timeoutMs, onReply, captureStartReceipt })
   } catch (error) {
     if (error instanceof StructuredAgentSessionInputNotAdmitted) {
       throw error
