@@ -1,8 +1,6 @@
-// Keeps the host's MCP server list in step with the servers approved plugins add, while the host's
-// MCP servers switch is on. With it off, nothing here reads or writes the list.
+// Keeps the host's MCP server list in step with the servers approved plugins add.
 import { pluginMcpServerTool } from '../../../shared/plugins/contributions/plugin-mcp-server-contribution'
 import type { PluginChangeEvent } from '../../../shared/plugins/events/plugin-change-event'
-import { isMcpServersFeatureEnabled } from '../../mcp-servers/mcp-servers-feature'
 import type { PluginActivationState } from '../../../shared/plugins/approval/plugin-consent-state'
 import {
   syncPluginMcpServers,
@@ -71,9 +69,6 @@ export function installPluginMcpServerSync(
   let failures = 0
   let retry: ReturnType<typeof setTimeout> | null = null
   const sync = async (): Promise<void> => {
-    if (!isMcpServersFeatureEnabled()) {
-      return
-    }
     if (retry) {
       clearTimeout(retry)
       retry = null

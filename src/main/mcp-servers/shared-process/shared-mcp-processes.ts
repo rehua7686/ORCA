@@ -17,7 +17,6 @@ import { overlayEnvironmentVariables } from '../../../shared/shell/launch/enviro
 import { RelayRefusal } from '../../bots/tool-relay/bot-tool-relay-requests'
 import { answerUnavailable } from '../../bots/tool-relay/bot-tool-relay-sign-in-answer'
 import { sharedMcpProcessServer, type McpCommandServer } from '../mcp-shared-process-servers'
-import { isMcpServersFeatureEnabled } from '../mcp-servers-feature'
 import { answerNoSession, answerParseError, answerSessionGone } from './shared-mcp-http-answers'
 import { SharedMcpProcess, SharedMcpStartFailed, type SharedMcpLaunch } from './shared-mcp-process'
 
@@ -91,9 +90,6 @@ export class SharedMcpProcesses {
   }
 
   async handle(request: SharedMcpProcessRequest): Promise<void> {
-    if (!isMcpServersFeatureEnabled()) {
-      throw new RelayRefusal(404, 'Not found.')
-    }
     const { req, res, body, signal } = request
     // A deleted bot's token, or the relay closing, cuts its open calls and streams here too.
     const cut = (): void => void res.destroy()

@@ -14,7 +14,6 @@ import { botToolRelay, type BotToolRelay } from '../bots/tool-relay/bot-tool-rel
 import { mcpServersWithDigestsForLaunch } from './mcp-host-list-launch'
 import { mcpHostListFolder } from './mcp-host-list-folder'
 import { botHostMcpAccess } from './bot-host-mcp-access'
-import { isMcpServersFeatureEnabled } from './mcp-servers-feature'
 import { SessionMcpTools, type SessionHostMcpServers } from './session-mcp-tools'
 
 // An Orca sign-in to a host-list server is a list change its chats compare: only one whose server
@@ -47,9 +46,6 @@ async function hostServersFor(
   workspace: HostWorkspace,
   given: string | undefined
 ): Promise<HostRead | undefined> {
-  if (!isMcpServersFeatureEnabled()) {
-    return undefined
-  }
   const folder = given ?? mcpHostListFolder()
   // Read before the list: a write in between makes this launch look stale, never current.
   const epoch = botToolsEpoch(folder)
@@ -151,7 +147,7 @@ export async function sessionLaunchToolsChanged(
     return false
   }
   const now = await hostServersFor(host.agent, host.workspace, host.folder)
-  if (!now && isMcpServersFeatureEnabled()) {
+  if (!now) {
     // The list can't be read now: the next turn compares again, so a change isn't lost.
     return false
   }

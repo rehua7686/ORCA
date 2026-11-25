@@ -12,7 +12,6 @@ import { terminalServers, type WslLaunch } from './terminal-mcp-servers'
 import { agentOwnMcpServerNames } from '../agent-own-mcp-server-names'
 import { codexArgsMcpServerNames } from '../../codex/structured/launch/codex-structured-launch-args'
 import { tokenizeStartupCommand } from '../../../shared/agent-launch/startup/tui-agent-startup-shell'
-import { isMcpServersFeatureEnabled } from '../mcp-servers-feature'
 import { SessionMcpTools, withSessionMcpToolsEnv } from '../session-mcp-tools'
 import { noteTerminalMcpDelivery } from '../mcp-agent-problems'
 import {
@@ -88,9 +87,6 @@ export async function currentTerminalMcpFingerprint(
   pane: Pick<TerminalMcpPaneLaunch, 'agent' | 'workspaceId' | 'wsl' | 'wslDistro'>,
   deps: Deps = {}
 ): Promise<string | null> {
-  if (!isMcpServersFeatureEnabled()) {
-    return null
-  }
   const wsl = pane.wsl ? { distro: pane.wslDistro ?? null } : null
   return fingerprintOf(await offeredTools(pane.agent, pane.workspaceId, wsl, deps))
 }
@@ -98,13 +94,7 @@ export async function currentTerminalMcpFingerprint(
 function adapterAndExecutable(
   input: TerminalMcpLaunchInput
 ): { adapter: TerminalMcpAdapter; executable: string } | null {
-  if (
-    !input.isFreshLaunch ||
-    input.connectionId ||
-    !input.command ||
-    !input.launchAgent ||
-    !isMcpServersFeatureEnabled()
-  ) {
+  if (!input.isFreshLaunch || input.connectionId || !input.command || !input.launchAgent) {
     return null
   }
   const adapter = terminalMcpAdapterFor(input.launchAgent)

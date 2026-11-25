@@ -21,7 +21,6 @@ import {
 import { readMcpHostList } from '../mcp-host-list'
 import { mcpHostListFolder } from '../mcp-host-list-folder'
 import { onMcpHostListChanged } from '../mcp-host-list-changes'
-import { isMcpServersFeatureEnabled } from '../mcp-servers-feature'
 import {
   mcpAgentFileEntry,
   mcpAgentFileEntryName,
@@ -56,9 +55,6 @@ export type McpAgentFileSyncDeps = {
 }
 
 export async function syncMcpAgentFiles(deps: McpAgentFileSyncDeps): Promise<void> {
-  if (!isMcpServersFeatureEnabled()) {
-    return
-  }
   const { servers, agentFiles } = await readMcpHostList(deps.folder)
   for (const agent of MCP_FILE_AGENTS) {
     if (agentFiles[agent] && deps.launcher === null) {
