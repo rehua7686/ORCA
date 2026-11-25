@@ -73,7 +73,7 @@ import {
   sanitizeTaskResumeState
 } from './ui-slice-bot-sidebar-hydration'
 import { hydrateWslMovedSection } from './ui-slice-wsl-moved-section-actions'
-import { hydrateBrowserPaneLayout } from './browser-pane-layout-hydration'
+import { hydratePaneLayout } from './pane-layout-hydration'
 import { hydrateStatusBarItems } from './ui-slice-hydration-status-bar-items'
 
 const MAX_LEFT_SIDEBAR_WIDTH = 500
@@ -232,7 +232,7 @@ export function createUiHydrationActions(set: UISliceSet, _get: UISliceGet): Par
           browserDefaultSearchEngine: ui.browserDefaultSearchEngine ?? null,
           browserDefaultZoomLevel: normalizeBrowserPageZoomLevel(ui.browserDefaultZoomLevel),
           browserKagiSessionLink: normalizeKagiSessionLink(ui.browserKagiSessionLink ?? ''),
-          ...hydrateBrowserPaneLayout(ui),
+          ...hydratePaneLayout(ui),
           taskResumeState: sanitizeTaskResumeState(ui.taskResumeState),
           featureTipsSeenIds: normalizeFeatureTipIds(ui.featureTipsSeenIds),
           ...hydrateFeatureInteractions(s.workspaceBoardUsedBeforeLaunch, ui),
