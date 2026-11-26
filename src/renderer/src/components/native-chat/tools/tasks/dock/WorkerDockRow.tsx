@@ -98,7 +98,7 @@ export const WorkerDockRow = memo(function WorkerDockRow({
     .filter(Boolean)
     .join(' · ')
   const tooltip = row
-    ? [row.name, title === row.title ? '' : row.title, title, state, reason, remote]
+    ? [row.name, title === row.title ? '' : row.title, title, progress, state, reason, remote]
         .filter(Boolean)
         .join(' · ')
     : undefined
