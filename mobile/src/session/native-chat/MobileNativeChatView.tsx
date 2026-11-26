@@ -16,8 +16,8 @@ import {
 } from './transcript/viewport/mobile-native-chat-disclosure-store'
 import { type NativeScrollEvent, type NativeSyntheticEvent, View } from 'react-native'
 import { MobileNativeChatSendErrorBanner } from './status/MobileNativeChatSendErrorBanner'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { useChatBottomFit } from './composer/use-chat-bottom-fit'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 import { MobileNativeChatInputLockStatus } from './composer/field/MobileNativeChatInputLockStatus'
 import { useMobileColorScheme } from '../../theme/use-mobile-color-scheme'
@@ -36,7 +36,6 @@ import { useMobileNativeChatTurnDisclosure } from './transcript/turn-state/use-m
 import { mobileNativeChatComposerPlaceholder } from './composer/field/use-mobile-native-chat-input-lease'
 import { MobileNativeChatLiveLine } from './transcript/messages/MobileNativeChatLiveLine'
 import { MobileNativeChatAwaitingInputRow } from './transcript/messages/MobileNativeChatAwaitingInputRow'
-import { MobileNativeChatFloatingControls } from './lower-region/MobileNativeChatFloatingControls'
 import { MobileNativeChatDraftComposer } from './composer/MobileNativeChatDraftComposer'
 import { MobileNativeChatPromptCard } from './input/prompts/MobileNativeChatPromptCard'
 import { useMobileNativeChatWorkerApprovalSlot } from './input/prompts/MobileNativeChatWorkerApproval'
@@ -46,6 +45,7 @@ import {
 } from './transcript/messages/MobileNativeChatWorkerApprovalReceipts'
 import type { MobileNativeChatMicProps } from './composer/dictation/MobileNativeChatComposerMic'
 import { useMobileNativeChatPromptInputOwner } from './input/prompts/use-mobile-native-chat-prompt-input-owner'
+import { DuoRailComposerTop, MobileNativeChatJumpControls } from '../duo-rail-jump-controls'
 import {
   NO_COMPOSER_TRAY,
   type ComposerTrayProps
@@ -151,8 +151,7 @@ export function MobileNativeChatView({
 }: Props): React.JSX.Element {
   useMobileColorScheme()
   const t = useMobileTranslation()
-  const insets = useSafeAreaInsets()
-  const bottomPad = keyboardInset > 0 ? keyboardInset + insets.bottom : insets.bottom
+  const { bottomPad, composerFit, transcriptInset } = useChatBottomFit(keyboardInset)
   const rootStyle = [styles.root, { paddingBottom: bottomPad }]
   const { fontScale, pinchGesture } = useMobileNativeChatPinchGesture()
   const { font, lineSpacing } = useNativeChatTextSettings()
@@ -335,8 +334,9 @@ export function MobileNativeChatView({
         {...{ permission, onRespondPermission, question, onAnswerQuestion, onCollapsePrompt }}
         {...{ onAnswerInTerminal, collapsedPrompt, notice }}
       />
-      <View style={promptOwnsInput ? styles.hidden : undefined}>
+      <DuoRailComposerTop keyboardInset={keyboardInset} hidden={promptOwnsInput}>
         <MobileNativeChatDraftComposer
+          {...composerFit}
           draftScopeKey={composerScopeKey}
           structured={structuredActivityUi ? structured : null}
           draftKey={draftKey}
@@ -355,7 +355,7 @@ export function MobileNativeChatView({
           {...{ filePaths, onNeedFiles, fileReference, skillDiscovery, onNeedSkills }}
           stop={canStop ? { onStop, held: turnIndicator?.stopRequestInFlight === true } : null}
         />
-      </View>
+      </DuoRailComposerTop>
     </>
   )
 
@@ -374,7 +374,7 @@ export function MobileNativeChatView({
         ) : firstScreen ? (
           <MobileBotFirstScreen firstScreen={firstScreen} after={mailRows} />
         ) : (
-          <GestureHandlerRootView style={styles.listWrap}>
+          <GestureHandlerRootView style={[styles.listWrap, transcriptInset]}>
             <MobileNativeChatDisclosureContext.Provider value={disclosures}>
               <MobileBotCardSendContext.Provider value={sendFromCard}>
                 <MobileMarkdownBotCardContext.Provider value={drawReplyCard}>
@@ -407,7 +407,7 @@ export function MobileNativeChatView({
                 </MobileMarkdownBotCardContext.Provider>
               </MobileBotCardSendContext.Provider>
             </MobileNativeChatDisclosureContext.Provider>
-            <MobileNativeChatFloatingControls
+            <MobileNativeChatJumpControls
               showJumpToTail={tail.showJumpToTail}
               onJumpToTail={jumpToTail}
             />
