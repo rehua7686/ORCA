@@ -25,6 +25,7 @@ export const AGENT_KIND_VALUES = [
   'qoder-cn',
   'antigravity',
   'aider',
+  'gray',
   'goose',
   'amp',
   'kilo',
