@@ -3,6 +3,10 @@ import {
   type LocalAccountRuntimeTarget
 } from '../../../shared/agent-accounts/local-account-runtime'
 import type { BrowserWindow } from 'electron'
+import {
+  USAGE_PROVIDER_KEYS,
+  type UsageLastGoodStore
+} from '../usage-last-good/usage-last-good-store'
 import { hasMiniMaxSessionCookie } from '../../minimax/minimax-cookie-store'
 import { hasMiniMaxApiKey } from '../../minimax/minimax-api-key-store'
 import { hasZcodePlanApiKey } from '../../zcode/zcode-plan-api-key-store'
@@ -23,7 +27,8 @@ import {
   type ClaudeOAuthUsageEnabledResolver,
   type MuseUsageEnabledResolver,
   type ZcodePlanRateLimitConfig,
-  type InactiveCodexAccountInfo
+  type InactiveCodexAccountInfo,
+  type InternalRateLimitState
 } from './service-types'
 import {
   type ClaudeAccountSelectionTarget,
@@ -32,9 +37,40 @@ import {
 import type { InactiveClaudeAccount } from '../providers/claude/claude-managed-account-usage'
 import type { RateLimitState } from '../../../shared/agent-usage/rate-limits/rate-limit-types'
 import type { NetworkProxySettings } from '../../../shared/network/network-proxy'
+import type { UsageHistoryRecorder } from '../usage-history/usage-history-recorder'
 
 export class RateLimitService extends RateLimitServiceTargetUsageRead {
   private lastOwnerReturnAt = Number.NEGATIVE_INFINITY
+  private usageLastGood: UsageLastGoodStore | null = null
+  /** Set when startup picks a target other than the host default before last-good loads. */
+  private antigravityTargetMoved = false
+
+  /** Shows each provider's persisted last windows until a poll replaces them. Loads well inside
+   *  the deferred startup poll; a provider already read by then keeps its own reading. */
+  setUsageLastGoodStore(store: UsageLastGoodStore): Promise<void> {
+    this.usageLastGood = store
+    return store.loaded.then((restored) => {
+      const currentTarget = localAccountRuntimeTargetKey(this.antigravityFetchTarget)
+      const savedTarget = store.savedAntigravityTarget
+      // A reading saved for another target, or an old file with no target after startup already
+      // switched off the host default, must not fill the slot the target change just cleared.
+      const skipAntigravity =
+        savedTarget === null ? this.antigravityTargetMoved : savedTarget !== currentTarget
+      const seeded = { ...this.state }
+      for (const key of USAGE_PROVIDER_KEYS) {
+        if (key === 'antigravity' && skipAntigravity) {
+          continue
+        }
+        seeded[key] ??= restored[key] ?? null
+      }
+      this.updateState(seeded)
+    })
+  }
+
+  protected override updateState(next: InternalRateLimitState): void {
+    super.updateState(next)
+    this.usageLastGood?.record(next, localAccountRuntimeTargetKey(this.antigravityFetchTarget))
+  }
 
   refreshOnOwnerReturn(): Promise<void> {
     const now = Date.now()
@@ -120,6 +156,7 @@ export class RateLimitService extends RateLimitServiceTargetUsageRead {
       return
     }
     this.antigravityFetchTarget = { ...target }
+    this.antigravityTargetMoved = true
     this.antigravityFetchGeneration += 1
     this.antigravityAccounts = []
     this.activeFailureStreakByProvider.antigravity = 0
@@ -136,6 +173,11 @@ export class RateLimitService extends RateLimitServiceTargetUsageRead {
 
   setNetworkProxySettingsResolver(resolver: () => NetworkProxySettings): void {
     this.networkProxySettingsResolver = resolver
+  }
+
+  setUsageHistoryRecorder(recorder: UsageHistoryRecorder): void {
+    this.usageHistory = recorder
+    recorder.record(this.state)
   }
 
   setInactiveClaudeAccountsResolver(resolver: () => InactiveClaudeAccount[]): void {
@@ -218,6 +260,7 @@ export class RateLimitService extends RateLimitServiceTargetUsageRead {
     this.detachWindowListeners?.()
     this.detachWindowListeners = null
     this.mainWindow = null
+    void this.usageHistory?.flush()
   }
 
   async getState(): Promise<RateLimitState> {
@@ -244,7 +287,8 @@ export class RateLimitService extends RateLimitServiceTargetUsageRead {
         this.inactiveCodexCache,
         this.inactiveCodexFetching
       ),
-      antigravityAccounts: this.antigravityAccounts
+      antigravityAccounts: this.antigravityAccounts,
+      usageHistory: this.usageHistory?.snapshot()
     }
   }
 }
