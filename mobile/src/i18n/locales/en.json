@@ -483,8 +483,8 @@
       "loadFailed": "Unable to load agent sessions"
     },
     "worktreeNavigationActions": {
-      "sourceControl": "Source Control",
-      "agentSessionHistory": "Agent Session History"
+      "sourceControl": "Source control",
+      "agentSessionHistory": "Agent history"
     },
     "resume": {
       "hostConnectionChanged": "Host connection changed. Retry resume."
@@ -869,6 +869,9 @@
     "hostPendingCreationRow": {
       "creatingWorkspace": "Creating workspace…"
     },
+    "hostSectionHeader": {
+      "newWorkspaceIn": "New workspace in {{project}}"
+    },
     "hostScreenHeader": {
       "backToHosts": "Back to hosts",
       "reconnect": "Reconnect",
@@ -893,7 +896,7 @@
       "ignoredNamesCount": "{{names}} +{{value0}}",
       "ignoredUnchecked": "Ignored files could not be fully checked",
       "needsUpdate": "Update Orca on your computer to delete this workspace from your phone.",
-      "removeTitle": "Remove Workspace",
+      "removeTitle": "Remove workspace",
       "removeFolderMessage": "Remove \"{{name}}\" from Orca? The folder on disk is kept."
     },
     "hostScreenOverlays": {
@@ -904,15 +907,17 @@
       "unpin": "Unpin",
       "pin": "Pin",
       "rename": "Rename",
-      "primaryWorktreeDeleteHint": "Primary worktree — can't be deleted. Remove the project instead.",
       "removeHost": "Remove Host",
       "removeHostMessage": "Remove \"{{name}}\"? You can re-pair later.",
       "deleteFailed": "Failed to delete \"{{name}}\"",
-      "markRead": "Mark Read",
-      "markUnread": "Mark Unread",
-      "muteNotifications": "Mute Notifications",
-      "unmuteNotifications": "Unmute Notifications",
-      "moveToStatus": "Move to Status"
+      "markRead": "Mark as read",
+      "markUnread": "Mark as unread",
+      "muteNotifications": "Mute notifications",
+      "unmuteNotifications": "Unmute notifications",
+      "status": "Status",
+      "handOff": "Hand off",
+      "handOffToAgent": "To an agent",
+      "handOffToBot": "To a bot"
     },
     "workspaceRenameSheet": {
       "title": "Rename Workspace",
@@ -1577,10 +1582,7 @@
       "description": "Pick a workspace from the sidebar to open its terminal here."
     },
     "worktreeListRow": {
-      "folder": "Folder",
-      "remoteHost": "Remote host",
-      "project": "Project {{repo}}",
-      "child": "Child",
+      "needsYou": "Needs you",
       "children_one": "{{count}} child",
       "children_other": "{{count}} children",
       "unsavedName": "Unsaved name: {{name}}"
@@ -1669,15 +1671,6 @@
     "mermaidDiagram": {
       "label": "Mermaid diagram",
       "expand": "Expand diagram"
-    },
-    "worktreeAgentList": {
-      "hideChildAgents_one": "Hide {{count}} child agent",
-      "hideChildAgents_other": "Hide {{count}} child agents",
-      "showChildAgents_one": "Show {{count}} child agent",
-      "showChildAgents_other": "Show {{count}} child agents",
-      "hideIdleChildren": "Hide {{count}} idle child agents",
-      "showIdleChildren": "Show {{count}} idle child agents",
-      "idleChildCount": "{{count}} idle"
     },
     "diffReviewFilesSheet": {
       "title": "Files",
@@ -7137,7 +7130,6 @@
       "hostMcpServers": "Your MCP servers"
     },
     "handToBot": {
-      "menu": "Hand to bot…",
       "title": "Hand {{name}} to a bot",
       "noAgents": "It has no agents running.",
       "oneAgent": "Its agent keeps running and works for the bot.",

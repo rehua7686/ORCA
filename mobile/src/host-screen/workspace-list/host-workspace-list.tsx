@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, type ReactElement } from 'react'
+import { useCallback, useEffect, useMemo, useRef, type ReactElement } from 'react'
 import { Animated, Platform, RefreshControl, View } from 'react-native'
 import { isBotsListRow, useMobileBotsListParts } from '../../bots/use-mobile-bots-list-parts'
 import { AuthFailedBanner } from '../../components/host-connection/AuthFailedBanner'
@@ -28,8 +28,11 @@ import type {
   WorkspaceListItem,
   Worktree
 } from '../../worktree/workspace-list/workspace-list-types'
-import { DEFAULT_REPO_BADGE_COLOR } from '../../../../src/shared/repository/appearance/repo-badge-color'
-import { getWorktreeCardDetails } from '../../../../src/shared/worktree/row-display/card-properties'
+import {
+  getRepoExecutionHostIdOrDefault,
+  LOCAL_EXECUTION_HOST_ID
+} from '../../../../src/shared/execution-host/execution-host'
+import { worktreeListRowStyles as rowStyles } from '../../worktree/row-presentation/worktree-list-row-styles'
 import { hostScreenStyles as styles } from '../host-screen-styles'
 import { useRepoLookById } from '../catalog/host-repo-looks'
 import { HostSectionHeader } from './host-section-header'
@@ -37,6 +40,8 @@ import { useSlowPendingKeys } from './use-slow-pending-keys'
 import { useHostMutationDrafts } from '../../query/host-mutation-drafts'
 import { workspaceRenameDraftKey } from '../workspace-actions/workspace-rename-sheet'
 import type { HostScreenController } from '../use-host-screen-controller'
+import { isWorktreePinned } from '../../worktree/workspace-list/workspace-list-sections'
+import { folderIdOfSelector } from '../../../../src/shared/workspace/identity/workspace-scope'
 
 export function HostWorkspaceList({
   controller,
@@ -105,40 +110,64 @@ export function HostWorkspaceList({
     }
   }, [hasRows, resetTitle])
   const repoLookById = useRepoLookById(repoById)
-  const { worktreeCardProperties, compactWorktreeCards, newCardStyle } = state.view
-  const cardDetails = useMemo(
-    () => getWorktreeCardDetails(worktreeCardProperties, { compactWorktreeCards, newCardStyle }),
-    [worktreeCardProperties, compactWorktreeCards, newCardStyle]
-  )
   const sectionCounts = useMemo(
     () => new Map(rawSections.map((section) => [section.key, section.data.length])),
     [rawSections]
   )
   const { collapsedGroups } = controller
-  const { groupBy, agentActivityDisplayMode } = state.view
+  const { groupBy } = state.view
   const { toggleCollapsed, toggleWorktreeLineage } = settings
   const { setActionTarget } = state
-  const { openWorktreeSession } = actions
-  const statusLive = connState === 'connected'
+  const { openWorktreeSession, openNewWorktreeModal, setWorktreeUnread, togglePin } = actions
+  const { pinnedIds } = state
+  // The writes change identity with every catalog read; rows keep one callback so a poll that
+  // leaves a row alone doesn't re-render it.
+  const rowWrites = useRef({ setWorktreeUnread, togglePin })
+  useEffect(() => {
+    rowWrites.current = { setWorktreeUnread, togglePin }
+  }, [setWorktreeUnread, togglePin])
+  const toggleRead = useCallback(
+    (row: Worktree) => rowWrites.current.setWorktreeUnread(row, !row.unread),
+    []
+  )
+  const toggleRowPin = useCallback((row: Worktree) => rowWrites.current.togglePin(row), [])
+  const canCreate = connState === 'connected' && !isReadOnly
+  const firstSectionKey = sections[0]?.key
 
   const renderSectionHeader = useCallback(
     ({ section }: { section: Section }) => {
       const collapseKey = section.collapseKey ?? section.key
+      const first = section.key === firstSectionKey
+      const repo = groupBy === 'repo' && !section.isProjectGroup ? section.repo : undefined
       return (
-        bots.header(section, collapsedGroups, pendingCollapseKeys, toggleCollapsed) ?? (
+        bots.header(section, collapsedGroups, pendingCollapseKeys, toggleCollapsed, first) ?? (
           <HostSectionHeader
             title={section.title}
             icon={section.icon}
             isProjectGroup={section.isProjectGroup}
             projectGroupDepth={section.projectGroupDepth}
             pendingCreations={section.pendingCreations}
+            hasRows={section.data.length > 0}
             collapseKey={collapseKey}
             collapsed={collapsedGroups.has(collapseKey)}
             count={section.count ?? sectionCounts.get(section.key) ?? 0}
             pending={pendingCollapseKeys.has(collapseKey)}
             groupByRepo={groupBy === 'repo'}
             repoLook={groupBy === 'repo' && section.repo ? repoLookById.get(section.repo.id) : null}
+            first={first}
             onToggle={toggleCollapsed}
+            onNew={
+              repo && canCreate
+                ? () =>
+                    openNewWorktreeModal({
+                      id: repo.id,
+                      executionHostId: getRepoExecutionHostIdOrDefault(
+                        repo,
+                        LOCAL_EXECUTION_HOST_ID
+                      )
+                    })
+                : undefined
+            }
           />
         )
       )
@@ -150,7 +179,10 @@ export function HostWorkspaceList({
       groupBy,
       repoLookById,
       toggleCollapsed,
-      bots
+      bots,
+      firstSectionKey,
+      canCreate,
+      openNewWorktreeModal
     ]
   )
 
@@ -160,41 +192,67 @@ export function HostWorkspaceList({
   )
 
   const renderItem = useCallback(
-    ({ item: { row: item, view } }: { item: WorkspaceListItem }) =>
-      bots.groupRow(item, view, isReadOnly) ?? (
-        <WorktreeListRow
-          item={item}
-          view={view}
-          isReadOnly={isReadOnly}
-          status={hasWorktreeAgentState(item) ? getWorktreeDotStatus(item) : null}
-          repoColor={repoLookById.get(item.repoId)?.color ?? DEFAULT_REPO_BADGE_COLOR}
-          repoIcon={repoLookById.get(item.repoId)?.icon ?? null}
-          hideRepo={groupBy === 'repo' && !view.showProjectName}
-          cardDetails={cardDetails}
-          agentActivityDisplayMode={agentActivityDisplayMode}
-          onPress={openWorktreeSession}
-          onAgentPress={openWorktreeSession}
-          statusLive={statusLive && !view.hostContextHealthLabel}
-          // A bot's home goes through the bot's own delete, not the workspace menu.
-          onLongPress={item.botHome === true || view.botFacts ? undefined : setActionTarget}
-          onToggleLineage={toggleWorktreeLineage}
-          unsavedName={unsavedRename(renameDrafts, hostId, item)}
-          pairedHostId={hostId ?? null}
-        />
-      ),
+    ({
+      item: { row: item, view },
+      index,
+      section
+    }: {
+      item: WorkspaceListItem
+      index: number
+      section: Section
+    }) => (
+      // Each project is one inset group, like Home's: its first and last rows round the corners.
+      <View
+        style={[
+          rowStyles.groupRow,
+          index === 0 && !section.pendingCreations?.length && rowStyles.groupFirst,
+          index === section.data.length - 1 && rowStyles.groupLast
+        ]}
+      >
+        {bots.groupRow(item, view, isReadOnly) ?? (
+          <WorktreeListRow
+            item={item}
+            view={view}
+            isReadOnly={isReadOnly}
+            status={hasWorktreeAgentState(item) ? getWorktreeDotStatus(item) : null}
+            onPress={openWorktreeSession}
+            onAgentPress={openWorktreeSession}
+            // A bot's home goes through the bot's own delete, not the workspace menu.
+            onLongPress={item.botHome === true || view.botFacts ? undefined : setActionTarget}
+            onToggleLineage={toggleWorktreeLineage}
+            unsavedName={unsavedRename(renameDrafts, hostId, item)}
+            pairedHostId={hostId ?? null}
+            // Outside its project's group, or nested under another project, the row names its own.
+            repoLook={
+              groupBy !== 'repo' || view.showProjectName ? repoLookById.get(item.repoId) : null
+            }
+            showSelection={embedded}
+            // worktree.set resolves git worktrees only, so a folder workspace offers no swipe.
+            {...(swipeable(item, view)
+              ? {
+                  onToggleRead: toggleRead,
+                  onTogglePin: toggleRowPin,
+                  pinned: isWorktreePinned(item, pinnedIds)
+                }
+              : {})}
+          />
+        )}
+      </View>
+    ),
     [
       bots,
       renameDrafts,
       hostId,
       isReadOnly,
-      cardDetails,
+      openWorktreeSession,
+      setActionTarget,
+      toggleWorktreeLineage,
+      toggleRead,
+      toggleRowPin,
+      pinnedIds,
       repoLookById,
       groupBy,
-      agentActivityDisplayMode,
-      openWorktreeSession,
-      statusLive,
-      setActionTarget,
-      toggleWorktreeLineage
+      embedded
     ]
   )
 
@@ -337,6 +395,15 @@ export function HostWorkspaceList({
   )
 }
 
+function swipeable(row: Worktree, view: WorkspaceListItem['view']): boolean {
+  return (
+    folderIdOfSelector(row.worktreeId) === undefined &&
+    row.botHome !== true &&
+    !view.botWorkspace &&
+    !view.botFacts
+  )
+}
+
 // The row keeps its real name; a rename the desktop never took is shown under it.
 function unsavedRename(
   drafts: ReadonlyMap<string, string>,
@@ -350,5 +417,9 @@ function unsavedRename(
 function ListSeparator({ leadingItem }: { leadingItem?: WorkspaceListItem }) {
   useMobileColorScheme()
   // A separator keeps the neighbours it mounted with, so the Bots list draws its own dividers.
-  return isBotsListRow(leadingItem?.view) ? null : <View style={styles.separator} />
+  return isBotsListRow(leadingItem?.view) ? null : (
+    <View style={rowStyles.groupSeparator}>
+      <View style={rowStyles.groupSeparatorLine} />
+    </View>
+  )
 }
