@@ -22196,6 +22196,7 @@
         "showLess": "Show less"
       },
       "visualUnavailable": "Visualization unavailable",
+      "visualLabel": "Visualization",
       "visualLoading": "Loading visualization",
       "visualOpenInNewTab": "Open in new tab",
       "queuedMessages": {
