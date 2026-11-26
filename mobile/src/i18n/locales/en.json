@@ -4932,7 +4932,8 @@
       "assignedSubtitle": "Unresolved issues assigned to you",
       "reportedSubtitle": "Unresolved issues you reported",
       "allSubtitle": "Unresolved issues across the selected sites",
-      "doneSubtitle": "Your recently resolved issues"
+      "doneSubtitle": "Your recently resolved issues",
+      "noGiteaTasks": "No Gitea tasks"
     },
     "tasksCreateDrawers": {
       "newIssueTitle": "New {{providerLabel}} Issue",
@@ -5299,7 +5300,8 @@
       "refreshJira": "Refresh Jira issues",
       "title": "Tasks",
       "newGitHubIssue": "New GitHub issue",
-      "newLinearIssue": "New Linear issue"
+      "newLinearIssue": "New Linear issue",
+      "refreshGitea": "Refresh Gitea work items"
     },
     "searchControl": {
       "projectPlaceholder": "Search project view...",

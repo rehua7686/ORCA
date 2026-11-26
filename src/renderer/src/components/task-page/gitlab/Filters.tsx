@@ -1,39 +1,12 @@
 import type { TaskPageComposerActionsModel } from '../use-task-page-composer-actions'
 import { cn } from '@/lib/class-names'
-import TaskProjectSourceCombobox from '@/components/task-page/source-selection/task-project-source-combobox'
-import { normalizeTaskRepoSelection } from '../../../../../shared/work-items/task-repo-selection'
-import { toast } from 'sonner'
+import { TaskRepoSourcePicker } from '../source-selection/TaskRepoSourcePicker'
+import { TaskFilterChip } from '../TaskFilterChip'
 import { useTranslate } from '@/i18n/use-translate'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { LoaderCircle, RefreshCw } from 'lucide-react'
 import { getGitLabMRInvolvementFilters } from '@/components/task-page/task-page-localized-options'
-
-function FilterChip({
-  label,
-  active,
-  onSelect
-}: {
-  label: string
-  active: boolean
-  onSelect: () => void
-}): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      aria-pressed={active}
-      onClick={onSelect}
-      className={cn(
-        'rounded-md border px-2 py-1 text-xs transition',
-        active
-          ? 'border-border/50 bg-foreground/90 text-background backdrop-blur-md'
-          : 'border-border/50 bg-transparent text-foreground hover:bg-muted/50'
-      )}
-    >
-      {label}
-    </button>
-  )
-}
 
 export function TaskPageGitLabFilters({
   model
@@ -42,15 +15,8 @@ export function TaskPageGitLabFilters({
 }): React.JSX.Element | null {
   const t = useTranslate()
   const {
-    updateSettings,
-    eligibleRepos,
-    repoSelection,
-    setRepoSelection,
-    taskPickerGroups,
-    taskPickerRepos,
     gitLabIssueFilters,
     gitLabMRFilters,
-    getTaskPickerRepoHostLabel,
     setGitlabFilter,
     gitlabLoading,
     setGitlabRefreshNonce,
@@ -91,34 +57,7 @@ export function TaskPageGitLabFilters({
           })}
         </div>
         <div className="min-w-0 w-full sm:w-[200px]">
-          <TaskProjectSourceCombobox
-            groups={taskPickerGroups}
-            selected={repoSelection}
-            getRepoHostLabel={getTaskPickerRepoHostLabel}
-            onChange={(next) => {
-              const normalized = normalizeTaskRepoSelection(eligibleRepos, next)
-              setRepoSelection(normalized)
-              void updateSettings({
-                defaultRepoSelection: [...normalized]
-              }).catch(() => {
-                toast.error(
-                  t('auto.components.TaskPage.dfd72673e7', 'Failed to save project selection.')
-                )
-              })
-            }}
-            onSelectAll={() => {
-              const allIds = new Set(taskPickerRepos.map((r) => r.id))
-              setRepoSelection(allIds)
-              void updateSettings({
-                defaultRepoSelection: null
-              }).catch(() => {
-                toast.error(
-                  t('auto.components.TaskPage.dfd72673e7', 'Failed to save project selection.')
-                )
-              })
-            }}
-            triggerClassName="h-8 w-full rounded-md border border-border/50 bg-muted/50 px-2 text-xs font-medium shadow-sm transition hover:bg-muted/50 focus:ring-2 focus:ring-ring/20 focus:outline-none"
-          />
+          <TaskRepoSourcePicker model={model} />
         </div>
       </div>
       <div
@@ -131,7 +70,7 @@ export function TaskPageGitLabFilters({
               {gitlabView === 'issues' || gitlabView === 'mrs'
                 ? (gitlabView === 'issues' ? gitLabIssueFilters : gitLabMRFilters).map(
                     ({ id, label }) => (
-                      <FilterChip
+                      <TaskFilterChip
                         key={id}
                         label={label}
                         active={activeGitlabFilter === id}
@@ -149,7 +88,7 @@ export function TaskPageGitLabFilters({
                 <span aria-hidden className="h-4 w-px bg-border/60" />
                 <div className="flex flex-wrap gap-2">
                   {getGitLabMRInvolvementFilters().map(({ id, label }) => (
-                    <FilterChip
+                    <TaskFilterChip
                       key={id ?? 'everyone'}
                       label={label}
                       active={gitlabMRInvolvement === id}

@@ -1,5 +1,6 @@
 import { replaceEqualDeep, useQueryClient } from '@tanstack/react-query'
 import { restoreStoredHostQueries } from '../../query/host-query-persistence'
+import { mobileTaskProviders } from '../mobile-task-providers'
 import { connectionHostStatus } from '../../query/host-status-query'
 import type { ClientSettingsActionsModel } from './use-mobile-tasks-client-settings-actions'
 import { resolveHydratedTaskViewState } from '../task-list/mobile-tasks-hydrated-view-state'
@@ -108,10 +109,12 @@ export function useMobileTasksRuntimeHydration(model: ClientSettingsActionsModel
 
     const preferredProviders = normalizeVisibleTaskProviders(settings.visibleTaskProviders)
     const linearIsConnected = hydration.linearConnected
-    const availableProviders = filterAvailableTaskProviders(preferredProviders, {
-      gitlabInstalled: hydration.glabInstalled,
-      linearConnected: linearIsConnected
-    })
+    const availableProviders = mobileTaskProviders(
+      filterAvailableTaskProviders(preferredProviders, {
+        gitlabInstalled: hydration.glabInstalled,
+        linearConnected: linearIsConnected
+      })
+    )
     const nextVisibleProviders =
       preferredProviders.includes('linear') && !availableProviders.includes('linear')
         ? [...availableProviders, 'linear' as const]
