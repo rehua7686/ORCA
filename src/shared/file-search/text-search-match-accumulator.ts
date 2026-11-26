@@ -2,6 +2,7 @@ import type { SearchFileResult, SearchMatch } from './code-search-types'
 import type { SearchAccumulator } from './text-search'
 import { sliceAtCodeUnitLimit } from '../text/surrogate-safe-text-slice'
 import { ownRetainedString } from '../text/own-retained-string'
+import { compareFileNames } from '../file-listing/file-name-sort'
 
 // Bound repeated context so dense search results fit within the SSH message limit.
 export const MAX_LINE_CONTENT_LENGTH = 500
@@ -88,4 +89,9 @@ export function pushSearchMatch(args: {
     return 'stop'
   }
   return 'continue'
+}
+
+// Why: ripgrep's parallel walk emits files in a different order each run; list them in path order.
+export function sortSearchFilesByPath(files: SearchFileResult[]): SearchFileResult[] {
+  return files.sort((a, b) => compareFileNames(a.relativePath, b.relativePath))
 }
