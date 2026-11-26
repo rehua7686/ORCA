@@ -223,4 +223,36 @@ describe('paired-client frame lineage identity', () => {
       stateStartedAt: NOW - 60_000
     })
   })
+
+  it('stamps a child-held hook row after a title-only working frame (#49963)', () => {
+    const hookWorking: AgentStatusEntry = {
+      ...workingWorkerRow(NOW - 60_000),
+      subagents: [
+        {
+          id: 'background-worker',
+          agentType: 'claude',
+          description: 'background task',
+          state: 'working',
+          startedAt: NOW - 90_000
+        }
+      ]
+    }
+    const pty = workingTitlePty(NOW - 120_000)
+    pty.lastAgentStatus = 'idle'
+    const observed = renewRuntimeMobileAgentStatusFromPtyTitle(hookWorking, pty)
+
+    pty.lastAgentStatus = 'working'
+    pty.lastAgentStatusStartedAtEpochMs = NOW - 59_000
+    pty.lastAgentStatusRichInvalidatedAtEpochMs = NOW - 59_000
+    const titleOnly = renewRuntimeMobileAgentStatusFromPtyTitle(observed, pty)
+    expect(titleOnly).toMatchObject({ state: 'working', updatedAt: NOW - 59_000 })
+    expect(titleOnly?.subagents).toBeUndefined()
+
+    pty.lastAgentStatus = 'idle'
+    pty.lastAgentStatusStartedAtEpochMs = NOW - 2_000
+    expect(renewRuntimeMobileAgentStatusFromPtyTitle(observed, pty)).toMatchObject({
+      updatedAt: NOW - 2_000,
+      subagents: hookWorking.subagents
+    })
+  })
 })
