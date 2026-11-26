@@ -242,6 +242,7 @@ import {
   BotShareStatusParams,
   BotShareStop
 } from './bots-share-params'
+import { BotSlackChannelHelloSet } from './bots-slack-channel-hello-params'
 import {
   BotToolAdd,
   BotToolFinishSignIn,
@@ -1387,6 +1388,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'bots.slack.setPostAs': BotSlackPostAs,
   'bots.slack.setUpApp': BotSlackSetUp,
   'bots.slack.state': BotSlackBot,
+  'bots.slackChannelHello.set': BotSlackChannelHelloSet,
   'bots.suggest': BotSuggest,
   'bots.suggestions.dismiss': BotSuggestionAct,
   'bots.suggestions.start': BotSuggestionAct,
