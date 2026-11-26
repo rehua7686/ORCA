@@ -2,11 +2,8 @@ import { MobileSessionBotIdentity } from './native-chat/MobileSessionBotIdentity
 import { MobileBotCardHostProvider } from './native-chat/transcript/bot-cards/MobileBotCardHostProvider'
 import { nativeChatTerminalRunner } from './native-chat/native-chat-terminal-runner'
 import { useCallback, useMemo, useState } from 'react'
-import { computeActiveTerminalKeyboardLift } from '../terminal/keyboard/terminal-keyboard-avoidance-lift'
-import {
-  terminalPaneDirection,
-  terminalPaneKeyboardLayout
-} from '../terminal/session/pane-layout/mobile-terminal-pane-layout'
+import { terminalPaneViewKeyboardLift } from '../terminal/keyboard/terminal-keyboard-avoidance-lift'
+import { terminalPaneDirection } from '../terminal/session/pane-layout/mobile-terminal-pane-layout'
 import { View, Text, Pressable, ActivityIndicator } from 'react-native'
 import { MobileBrowserTabBody } from '../browser/MobileBrowserTabBody'
 import { TerminalPaneView } from '../terminal/session/pane-layout/TerminalPaneView'
@@ -70,6 +67,7 @@ export function MobileSessionActiveContent({
     toastMessage,
     handleTerminalInteraction,
     handleTerminalTap,
+    handleTerminalSwipeDown,
     browserScreencastSupported,
     showToast,
     nativeChatSendError,
@@ -289,25 +287,20 @@ export function MobileSessionActiveContent({
               keyboardInset={keyboardLift}
               title={terminal.title}
               onFrame={notifyTerminalPaneFrame}
-              keyboardLift={
-                terminal.handle !== activeHandle &&
-                !(terminalSplitActive && visibleTerminalHandles.includes(terminal.handle))
-                  ? 0
-                  : terminalSplitActive
-                    ? computeActiveTerminalKeyboardLift({
-                        keyboardLift: terminalPaneKeyboardLayout(
-                          paneFrame,
-                          paneDirection,
-                          visibleTerminalHandles.indexOf(terminal.handle),
-                          keyboardLift
-                        ).occlusion,
-                        metrics: controller.terminalKeyboardMetrics.get(terminal.handle),
-                        terminalFrameHeight:
-                          controller.getTerminalPaneViewport(terminal.handle).terminalFrameRef
-                            .current?.height ?? 0
-                      })
-                    : activeTerminalKeyboardLift
-              }
+              keyboardLift={terminalPaneViewKeyboardLift({
+                activeHandle,
+                activeTerminalKeyboardLift,
+                handle: terminal.handle,
+                keyboardLift,
+                metrics: controller.terminalKeyboardMetrics.get(terminal.handle),
+                paneDirection,
+                paneFrame,
+                splitActive: terminalSplitActive,
+                terminalFrameHeight:
+                  controller.getTerminalPaneViewport(terminal.handle).terminalFrameRef.current
+                    ?.height ?? 0,
+                visibleHandles: visibleTerminalHandles
+              })}
               terminalTheme={terminal.terminalTheme}
               hostSettings={controller.terminalHostSettings}
               textScale={terminalTextScale}
@@ -328,6 +321,7 @@ export function MobileSessionActiveContent({
               onTerminalQueryReply={handleTerminalQueryReply}
               onTerminalInteraction={handleTerminalInteraction}
               onTerminalTap={handleTerminalTap}
+              onTerminalSwipeDown={handleTerminalSwipeDown}
               onFileTap={handleFileTap}
               onOpenUrl={terminalLinks.handleTerminalOpenUrl}
             />
