@@ -13,6 +13,7 @@ import { WorkspaceEmojiSuggestionPopover } from '@/components/workspace-emoji/Wo
 import type { WorktreeJumpPaletteController } from './use-worktree-jump-palette-controller'
 import { WorktreeJumpPaletteEntry } from './rows/worktree-jump-palette-entry'
 import { FooterKey, PaletteState } from './rows/worktree-jump-palette-row-content'
+import { WorktreeJumpPaletteSearchShortcutOffer } from './worktree-jump-palette-search-shortcut-offer'
 import {
   getWorktreeJumpPaletteEmptyState,
   getWorktreeJumpPaletteResultCount
@@ -217,9 +218,11 @@ export function WorktreeJumpPaletteSurface({
           onRetry={controller.retryTaskSearch}
         />
       </CommandList>
-      <div className="flex items-center justify-end border-t border-border/60 px-3.5 py-2.5 text-[11px] text-muted-foreground/82">
+      {/* Wraps so the Search offer keeps a readable width and the hints move to their own row when narrow. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border/60 px-3.5 py-2.5 text-[11px] text-muted-foreground/82">
+        <WorktreeJumpPaletteSearchShortcutOffer />
         {/* Wraps on narrow windows and long translations instead of clipping its first keys. */}
-        <div className="flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-x-2 gap-y-1">
           {selectedTask ? (
             <>
               <ShortcutKeyCombo keys={[modKey, 'Enter']} />
