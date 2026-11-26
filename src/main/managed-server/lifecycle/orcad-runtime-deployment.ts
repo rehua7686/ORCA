@@ -4,9 +4,11 @@ import { randomUUID } from 'node:crypto'
 import { assertRuntimeEnvironmentNotReconciling } from '../../../shared/remote-runtime/host-catalog/runtime-environment-reconciliation-record'
 import { listEnvironments } from '../../../shared/remote-runtime/host-store/runtime-environment-store'
 import { addManagedOrcadEnvironment } from '../../../shared/remote-runtime/host-store/runtime-environment-managed-orcad-store'
+import { RuntimeEnvironmentStoreError } from '../../../shared/remote-runtime/host-store/runtime-environment-store-records'
 import {
   getOrcadSshDeployment,
-  redactRuntimeEnvironment
+  redactRuntimeEnvironment,
+  type KnownRuntimeEnvironment
 } from '../../../shared/remote-runtime/host-catalog/runtime-environments'
 import {
   ORCAD_MANAGED_REMOTE_PORT,
@@ -39,6 +41,7 @@ import { resolveOrcadMigrationFence } from '../../ssh/migration-source/orcad-mig
 import type { SshTarget } from '../../../shared/remote-runtime/ssh/ssh-types'
 import { findCollidingEnvironmentName } from '../../../shared/remote-runtime/host-catalog/runtime-environment-name-collision'
 import { deployedOrcadTunnelChecks } from './orcad-managed-tunnel-identity'
+import { finishManagedOrcadRouteMove } from './orcad-managed-route-move'
 import {
   isForceableOrcadDeferral,
   managedOrcadDeployPolicy,
@@ -70,8 +73,13 @@ export async function createManagedOrcadEnvironment(
         throw new Error('The SSH target is owned by a server that is not deployed on it.')
       }
     }
+    const moveSavedServer = !args.migration
+    const mayBeThisMachineUnderAnotherRoute = (entry: KnownRuntimeEnvironment) =>
+      moveSavedServer && getOrcadSshDeployment(entry) !== undefined
     const namesake = findCollidingEnvironmentName(
-      environments.filter((entry) => entry.id !== environmentId),
+      environments.filter(
+        (entry) => entry.id !== environmentId && !mayBeThisMachineUnderAnotherRoute(entry)
+      ),
       args.name
     )
     if (namesake) {
@@ -156,11 +164,32 @@ export async function createManagedOrcadEnvironment(
           sshTargetGeneration: targetGeneration,
           localPort,
           remotePort: ORCAD_MANAGED_REMOTE_PORT
+        },
+        moveSavedServer
+      }).catch(async (error: unknown) => {
+        if (moveSavedServer && isStoreRefusal(error)) {
+          claims.release(claimed.id, environmentId)
+          await claims.flush(args.signal)
         }
+        throw error
       })
+      const outcome = serving.created ? 'created' : 'already-current'
+      if (environment.id !== environmentId) {
+        const moved = await finishManagedOrcadRouteMove(userDataPath, {
+          environmentId: environment.id,
+          target: claimed,
+          provisionalEnvironmentId: environmentId,
+          signal: args.signal
+        })
+        return {
+          outcome,
+          environment: redactRuntimeEnvironment(moved),
+          activeVersion: serving.version
+        }
+      }
       environmentRegistered = true
       return {
-        outcome: serving.created ? 'created' : 'already-current',
+        outcome,
         environment: redactRuntimeEnvironment(environment),
         activeVersion: serving.version
       }
@@ -173,6 +202,10 @@ export async function createManagedOrcadEnvironment(
 }
 
 type DeployedOrcad = OrcadRunningAdoption & { created?: true }
+
+function isStoreRefusal(error: unknown): boolean {
+  return error instanceof RuntimeEnvironmentStoreError && error.code === 'invalid_argument'
+}
 
 async function deployOwnOrcad(
   context: OrcadRemoteContext<SshTarget>,
