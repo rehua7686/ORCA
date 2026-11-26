@@ -37,6 +37,9 @@ export type AcpSessionModelDiscovery = {
   /** Removes a listing session, after its process exits, from an agent that can't delete sessions
    *  over ACP; `cwd` is the private folder it ran in, so only that session matches. */
   discardSession?(session: AcpListingSession): Promise<void>
+  /** Lists even when none of the above can remove the listing session, which the agent may keep
+   *  in its history; pair with `inPrivateFolder` and `listsOnDemand` so it only runs on request. */
+  keepsListingSession?: true
 }
 
 export type AcpListingSession = {
