@@ -5,21 +5,23 @@ import { colors } from '../../../../theme/mobile-theme'
 import { useMobileTranslation } from '../../../../i18n/use-mobile-translation'
 import { ActionSheetModal } from '../../../../components/sheets/ActionSheetModal'
 import { mobileNativeChatAttachActions } from './mobile-native-chat-attach-actions'
+import { useMobileNativeChatTerminalFiles } from './mobile-native-chat-terminal-files-context'
 import {
   COMPOSER_CONTROL_HIT_SLOP,
   composerInputStyles as inputStyles
 } from '../../../../components/composer-input/composer-input-styles'
 
-/** The composer's + button: the add-to-message sheet in a structured chat, else the photo library. */
+/** The composer's + button: the add-to-message sheet in a structured chat or when files can be added, else the photo library. */
 export function MobileNativeChatComposerAttachButton({
   onAttachImage,
-  onAttachFiles,
+  onAttachFiles: onAttachStructuredFiles,
   structured,
   isAttaching,
   disabled,
   menu
 }: {
   onAttachImage: (() => void) | undefined
+  /** A structured chat's file picker; a terminal-backed chat's comes from its overlay's context. */
   onAttachFiles: (() => void) | undefined
   structured: boolean
   isAttaching: boolean
@@ -33,9 +35,12 @@ export function MobileNativeChatComposerAttachButton({
 }): React.JSX.Element | null {
   const t = useMobileTranslation()
   const [attachOpen, setAttachOpen] = useState(false)
-  // A terminal-backed chat has only photos to add, so its + opens the library at once.
+  const terminalFiles = useMobileNativeChatTerminalFiles()
+  const onAttachFiles = onAttachStructuredFiles ?? terminalFiles?.onAttachFiles
+  // A terminal-backed chat with no file storage has only photos to add, so its + opens the library at once.
   const sheet = structured ? menu : undefined
-  const attachPress = sheet ? () => setAttachOpen(true) : onAttachImage
+  const showsMenu = sheet !== undefined || onAttachFiles !== undefined
+  const attachPress = showsMenu ? () => setAttachOpen(true) : onAttachImage
   if (!attachPress) {
     return null
   }
@@ -43,7 +48,7 @@ export function MobileNativeChatComposerAttachButton({
     <>
       <Pressable
         accessibilityLabel={
-          sheet
+          showsMenu
             ? t('chat.composer.addToMessage', 'Add to message')
             : t('chat.composer.attachImage', 'Attach image')
         }
@@ -58,17 +63,21 @@ export function MobileNativeChatComposerAttachButton({
           <Plus size={19} color={colors.textPrimary} strokeWidth={2} />
         )}
       </Pressable>
-      {sheet ? (
+      {showsMenu ? (
         <ActionSheetModal
           visible={attachOpen}
           onClose={() => setAttachOpen(false)}
           actions={mobileNativeChatAttachActions({
             onPhotos: onAttachImage,
             onFiles: onAttachFiles,
-            onWorkspaceFile: sheet.openFileMenu,
-            onSkills: () => sheet.openSlashMenu('skill'),
-            onCommands: () => sheet.openSlashMenu('command'),
-            skillCount: sheet.skillCount
+            ...(sheet
+              ? {
+                  onWorkspaceFile: sheet.openFileMenu,
+                  onSkills: () => sheet.openSlashMenu('skill'),
+                  onCommands: () => sheet.openSlashMenu('command'),
+                  skillCount: sheet.skillCount
+                }
+              : {})
           })}
         />
       ) : null}
