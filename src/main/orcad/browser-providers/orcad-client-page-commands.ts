@@ -18,9 +18,9 @@ import {
   createBrowserClientPage,
   createBrowserPageOnPairedHost,
   DEFAULT_BROWSER_PROFILE_ID,
-  hasPairedPageHost,
-  openBrowserUrlOnClient
+  hasPairedPageHost
 } from '../../runtime/browser/client-pages/browser-client-page-opening'
+import { openUrlForMobileOrClient } from '../../runtime/browser/tabs/mobile-terminal-browser-open'
 import {
   opensOnPairedDesktop,
   pairedDesktopTabMismatch
@@ -83,8 +83,16 @@ export function orcadClientPageCommand(
       engineAvailable() ? engineTabs(forward) : null
     )
   if (name === 'browserOpenUrlOnClient') {
-    return (...args: Parameters<RuntimeBrowserCommands['browserOpenUrlOnClient']>) =>
-      openBrowserUrlOnClient(host, args[0], args[1]?.signal)
+    return (...[params, opts]: Parameters<RuntimeBrowserCommands['browserOpenUrlOnClient']>) =>
+      openUrlForMobileOrClient({
+        host,
+        params,
+        // orcad has no offscreen/renderer screencast host, so it cannot stream a server tab to mobile.
+        canCreateServerTab: false,
+        signal: opts?.signal,
+        createServerTab: async (...tabArgs) =>
+          requireCreatedPage(await createTab(host, tabArgs, forward, engineAvailable))
+      })
   }
   if (name === 'browserTabCreate') {
     return (...args: Parameters<RuntimeBrowserCommands['browserTabCreate']>) =>
@@ -193,7 +201,7 @@ function createTab(
   }
   const hasEngine = engineAvailable()
   const createOnEngine = async (): Promise<unknown> => {
-    const created = await forward([params, caller])
+    const created = await forward([params, caller], 'browserTabCreate')
     if (
       hasEngine &&
       browserTabCreateClientPageStartsActive(params?.activate) &&
