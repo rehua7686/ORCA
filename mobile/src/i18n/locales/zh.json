@@ -1254,12 +1254,8 @@
       "monitoring": "监控后台任务",
       "unverifiable": "暂无近期更新"
     },
-    "authFailedBanner": {
-      "message": "身份验证失败。请先尝试重新连接；若仍失败，请在桌面端重新配对"
-    },
     "authFailedBannerActions": {
-      "repair": "重新配对",
-      "webNote": "请在 Orca 应用中重新连接或移除此主机"
+      "repair": "重新配对"
     },
     "codexResetCredit": {
       "alreadyAppliedTitle": "已执行重置",
@@ -1446,9 +1442,6 @@
       "sameNetworkOnlyHint": "仅能在同一 Wi-Fi 或 Tailscale 下连接。如需随时随地连接，请在桌面端登录并重新配对",
       "unlockHint": "解锁手机后，轻点重试",
       "worktreeAccessibilitySummary": "{{summary}}，{{activeCount}} 个活跃"
-    },
-    "hostDiagnosticsLink": {
-      "viewDiagnostics": "查看网络诊断"
     },
     "hostProtocolGate": {
       "checkingCompatibility": "正在检查主机兼容性"
@@ -1690,13 +1683,9 @@
       "placeholder": "工作区名称"
     },
     "worktreeListRow": {
-      "child": "子工作区",
       "children_one": "{{count}} 个子工作区",
       "children_other": "{{count}} 个子工作区",
-      "unsavedName": "未保存的名称：{{name}}",
-      "folder": "文件夹",
-      "project": "项目 {{repo}}",
-      "remoteHost": "远程主机"
+      "unsavedName": "未保存的名称：{{name}}"
     },
     "nativeScreenRecovery": {
       "title": "出了点问题",
@@ -1721,15 +1710,6 @@
     "mermaidDiagram": {
       "expand": "展开图表",
       "label": "Mermaid 图表"
-    },
-    "worktreeAgentList": {
-      "hideChildAgents_one": "隐藏 {{count}} 个子智能体",
-      "hideChildAgents_other": "隐藏 {{count}} 个子智能体",
-      "showChildAgents_one": "显示 {{count}} 个子智能体",
-      "showChildAgents_other": "显示 {{count}} 个子智能体",
-      "hideIdleChildren": "隐藏 {{count}} 个空闲子智能体",
-      "showIdleChildren": "显示 {{count}} 个空闲子智能体",
-      "idleChildCount": "{{count}} 个空闲"
     },
     "diffReviewFilesSheet": {
       "title": "文件",
@@ -2348,7 +2328,6 @@
     },
     "hostScreenHeader": {
       "accounts": "账户",
-      "backToHosts": "返回主机列表",
       "floatingWorkspace": "浮动工作区",
       "hideSidebar": "隐藏侧边栏",
       "reconnect": "重新连接",
@@ -2377,7 +2356,6 @@
       "deleteDestroysEnvironment": "这也会销毁 Orca 为其创建的环境“{{environment}}”，包括其中未提交的更改和正在运行的终端。",
       "deleteKeepsEnvironment": "Orca 为其创建的环境“{{environment}}”会继续运行：其配方没有销毁步骤。",
       "pin": "固定",
-      "primaryWorktreeDeleteHint": "主工作树不能删除。请改为移除项目",
       "removeHost": "移除主机",
       "removeHostMessage": "要移除“{{name}}”吗？之后可重新配对",
       "deleteFailed": "无法删除“{{name}}”",
@@ -2387,8 +2365,7 @@
       "markRead": "标记为已读",
       "markUnread": "标记为未读",
       "muteNotifications": "静音通知",
-      "unmuteNotifications": "取消静音通知",
-      "moveToStatus": "移至状态"
+      "unmuteNotifications": "取消静音通知"
     },
     "workspaceDetailsSheet": {
       "checksFailing": "检查项：未通过",
@@ -2405,36 +2382,16 @@
       "prOpen": "开放"
     },
     "workspaceOptionControls": {
-      "agentActivity": "智能体活动",
-      "agentActivityLayout": "智能体活动布局",
       "agentActivitySort": "智能体活动",
       "agentActivitySortDescription": "需要关注的智能体，然后是最近的活动",
-      "agentStatuses": "智能体状态",
       "allHosts": "所有主机",
       "allProjects": "所有项目",
-      "automation": "自动化",
-      "branchFolderPath": "分支 / 文件夹路径",
-      "branchName": "分支名称",
-      "compact": "紧凑",
-      "detailed": "详细的",
-      "fullList": "完整列表",
-      "githubIssues": "GitHub 议题",
-      "githubTicket": "GitHub 票证",
-      "host": "主机",
-      "hover": "悬停",
-      "jiraIssue": "Jira 议题",
-      "jiraIssues": "Jira 议题",
-      "linearIssue": "Linear 议题",
-      "linearIssues": "Linear 议题",
       "manual": "手动的",
       "manualProjectOrderDescription": "拖动项目进行排列",
       "manualWorkspaceOrderDescription": "拖动工作区以将它们排列在每个组中",
       "name": "名称",
       "none": "无",
-      "notes": "笔记",
-      "ports": "端口",
       "pr": "PR",
-      "prMrLink": "PR/MR链接",
       "project": "项目",
       "recent": "最近的",
       "recentProjectOrderDescription": "最近的工作区活动",
@@ -2445,32 +2402,21 @@
     },
     "workspaceOptionsSheet": {
       "backToOptions": "返回工作区选项",
-      "cardDisplay": "卡片显示",
-      "cardLayout": "卡片布局",
       "exceptDefaultBranch": "默认分支除外",
       "filters": "筛选条件",
       "groupBy": "分组依据",
-      "hideAutomationCreated": "隐藏自动化创建的工作区",
-      "hideCliCreated": "隐藏 CLI 创建的工作区",
       "hideDefaultBranch": "隐藏默认分支",
-      "hideDetachedHead": "隐藏分离 HEAD",
-      "hideOtherClientWorkspaces": "隐藏其他客户端工作区",
       "hideSleeping": "隐藏休眠项",
-      "hosts": "主机",
       "localLinux": "本地 Linux",
       "localMac": "本地 Mac",
       "localWindows": "本地 Windows",
       "projectOrder": "项目排序",
       "projects": "项目",
-      "savingToDesktop": "正在保存到主机",
       "show": "显示",
-      "showProperties": "显示属性",
       "sortBy": "排序方式",
-      "syncedAcrossDevices": "已在各设备间同步",
       "done": "完成",
       "reset": "重置",
       "thisComputer": "本机",
-      "waitingForDesktop": "仍在等待主机响应",
       "workspaceOptions": "工作区选项"
     },
     "hostBottomBar": {
@@ -5368,8 +5314,7 @@
       "noFilterMatches": "没有符合筛选条件的工作区",
       "reopen": "重新打开以更新",
       "reopenDetail": "此页面尚无法识别此主机的工作区列表格式",
-      "loading": "正在加载工作区…",
-      "retryingAutomatically": "正在自动重试"
+      "loading": "正在加载工作区…"
     },
     "workspaceListSections": {
       "all": "全部",
@@ -7307,7 +7252,6 @@
       "valueSaved": "已保存"
     },
     "handToBot": {
-      "menu": "交给 bot…",
       "title": "将 {{name}} 交给 bot",
       "noAgents": "它没有正在运行的智能体",
       "oneAgent": "它的智能体会继续运行，并为该 bot 工作",

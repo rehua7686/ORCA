@@ -854,12 +854,8 @@
       "monitoring": "Monitorando tarefas em segundo plano",
       "unverifiable": "Nenhuma atualização recente"
     },
-    "authFailedBanner": {
-      "message": "Falha na autenticação — tente se reconectar primeiro; se a falha persistir, faça o pareamento novamente pelo desktop."
-    },
     "authFailedBannerActions": {
-      "repair": "Parear novamente",
-      "webNote": "Reconecte ou remova este host pelo aplicativo Orca."
+      "repair": "Parear novamente"
     },
     "codexResetCredit": {
       "alreadyAppliedTitle": "Redefinição já aplicada",
@@ -1053,9 +1049,6 @@
       "sameNetworkOnlyHint": "Só conecta na mesma rede Wi-Fi ou pelo Tailscale. Para se conectar de qualquer lugar, entre na sua conta no desktop e pareie novamente",
       "unlockHint": "Desbloqueie seu celular e depois toque para tentar novamente",
       "worktreeAccessibilitySummary": "{{summary}}, {{activeCount}} em atividade"
-    },
-    "hostDiagnosticsLink": {
-      "viewDiagnostics": "Ver diagnósticos de rede"
     },
     "hostProtocolGate": {
       "checkingCompatibility": "Verificando a compatibilidade do host"
@@ -1291,13 +1284,9 @@
       "placeholder": "Nome do espaço de trabalho"
     },
     "worktreeListRow": {
-      "child": "Filho",
       "children_many": "{{count}} filhos",
       "children_one": "{{count}} filho",
-      "children_other": "{{count}} filhos",
-      "folder": "Pasta",
-      "project": "Projeto {{repo}}",
-      "remoteHost": "Host remoto"
+      "children_other": "{{count}} filhos"
     },
     "nativeScreenRecovery": {
       "title": "Algo deu errado",
@@ -1338,17 +1327,6 @@
     },
     "sheetHeader": {
       "close": "Fechar"
-    },
-    "worktreeAgentList": {
-      "hideChildAgents_one": "Ocultar {{count}} agente filho",
-      "hideChildAgents_other": "Ocultar {{count}} agentes filhos",
-      "showChildAgents_one": "Mostrar {{count}} agente filho",
-      "showChildAgents_other": "Mostrar {{count}} agentes filhos",
-      "hideIdleChildren": "Ocultar {{count}} agentes filhos inativos",
-      "showIdleChildren": "Mostrar {{count}} agentes filhos ociosos",
-      "idleChildCount": "{{count}} ocioso",
-      "hideChildAgents_many": "Ocultar {{count}} agentes filhos",
-      "showChildAgents_many": "Mostrar {{count}} agentes filhos"
     },
     "diffReviewFilesSheet": {
       "title": "Arquivos",
@@ -1854,7 +1832,6 @@
     },
     "hostScreenHeader": {
       "accounts": "Contas",
-      "backToHosts": "Voltar aos hosts",
       "floatingWorkspace": "Espaço de Trabalho Flutuante",
       "hideSidebar": "Ocultar barra lateral",
       "reconnect": "Reconectar",
@@ -1867,7 +1844,6 @@
       "deleteDestroysEnvironment": "Isto também destrói o ambiente \"{{environment}}\" que o Orca criou para ele, com as alterações não confirmadas e os terminais em execução nele.",
       "deleteKeepsEnvironment": "O ambiente \"{{environment}}\" que o Orca criou para ele continua em execução: a receita não tem um passo de destruição.",
       "pin": "Fixar",
-      "primaryWorktreeDeleteHint": "Worktree primária — não pode ser excluída. Remova o projeto em vez disso.",
       "removeHost": "Remover host",
       "removeHostMessage": "Remover \"{{name}}\"? Você pode parear novamente mais tarde.",
       "sleep": "Suspender",
@@ -1875,8 +1851,7 @@
       "rename": "Renomear",
       "deleteFailed": "Falha ao excluir \"{{name}}\"",
       "markRead": "Marcar como Lido",
-      "markUnread": "Marcar como Não Lido",
-      "moveToStatus": "Mover para Status"
+      "markUnread": "Marcar como Não Lido"
     },
     "workspaceDetailsSheet": {
       "checksFailing": "Verificações: com falha",
@@ -1893,36 +1868,16 @@
       "prOpen": "Aberto"
     },
     "workspaceOptionControls": {
-      "agentActivity": "Atividade do agente",
-      "agentActivityLayout": "Layout de atividade do agente",
       "agentActivitySort": "Atividade do Agente",
       "agentActivitySortDescription": "Agentes que precisam de atenção, depois a atividade mais recente.",
-      "agentStatuses": "Status dos agentes",
       "allHosts": "Todos os hosts",
       "allProjects": "Todos os projetos",
-      "automation": "Automação",
-      "branchFolderPath": "Branch / caminho da pasta",
-      "branchName": "Nome da branch",
-      "compact": "Compacto",
-      "detailed": "Detalhado",
-      "fullList": "Lista completa",
-      "githubIssues": "Issues do GitHub",
-      "githubTicket": "Ticket do GitHub",
-      "host": "Host",
-      "hover": "Passar o mouse",
-      "jiraIssue": "Issue do Jira",
-      "jiraIssues": "Issues do Jira",
-      "linearIssue": "Issue do Linear",
-      "linearIssues": "Issues do Linear",
       "manual": "Manual",
       "manualProjectOrderDescription": "Arraste os projetos para organizá-los",
       "manualWorkspaceOrderDescription": "Arraste os espaços de trabalho para organizá-los dentro de cada grupo.",
       "name": "Nome",
       "none": "Nenhum",
-      "notes": "Notas",
-      "ports": "Portas",
       "pr": "PR",
-      "prMrLink": "Link de PR/MR",
       "project": "Projeto",
       "recent": "Recente",
       "recentProjectOrderDescription": "Atividade mais recente do espaço de trabalho",
@@ -1933,30 +1888,19 @@
     },
     "workspaceOptionsSheet": {
       "backToOptions": "Voltar às opções do espaço de trabalho",
-      "cardDisplay": "Exibição do cartão",
-      "cardLayout": "Layout do cartão",
       "exceptDefaultBranch": "Exceto a branch padrão",
       "filters": "Filtros",
       "groupBy": "Agrupar por",
-      "hideAutomationCreated": "Ocultar criados por automação",
-      "hideCliCreated": "Ocultar criados por CLI",
       "hideDefaultBranch": "Ocultar branch padrão",
-      "hideDetachedHead": "Ocultar HEAD desanexado",
-      "hideOtherClientWorkspaces": "Ocultar espaços de trabalho de outros clientes",
       "hideSleeping": "Ocultar em suspensão",
-      "hosts": "Hosts",
       "localLinux": "Linux local",
       "localMac": "Mac local",
       "localWindows": "Windows local",
       "projectOrder": "Ordem do projeto",
       "projects": "Projetos",
-      "savingToDesktop": "Salvando no host",
       "show": "Mostrar",
-      "showProperties": "Mostrar propriedades",
       "sortBy": "Ordenar por",
-      "syncedAcrossDevices": "Sincronizadas entre seus dispositivos",
       "thisComputer": "Este computador",
-      "waitingForDesktop": "Ainda aguardando o host",
       "workspaceOptions": "Opções do espaço de trabalho",
       "done": "Concluído",
       "reset": "Restaurar"
@@ -4796,8 +4740,7 @@
       "noFilterMatches": "Nenhum espaço de trabalho corresponde aos filtros",
       "reopen": "Reabrir para atualizar",
       "reopenDetail": "Este host lista os espaços de trabalho em um formato que esta página ainda não reconhece.",
-      "loading": "Carregando espaços…",
-      "retryingAutomatically": "Tentando novamente automaticamente."
+      "loading": "Carregando espaços…"
     },
     "workspaceListSections": {
       "all": "Todos",
@@ -5151,7 +5094,6 @@
     }
   },
   "bots": {
-    "section": {},
     "link": {
       "pairTitle": "Emparelhar um computador",
       "pairRequired": "Para abrir este link, emparelhe este telefone com um computador e abra o link novamente.",
@@ -5640,7 +5582,6 @@
       "valueSaved": "Salvo"
     },
     "handToBot": {
-      "menu": "Repassar a um bot…",
       "title": "Repassar {{name}} a um bot",
       "noAgents": "Não há agentes em execução.",
       "oneAgent": "O agente dele continua em execução e trabalha para o bot.",

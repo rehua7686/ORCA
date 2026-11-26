@@ -781,12 +781,8 @@
       "monitoring": "Hintergrundaufgaben werden überwacht",
       "unverifiable": "Keine aktuelle Meldung"
     },
-    "authFailedBanner": {
-      "message": "Authentifizierung fehlgeschlagen – zuerst erneut verbinden; bei weiteren Fehlern vom Computer aus erneut koppeln."
-    },
     "authFailedBannerActions": {
-      "repair": "Erneut koppeln",
-      "webNote": "Diesen Host über die Orca-App erneut verbinden oder entfernen."
+      "repair": "Erneut koppeln"
     },
     "codexResetCredit": {
       "alreadyAppliedTitle": "Zurücksetzung bereits erfolgt",
@@ -944,9 +940,6 @@
       "sameNetworkOnlyHint": "Verbindet sich nur im selben WLAN oder über Tailscale. Für Verbindungen von überall auf dem Desktop anmelden und erneut koppeln",
       "unlockHint": "Telefon entsperren, dann zum erneuten Versuch tippen",
       "worktreeAccessibilitySummary": "{{summary}}, {{activeCount}} aktiv"
-    },
-    "hostDiagnosticsLink": {
-      "viewDiagnostics": "Netzwerkdiagnose anzeigen"
     },
     "hostProtocolGate": {
       "checkingCompatibility": "Host-Kompatibilität wird geprüft"
@@ -1168,12 +1161,8 @@
       "placeholder": "Name des Arbeitsbereichs"
     },
     "worktreeListRow": {
-      "child": "Untergeordnet",
       "children_one": "{{count}} untergeordneter Arbeitsbereich",
-      "children_other": "{{count}} untergeordnete Arbeitsbereiche",
-      "folder": "Ordner",
-      "project": "Projekt {{repo}}",
-      "remoteHost": "Remote-Host"
+      "children_other": "{{count}} untergeordnete Arbeitsbereiche"
     },
     "nativeScreenRecovery": {
       "title": "Etwas ist schiefgelaufen",
@@ -1673,7 +1662,6 @@
     },
     "hostScreenHeader": {
       "accounts": "Konten",
-      "backToHosts": "Zurück zu den Hosts",
       "floatingWorkspace": "Schwebender Arbeitsbereich",
       "hideSidebar": "Seitenleiste ausblenden",
       "reconnect": "Erneut verbinden",
@@ -1685,15 +1673,13 @@
       "deleteDestroysEnvironment": "Dadurch wird auch die Umgebung „{{environment}}“ gelöscht, die Orca dafür erstellt hat, samt nicht committeter Änderungen und laufender Terminals.",
       "deleteKeepsEnvironment": "Die Umgebung „{{environment}}“, die Orca dafür erstellt hat, läuft weiter: Ihr Rezept hat keinen Löschschritt.",
       "pin": "Anheften",
-      "primaryWorktreeDeleteHint": "Primärer Worktree — kann nicht gelöscht werden. Stattdessen das Projekt entfernen.",
       "removeHost": "Host entfernen",
       "removeHostMessage": "„{{name}}“ entfernen? Eine erneute Kopplung ist später möglich.",
       "sleep": "In Ruhezustand versetzen",
       "unpin": "Anheftung aufheben",
       "rename": "Umbenennen",
       "markRead": "Als gelesen markieren",
-      "markUnread": "Als ungelesen markieren",
-      "moveToStatus": "In Status verschieben"
+      "markUnread": "Als ungelesen markieren"
     },
     "workspaceDetailsSheet": {
       "checksFailing": "Checks: fehlgeschlagen",
@@ -1710,36 +1696,16 @@
       "prOpen": "Offen"
     },
     "workspaceOptionControls": {
-      "agentActivity": "Agentenaktivität",
-      "agentActivityLayout": "Layout der Agentenaktivität",
       "agentActivitySort": "Agentenaktivität",
       "agentActivitySortDescription": "Zuerst Agenten, die Aufmerksamkeit erfordern, dann nach letzter Aktivität.",
-      "agentStatuses": "Agentenstatus",
       "allHosts": "Alle Hosts",
       "allProjects": "Alle Projekte",
-      "automation": "Automatisierung",
-      "branchFolderPath": "Branch / Ordnerpfad",
-      "branchName": "Branch-Name",
-      "compact": "Kompakt",
-      "detailed": "Detailliert",
-      "fullList": "Vollständige Liste",
-      "githubIssues": "GitHub-Issues",
-      "githubTicket": "GitHub-Ticket",
-      "host": "Host",
-      "hover": "Bei Mauszeigerkontakt",
-      "jiraIssue": "Jira-Issue",
-      "jiraIssues": "Jira-Issues",
-      "linearIssue": "Linear-Issue",
-      "linearIssues": "Linear-Issues",
       "manual": "Manuell",
       "manualProjectOrderDescription": "Projekte zum Anordnen ziehen",
       "manualWorkspaceOrderDescription": "Arbeitsbereiche ziehen, um sie innerhalb der jeweiligen Gruppe anzuordnen.",
       "name": "Name",
       "none": "Keine",
-      "notes": "Notizen",
-      "ports": "Ports",
       "pr": "PR",
-      "prMrLink": "PR/MR-Link",
       "project": "Projekt",
       "recent": "Zuletzt aktiv",
       "recentProjectOrderDescription": "Letzte Arbeitsbereichsaktivität",
@@ -1750,30 +1716,19 @@
     },
     "workspaceOptionsSheet": {
       "backToOptions": "Zurück zu den Arbeitsbereichsoptionen",
-      "cardDisplay": "Kartendarstellung",
-      "cardLayout": "Kartenlayout",
       "exceptDefaultBranch": "Außer Standard-Branch",
       "filters": "Filter",
       "groupBy": "Gruppieren nach",
-      "hideAutomationCreated": "Durch Automatisierungen erstellte ausblenden",
-      "hideCliCreated": "Per CLI erstellte ausblenden",
       "hideDefaultBranch": "Standard-Branch ausblenden",
-      "hideDetachedHead": "Losgelösten HEAD ausblenden",
-      "hideOtherClientWorkspaces": "Arbeitsbereiche anderer Clients ausblenden",
       "hideSleeping": "Ruhende Arbeitsbereiche ausblenden",
-      "hosts": "Hosts",
       "localLinux": "Lokales Linux",
       "localMac": "Lokaler Mac",
       "localWindows": "Lokales Windows",
       "projectOrder": "Projektreihenfolge",
       "projects": "Projekte",
-      "savingToDesktop": "Wird auf dem Host gespeichert",
       "show": "Anzeigen",
-      "showProperties": "Eigenschaften anzeigen",
       "sortBy": "Sortieren nach",
-      "syncedAcrossDevices": "Geräteübergreifend synchronisiert",
       "thisComputer": "Dieser Computer",
-      "waitingForDesktop": "Es wird noch auf den Host gewartet",
       "workspaceOptions": "Arbeitsbereichsoptionen"
     },
     "workspaceRenameSheet": {
@@ -4471,7 +4426,6 @@
     }
   },
   "bots": {
-    "section": {},
     "link": {
       "pairTitle": "Computer koppeln",
       "pairRequired": "Kopple dieses Telefon mit einem Computer, um diesen Link zu öffnen, und öffne den Link dann erneut.",
@@ -4955,7 +4909,6 @@
       "valueSaved": "Gespeichert"
     },
     "handToBot": {
-      "menu": "An Bot übergeben…",
       "title": "{{name}} an einen Bot übergeben",
       "noAgents": "Es laufen keine Agents.",
       "oneAgent": "Sein Agent läuft weiter und arbeitet für den Bot.",
