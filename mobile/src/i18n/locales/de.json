@@ -775,7 +775,8 @@
     },
     "agentSpinner": {
       "monitoring": "Hintergrundaufgaben werden überwacht",
-      "unconfirmed": "Bestätigung nicht möglich"
+      "unconfirmed": "Bestätigung nicht möglich",
+      "sleeping": "Im Ruhezustand"
     },
     "agentStateDot": {
       "monitoring": "Hintergrundaufgaben werden überwacht",
