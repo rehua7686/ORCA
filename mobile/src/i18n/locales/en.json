@@ -5,19 +5,19 @@
         "system": "System",
         "light": "Light",
         "dark": "Dark",
-        "heading": "THEME",
+        "heading": "Theme",
         "description": "System follows this device’s light or dark setting."
       },
       "title": "Appearance",
       "language": {
         "systemWithCurrent": "System ({{language}})",
-        "heading": "LANGUAGE",
+        "heading": "Language",
         "description": "System follows this device’s language. Permission prompts always use the device language."
       },
       "usage": {
         "used": "Used",
         "remaining": "Remaining",
-        "heading": "USAGE PERCENTAGES",
+        "heading": "Usage percentages",
         "description": "Usage bars on Home and Accounts show how much of each limit is used or left. Saved on this phone."
       }
     },
@@ -42,8 +42,6 @@
       "lastCheckedDays_one": "Last checked {{count}}d ago",
       "lastCheckedDays_other": "Last checked {{count}}d ago",
       "updateToVersion": "Update to Orca {{version}}",
-      "update": "Update",
-      "installedVersion": "Version {{version}}",
       "checkUpdatesStatus": "Check for updates, {{status}}",
       "checkUpdates": "Check for updates"
     },
@@ -55,7 +53,7 @@
       "phoneBrowser": "Phone browser",
       "phoneBrowserDescription": "Open in Safari, Chrome, or another browser on this phone.",
       "title": "Browser",
-      "linksHeading": "LINKS",
+      "linksHeading": "Links",
       "terminalAndChatLinksDescription": "Choose where web links tapped in terminal output and chat open.",
       "loadFailed": "Could not load browser preferences. Try again.",
       "saveFailed": "Could not save browser preferences. Try again.",
@@ -64,23 +62,23 @@
     "menuItems": {
       "appearance": "Appearance",
       "terminal": "Terminal",
-      "chatUi": "Chat UI",
       "browser": "Browser",
       "voice": "Voice",
       "notifications": "Notifications",
       "troubleshooting": "Troubleshooting",
-      "about": "About"
+      "about": "About",
+      "chat": "Chat",
+      "updateAvailable": "Update available"
     },
     "nativeChatSettingsScreen": {
-      "title": "Chat UI",
-      "defaultViewHeading": "DEFAULT VIEW",
+      "defaultViewHeading": "Default view",
       "defaultViewDescription": "Choose how supported agent sessions (Claude, Codex, and other chat-capable agents) open on this device. Terminal shows the raw CLI; Chat UI shows a chat interface like the desktop app. You can still switch any individual session from its long-press menu.",
       "openInChatUi": "Open sessions in Chat UI",
       "on": "On",
       "off": "Off"
     },
     "nativeChatText": {
-      "heading": "TEXT",
+      "heading": "Text",
       "footer": "Pinch in a chat to change it; it saves here.",
       "size": "Text size",
       "sizeDefault": "Default",
@@ -151,7 +149,7 @@
       "retryCleanup": "Retry clearing pairing credentials"
     },
     "menuScreen": {
-      "privacyPolicy": "Privacy Policy",
+      "privacyPolicy": "Privacy policy",
       "support": "Support"
     },
     "uiLanguageSettingsSection": {
@@ -169,14 +167,14 @@
       "title": "Voice",
       "connectDesktop": "Connect to a desktop to manage voice settings.",
       "loadFailedMessage": "Failed to load voice settings.",
-      "dictationHeading": "DICTATION",
+      "dictationHeading": "Dictation",
       "enableDictation": "Enable Voice Dictation",
       "dictationDescription": "Dictate text into any focused pane on your desktop.",
       "dictationMode": "Dictation Mode",
       "dictationModeDescription": "Toggle: press once to start, again to stop. Hold: dictate while held.",
       "dictationModeWithAutoDescription": "Auto: tap to start and stop; on your computer, holding the shortcut records until you let go. Hold: dictate while held. Toggle: press once to start, again to stop.",
       "autoMode": "Auto",
-      "speechModelHeading": "SPEECH MODEL",
+      "speechModelHeading": "Speech model",
       "speechModel": "Speech Model",
       "loading": "Loading voice settings…"
     },
@@ -184,7 +182,7 @@
       "permissionOwnAll": "Agents' own settings"
     },
     "voiceTranscribeOn": {
-      "heading": "TRANSCRIBE ON",
+      "heading": "Transcribe on",
       "description": "Speech heard on this phone stays on it. Automatic uses your computer when this phone can’t transcribe.",
       "automatic": "Automatic",
       "phone": "This phone",
@@ -344,15 +342,15 @@
       "restoreAfterSeconds_one": "After {{count}}s",
       "restoreAfterSeconds_other": "After {{count}}s",
       "title": "Terminal",
-      "leaveAppHeading": "WHEN YOU LEAVE THE APP",
+      "leaveAppHeading": "When you leave the app",
       "leaveAppDescription": "While you're using a terminal on your phone, Orca shrinks it to fit your screen. When you close the app or switch away, this controls whether it stays at phone size (so interactive CLI tools don't reflow) or resizes back to your desktop. You can always use Restore on the desktop banner to resize manually.",
       "noPairedDesktops": "No paired desktops yet. Pair one to control terminal behavior.",
       "restoreHost": "Restore {{name}}",
       "previewColumns_one": "{{count}} column",
       "previewColumns_other": "{{count}} columns",
       "previewLabel": "Terminal preview",
-      "previewHeading": "PREVIEW",
-      "fontHeading": "FONT",
+      "previewHeading": "Preview",
+      "fontHeading": "Font",
       "fontDescription": "Pinch in a terminal to change the size; it saves here. Only changes this device, not the desktop terminal.",
       "font": "Font",
       "size": "Size",
@@ -525,23 +523,26 @@
   },
   "diagnostics": {
     "connectionDiagnosticsView": {
-      "connecting": "connecting",
-      "handshaking": "handshaking",
-      "connected": "connected",
-      "disconnected": "disconnected",
-      "reconnecting": "reconnecting",
-      "authFailed": "auth-failed",
-      "title": "Network diagnostics",
       "stateWithAttempt": "{{state}} · attempt {{attempts}}",
       "copyReport": "Copy report",
-      "diagnosisHeading": "What this suggests",
-      "privacyHint": "Sends a size-limited redacted report including host name, endpoint, versions, connection state, and events—never terminal contents or credentials.",
       "sending": "Sending…",
       "sent": "Diagnostics sent",
       "retrySending": "Retry sending",
-      "sendDiagnostics": "Send diagnostics",
       "noEvents": "No connection events yet. Events appear as the app dials this host.",
-      "noHosts": "No paired hosts."
+      "noHosts": "No paired hosts.",
+      "status": {
+        "connecting": "Connecting",
+        "handshaking": "Securing the connection",
+        "connected": "Connected",
+        "disconnected": "Not connected",
+        "reconnecting": "Reconnecting",
+        "authFailed": "Needs pairing again"
+      },
+      "sendReport": "Send report to Orca",
+      "sendHint": "Redacted: never terminal contents or credentials.",
+      "connectionLog": "Connection log",
+      "pickComputer": "Connection log for {{name}}, choose computer",
+      "more": "More actions"
     },
     "mobileWebBundleProbeRow": {
       "fetchBundle": "Fetch mobile web bundle",
@@ -560,42 +561,44 @@
       "title": "Workspace updates"
     },
     "troubleshootCommonIssues": {
-      "notificationsTitle": "Push Notifications",
       "allowNotifications": "Check that system settings allow Orca notifications and that Focus or Do Not Disturb is off.",
       "notificationNetwork": "Try cellular or another Wi-Fi network. If alerts arrive after switching, your network may be delaying delivery.",
-      "wifiTitle": "Different WiFi Networks",
       "sameNetwork": "Both devices must be on the same LAN (unless connected through Tailscale).",
       "sameSubnet": "Ethernet and WiFi must share the same subnet.",
       "reconnectWifi": "Try reconnecting WiFi on both devices.",
-      "firewallTitle": "Firewall Blocking Port {{port}}",
       "linuxFirewall": "Linux: sudo ufw allow {{port}}",
       "macosFirewall": "macOS: System Settings → Network → Firewall — allow Orca.",
       "windowsFirewall": "Windows: Defender Firewall → Allow app — enable Orca for Private networks.",
       "restrictedNetwork": "Corporate/school networks may block P2P — try a personal hotspot.",
-      "desktopTitle": "Desktop App Not Running",
       "openDesktop": "Orca must be open on your desktop to accept connections.",
       "restartDesktop": "Try restarting Orca — the companion server starts on launch.",
       "pairAfterUpdate": "After an update, you may need to re-pair via QR code.",
-      "timeoutTitle": "Connection Timeout",
       "wifiSignal": "Check WiFi signal strength on your phone.",
       "retryHost": "Go back to the host list and tap your host to retry.",
       "restartBothApps": "Restart both apps if timeouts persist.",
-      "tailscaleTitle": "Tailscale Host Unreachable",
       "keepTailscaleOn": "Host addresses like 100.x.x.x or *.ts.net connect through Tailscale — keep it ON.",
       "restartTailscale": "iOS/Android can silently wedge the tunnel: toggle Tailscale off and back on in the Tailscale app.",
       "checkTailnet": "Check the desktop is awake and shows as connected in your tailnet.",
       "updateTailscale": "Update the Tailscale app — recent releases fix reconnect bugs.",
-      "vpnTitle": "Other VPN Interference",
       "vpnRouting": "Non-Tailscale VPNs can route local traffic through a remote server.",
-      "disableVpn": "Disable that VPN or enable split tunneling / \"Allow LAN\"."
+      "disableVpn": "Disable that VPN or enable split tunneling / \"Allow LAN\".",
+      "notificationsIssue": "Notifications don’t arrive",
+      "wifiIssue": "Not on the same Wi-Fi",
+      "desktopIssue": "Orca isn’t running on the computer",
+      "timeoutIssue": "The connection times out",
+      "tailscaleIssue": "Tailscale can’t reach it",
+      "vpnIssue": "Another VPN is on",
+      "firewallIssue": "Port {{port}} is blocked"
     },
     "troubleshootView": {
       "title": "Troubleshooting",
-      "running": "Running…",
-      "runAgain": "Run again",
-      "runDiagnostics": "Run diagnostics",
-      "viewNetworkDiagnostics": "View network diagnostics",
-      "commonIssues": "Common issues"
+      "commonIssues": "Common issues",
+      "allGood": "All good",
+      "problems_one": "{{count}} problem",
+      "problems_other": "{{count}} problems",
+      "runCheck": "Run check",
+      "checkAgain": "Check again",
+      "connectionLog": "Connection log"
     },
     "useTroubleshootDiagnostics": {
       "pairedHosts": "Paired hosts",
@@ -1549,14 +1552,14 @@
     "terminalShortcutSettings": {
       "resetDefaults": "Reset Defaults",
       "resetDescription": "Show every built-in shortcut key in the original order",
-      "customShortcuts": "CUSTOM SHORTCUTS",
+      "customShortcuts": "Custom shortcuts",
       "empty": "No custom shortcuts defined yet.",
       "removeShortcut": "Remove {{label}}",
       "addShortcut": "Add Custom Shortcut…",
       "addDescription": "Create key combo or text macro",
-      "moreKeys": "MORE KEYS",
+      "moreKeys": "More keys",
       "moreKeysDescription": "These keys sit under ⋯ on the terminal key row. Toggle keys to show or hide them, and hold the grip to drag a key into the order you want. A key already on the row, like Esc or the arrows, is left out of ⋯.",
-      "directionPad": "DIRECTION PAD",
+      "directionPad": "Direction pad",
       "showDirectionPad": "Show D-pad",
       "showDirectionPadDescription": "Pin the arrow pad in the side rail. Without it, the rail lists the arrow keys.",
       "showShortcut": "Show {{label}} shortcut"
