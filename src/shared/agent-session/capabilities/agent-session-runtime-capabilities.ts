@@ -34,6 +34,7 @@ export const AGENT_SESSION_OMP_RESUME_PATH_RUNTIME_CAPABILITY =
   'agent-session.omp-resume-path.v1' as const
 // Gate journal/lifecycle/destructive tab mutations by client capability. Mobile may receive metadata-only placeholders for these non-PTY sessions.
 export const STRUCTURED_AGENT_SESSION_RUNTIME_CAPABILITY = 'agent-session.structured.v1' as const
+export const BOT_REQUEST_CARD_STATUS_CLIENT_CAPABILITY = 'bots.request-card-status.v1' as const
 // Older hosts advertised structured.v1 while gating on their setting. This capability gives clients per-launch mode choice; legacy clients use createSupport, which retains the host setting.
 export const STRUCTURED_AGENT_SESSION_CLIENT_LAUNCH_MODE_CAPABILITY =
   'agent-session.structured.client-launch-mode.v1' as const

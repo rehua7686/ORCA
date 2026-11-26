@@ -10,6 +10,7 @@ import {
 } from '../../agent-session/requests/structured-chat-dispatch-telemetry'
 import { NATIVE_REMOTE_RUNTIME_CLIENT_CAPABILITIES } from './protocol-version'
 import { GOOGLE_SETUP_CARDS_CLIENT_CAPABILITY } from '../../google/google-connect-types'
+import { BOT_REQUEST_CARD_STATUS_CLIENT_CAPABILITY } from '../../agent-session/capabilities/agent-session-runtime-capabilities'
 import {
   AGENT_STATUS_RESTORED_UNCONFIRMED_RUNTIME_CAPABILITY,
   SESSION_TABS_RETIREMENT_PROOF_DELTA_RUNTIME_CAPABILITY,
@@ -35,6 +36,7 @@ export const ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES = [
   TERMINAL_HOST_PANE_RESPAWN_CLIENT_CAPABILITY,
   // The renderer that reads a paired host's structured chats is the one that reads its own.
   ...STRUCTURED_AGENT_SESSION_RENDERER_CLIENT_CAPABILITIES,
+  BOT_REQUEST_CARD_STATUS_CLIENT_CAPABILITY,
   BROWSER_CLIENT_HOST_RUNTIME_CAPABILITY,
   BROWSER_CLIENT_PAGE_METADATA_RUNTIME_CAPABILITY,
   // The renderer starts hosting when a server's page needs a desktop and none holds a lease.
