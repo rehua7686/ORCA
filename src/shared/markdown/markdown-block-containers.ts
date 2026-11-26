@@ -8,7 +8,10 @@ const TABLE_LIST_PREFIX = /^( {0,3}(?:[*+-]|\d{1,9}[.)]))([ \t]+)/
 // Only a literal ordinal 1 followed by whitespace interrupts a paragraph or active table.
 export const TABLE_BODY_ORDERED_ITEM = /^ {0,3}(?!1[.)][ \t])\d{1,9}[.)](?:[ \t]|$)/
 
-export function splitMarkdownContainerPrefix(line: string, allowLaterOrdered = true): {
+export function splitMarkdownContainerPrefix(
+  line: string,
+  allowLaterOrdered = true
+): {
   containers: MarkdownContainer[]
   rest: string
 } {
