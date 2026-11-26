@@ -3,6 +3,7 @@ import type { ConnectorTurnActivity } from './connector-turn-activity-contract'
 // Mirror of cloud/packages/connector-contract/src for the machine side of the Orca Cloud connector.
 // Copies, not imports: the CLI compiles src/shared with rootDir src, so it can't reach cloud files.
 import * as z from 'zod'
+import { CONNECTOR_CLOUD_SOURCES } from './connector-cloud-sources'
 import type { ConnectorPrompt } from '../connector-prompt-contract'
 export * from '../connector-prompt-contract'
 export * from './connector-failure-contract'
@@ -25,7 +26,7 @@ export { CONNECTOR_PATHS } from './connector-cloud-paths'
 
 /** The services a person connects in one browser trip (connect-messages.ts in the cloud contract;
  *  connector-mirrored-constants.test.ts keeps them equal). */
-export const CONNECTOR_CONNECT_SOURCES = ['linear', 'github', 'slack'] as const
+export const CONNECTOR_CONNECT_SOURCES = ['linear', 'github', 'slack', 'cliq'] as const
 export type ConnectorConnectSource = (typeof CONNECTOR_CONNECT_SOURCES)[number]
 
 export const CONNECTOR_FEATURES = [
@@ -96,9 +97,6 @@ export const ConnectorHelloResponse = z.object({
   features: z.array(z.string()).optional(),
   webhookTombstones: z.array(z.string()).optional().catch(undefined)
 })
-
-/** Where an Orca Cloud conversation comes from. */
-export const CONNECTOR_CLOUD_SOURCES = ['slack', 'discord', 'linear', 'github', 'webhook'] as const
 
 /** A thread; a webhook has none, only its calls' trigger deliveries. */
 export const ConnectorConversation = z.object({

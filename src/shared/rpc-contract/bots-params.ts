@@ -17,18 +17,17 @@ import {
   BotSlackAppSchema,
   botMemberSource,
   botSlackApps,
-  withoutBotMember,
   withSlackMembersTagged,
-  type Bot,
-  type BotMember
+  type Bot
 } from '../bot-types'
 import { SettableBotAvatar } from './bot-avatar-params'
 import { BotAvatarColorSchema } from '../bots/bot-avatar-color'
 import { BotStoredOutfitSchema } from '../bots/bot-avatar-outfit'
-import { botMembersFullError, planBotMemberAdds } from '../bots/bot-member-capacity'
+import { applyBotMemberUpdates } from '../bots/bot-member-capacity'
 import { HANDED_WORKSPACES_MAX, HandedWorkspaceSchema } from '../bots/bot-made-for-workspaces'
 import { BotProposalSchema, BotProposalSeedSchema } from '../bots/bot-proposal'
 import { BotTakeOverSchema } from '../bots/bot-take-over'
+import { BotCliqBotsUpdateSchema, withCliqMembersIn } from '../bots/bot-cliq-members'
 import { BotLookAroundSchema, botLookAround, patchLookAround } from '../bots/bot-look-around'
 import { BotLaunchSchema } from '../bots/bot-launch'
 import {
@@ -159,6 +158,8 @@ export const BotUpdate = z.object({
       linear: BotLinearSchema.nullable().optional(),
       linearWorkspaces: z.array(BotLinearSchema).max(BOT_MAX_CONNECTOR_WORKSPACES).optional(),
       github: BotGitHubSchema.nullable().optional(),
+      /** Every organization the bot has a Cliq bot in; an org's people go with it. */
+      cliqBots: BotCliqBotsUpdateSchema,
       skillProjects: z.array(z.string().min(1)).max(BOT_MAX_SKILL_PROJECTS).optional(),
       // Only the changed fields; the host merges them into the saved setting.
       lookAround: BotLookAroundSchema.omit({ since: true }).partial().optional(),
@@ -305,24 +306,6 @@ export const BotRunSendAgainParams = BotChat.extend({
 export type BotTakeOverParams = z.infer<typeof BotTakeOverParams>
 export type BotChatResetParams = z.infer<typeof BotChatReset>
 
-/** Who can ask after the people an update takes off and adds, applied to the list the host has now.
- *  Throws botMembersFullError, saving nothing, when an add would pass a limit. */
-export function applyBotMemberUpdates(
-  members: readonly BotMember[],
-  updates: Pick<BotUpdateParams['updates'], 'removeMember' | 'removeMembers' | 'addMembers'>
-): BotMember[] {
-  const { removeMember, removeMembers = [], addMembers = [] } = updates
-  let next = [...members]
-  for (const key of [...(removeMember ? [removeMember] : []), ...removeMembers]) {
-    next = withoutBotMember(next, key)
-  }
-  const plan = planBotMemberAdds(next, addMembers)
-  if (!plan.ok) {
-    throw botMembersFullError(plan.full)
-  }
-  return plan.members
-}
-
 /** A null permission mode clears the override, so the bot's chats follow the native chat default. */
 export function applyBotUpdates(bot: Bot, updates: BotHostUpdates): Bot {
   const {
@@ -401,5 +384,5 @@ export function applyBotUpdates(bot: Bot, updates: BotHostUpdates): Bot {
   } else if (launch === null || (rest.agent !== undefined && rest.agent !== bot.agent)) {
     delete next.launch
   }
-  return next
+  return withCliqMembersIn(next)
 }
