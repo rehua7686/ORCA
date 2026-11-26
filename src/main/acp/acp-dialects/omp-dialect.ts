@@ -24,6 +24,9 @@ const toolResultSchema = z.looseObject({
     .optional()
 })
 const asyncInputSchema = z.looseObject({ async: z.literal(true) })
+const steeringSupportSchema = z.looseObject({
+  steering: z.looseObject({ supported: z.literal(true) })
+})
 
 function contentText(block: ToolCallContent | undefined): string | undefined {
   return block?.type === 'content' && block.content.type === 'text' ? block.content.text : undefined
@@ -138,6 +141,7 @@ export function reportsNoApiKey(error: AcpAgentError): boolean {
 }
 
 export const OMP_ACP_DIALECT: AcpDialect = {
+  sessionSteering: ({ _meta }) => steeringSupportSchema.safeParse(_meta).success,
   // OMP resolves any thinking level against the selected model (model-controls.ts setThinkingLevel).
   clampsUnlistedEffort: true,
   // OMP offers its `ask` tool and extension dialogs only to clients that answer forms.
