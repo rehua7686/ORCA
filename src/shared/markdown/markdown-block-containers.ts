@@ -5,12 +5,16 @@ export type MarkdownContainer = number | 'quote'
 const TABLE_QUOTE_PREFIX = /^ {0,3}>[ \t]?/
 const TABLE_LIST_PREFIX = /^( {0,3}(?:[*+-]|\d{1,9}[.)]))([ \t]+)/
 
-export function splitMarkdownContainerPrefix(line: string): {
+// Only a literal ordinal 1 followed by whitespace interrupts a paragraph or active table.
+export const TABLE_BODY_ORDERED_ITEM = /^ {0,3}(?!1[.)][ \t])\d{1,9}[.)](?:[ \t]|$)/
+
+export function splitMarkdownContainerPrefix(line: string, allowLaterOrdered = true): {
   containers: MarkdownContainer[]
   rest: string
 } {
   const containers: MarkdownContainer[] = []
   let rest = line
+  let allowsOrdered = allowLaterOrdered
   for (;;) {
     const quote = TABLE_QUOTE_PREFIX.exec(rest)
     if (quote) {
@@ -19,9 +23,10 @@ export function splitMarkdownContainerPrefix(line: string): {
       continue
     }
     const list = TABLE_LIST_PREFIX.exec(rest)
-    if (!list) {
+    if (!list || (!allowsOrdered && TABLE_BODY_ORDERED_ITEM.test(rest))) {
       return { containers, rest }
     }
+    allowsOrdered = true
     const markerWidth = list[1].length
     let width = markerWidth
     for (const character of list[2]) {

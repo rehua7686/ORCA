@@ -12,6 +12,7 @@ import {
 import {
   splitMarkdownContainerPrefix,
   stripMarkdownContainerPrefix,
+  TABLE_BODY_ORDERED_ITEM,
   type MarkdownContainer
 } from './markdown-block-containers'
 
@@ -38,9 +39,6 @@ const LEAF_BLOCK_START = new RegExp(
   ].join(''),
   'i'
 )
-
-// Only a literal ordinal 1 followed by whitespace interrupts an active table.
-const TABLE_BODY_ORDERED_ITEM = /^ {0,3}(?!1[.)][ \t])\d{1,9}[.)](?:[ \t]|$)/
 
 // marked recognizes a GFM delimiter row before validating cell counts and ends the preceding paragraph.
 const TABLE_DELIMITER_ROW = /^(?=[^\n]*[:|]) {0,3}(?:\| *)?:?-+:? *(?:\| *:?-+:? *)*(?:\| *)?$/
@@ -152,13 +150,20 @@ function scanMarkdownCodeLines(content: string, includeSpans: boolean): Markdown
         ? stripMarkdownContainerPrefix(line, tableContainers)
         : null
     const keepsOrderedRow = activeRow !== null && TABLE_BODY_ORDERED_ITEM.test(activeRow)
-    let header = splitMarkdownContainerPrefix(line)
+    const lineQuote = splitBlockquotePrefix(line)
+    const continuedList =
+      listContainers.length > 0 ? stripMarkdownContainerPrefix(line, listContainers, false) : null
+    const allowsOrderedList =
+      previousListBoundary ||
+      lineQuote.depth !== previousQuoteDepth ||
+      (listContainers.length > 0 &&
+        (continuedList === null || typeof listContainers.at(-1) === 'number'))
+    let header = splitMarkdownContainerPrefix(line, allowsOrderedList)
     if (keepsOrderedRow && activeRow !== null && tableContainers !== null) {
       header = { containers: tableContainers, rest: activeRow }
     }
     if (!wasInsideFence && !keepsOrderedRow && !BLANK_LINE.test(header.rest)) {
-      let continued =
-        listContainers.length > 0 ? stripMarkdownContainerPrefix(line, listContainers, false) : null
+      let continued = continuedList
       if (
         continued === null &&
         !previousListBoundary &&
@@ -170,7 +175,12 @@ function scanMarkdownCodeLines(content: string, includeSpans: boolean): Markdown
         continued = stripMarkdownContainerPrefix(line, listContainers)
       }
       if (continued !== null) {
-        const nested = splitMarkdownContainerPrefix(continued)
+        const nested = splitMarkdownContainerPrefix(
+          continued,
+          previousListBoundary ||
+            typeof listContainers.at(-1) === 'number' ||
+            splitBlockquotePrefix(continued).depth > 0
+        )
         header = { containers: [...listContainers, ...nested.containers], rest: nested.rest }
       } else {
         listContainers = []
@@ -188,7 +198,6 @@ function scanMarkdownCodeLines(content: string, includeSpans: boolean): Markdown
       fenceRanges.push([openFenceStart, nextLineStart])
       openFenceStart = -1
     }
-    const lineQuote = isFenceBoundary ? null : splitBlockquotePrefix(line)
     const isBoundary = isFenceBoundary || BLANK_LINE.test(header.rest)
     previousListBoundary =
       isBoundary || SINGLE_LINE_BLOCK.test(header.rest) || /^(?: {4}| {0,3}\t)/.test(header.rest)

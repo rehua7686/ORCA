@@ -44,3 +44,22 @@ it('keeps blank list lines inside a fence but requires every quote prefix', () =
     '\n\n\n\n\nafter'
   )
 })
+
+it.each([
+  'intro\n2. ~~~\n   keep',
+  '> intro\n> 2. ~~~\n>    keep',
+  '- > intro\n  > 2. ~~~\n  >    keep'
+])('preserves later ordered markers that continue a paragraph: %j', (source) => {
+  expect(getMarkdownFenceRanges(source)).toEqual([])
+  expect(stripMarkdownCode(source)).toBe(source)
+})
+
+it.each([
+  ['intro\n> 2. ~~~\n>    hidden', 'intro\n\n'],
+  ['1. intro\n2. ~~~\n   hidden', '1. intro\n\n'],
+  ['- intro\n  2. ~~~\n     hidden', '- intro\n\n'],
+  ['intro\n\n2. ~~~\n   hidden', 'intro\n\n\n'],
+  ['# intro\n2. ~~~\n   hidden', '# intro\n\n']
+])('keeps independently started ordered-list fences valid: %j', (source, expected) => {
+  expect(stripMarkdownCode(source)).toBe(expected)
+})
