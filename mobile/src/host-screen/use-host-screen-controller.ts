@@ -30,12 +30,16 @@ import { useHostScreenState } from './use-host-screen-state'
 import { useHostViewSettings } from './view-settings/use-host-view-settings'
 import { countActiveWorkspaceFilters } from '../../../src/shared/workspace-view/workspace-row-filters'
 import { useHostWorktreeActions } from './workspace-actions/use-host-worktree-actions'
+import { useHostListDeleteIntent } from './workspace-actions/use-host-list-delete-intent'
 import { useHostWorktreeCatalog } from './catalog/use-host-worktree-catalog'
 import { useHostDisplay } from '../host-descriptors/use-host-display'
 import { classifyConnection } from '../transport/connection/connection-health'
 import { useHostBots } from '../bots/use-host-bots'
 import type { BotsChangeScope } from '../worktree/execution-hosts/host-worktree-refresh'
 import type { ExecutionHostId } from '../../../src/shared/execution-host/execution-host'
+import type { Worktree } from '../worktree/workspace-list/workspace-list-types'
+
+const NO_CONFIRMED_ROWS: readonly Worktree[] = []
 
 export type HostScreenProps = {
   embedded?: boolean
@@ -152,6 +156,16 @@ export function useHostScreenController({
     pairedChangeKey: botsChangeKeys.host + botsChangeKeys['host-threads'],
     pairedThreadsKey: botsChangeKeys['host-threads']
   })
+  const retireDeleteIntent = useHostListDeleteIntent({
+    embedded,
+    hostId,
+    // Only rows this screen read from the host: cached rows may name a checkout already gone.
+    connected: connState === 'connected' && catalog.confirmedRows !== null,
+    rows: catalog.confirmedRows ?? NO_CONFIRMED_ROWS,
+    bots,
+    newBotOpen: newBotHostId !== null,
+    state
+  })
   const sectionsResult = useHostListSections({
     client,
     connected: connState === 'connected',
@@ -207,6 +221,7 @@ export function useHostScreenController({
     onHideSidebar,
     reconnectAttempts,
     relayRecovery,
+    retireDeleteIntent,
     routeNotice,
     router,
     sectionsResult,

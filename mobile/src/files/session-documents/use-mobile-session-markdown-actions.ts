@@ -10,6 +10,7 @@ import { markdownTabSave } from './mobile-markdown-tab-operations'
 import { dropDocumentEditDraft, markdownTabDraftKey } from '../../drafts/document-edit-draft-rows'
 import { triggerSuccess, triggerError } from '../../platform/haptics/haptics'
 import type { DirtyMarkdownDraft } from './session-document-state'
+import { useSessionLeaveRequest } from './use-session-leave-request'
 import type { MobileSessionTab } from '../../session/tabs/mobile-session-tabs'
 import type { MobileSessionDiffCommentsModel } from '../../source-control/review/review-notes/use-mobile-session-diff-comments'
 
@@ -135,29 +136,40 @@ export function useMobileSessionMarkdownActions(scope: MobileSessionMarkdownActi
     router.replace(`/h/${hostId}`)
   }, [hostId, router, standalone])
 
+  // Each dirty draft's tab and revision: a leave settles only the revisions its sheet showed.
+  const readDraftRevisions = useCallback(() => {
+    const revisions: string[] = []
+    for (const [tabId, doc] of markdownDocs) {
+      if (doc.status === 'ready' && doc.isDirty) {
+        revisions.push(`${tabId}\n${doc.localRevision ?? 0}`)
+      }
+    }
+    return revisions.join('\n\n')
+  }, [markdownDocs])
   // The sheet's Copy and Discard both settle the phone's drafts, so none is offered back next time.
-  const leaveSessionDroppingDrafts = useCallback(
+  const dropLeftDrafts = useCallback(
     (drafts: readonly DirtyMarkdownDraft[]) => {
       for (const draft of drafts) {
         dropDocumentEditDraft(markdownTabDraftKey(draftScope, draft.tabId))
       }
-      leaveSession()
     },
-    [draftScope, leaveSession]
+    [draftScope]
   )
+  const leaveRequest = useSessionLeaveRequest({
+    readDrafts: getDirtyMarkdownDrafts,
+    readRevisions: readDraftRevisions,
+    setLeaveDrafts,
+    dropDrafts: dropLeftDrafts,
+    leaveSession
+  })
+  const { requestLeave } = leaveRequest
 
   const requestLeaveSession = useCallback(() => {
     if (holdLeaveForDictation()) {
       return
     }
-    const dirtyDrafts = getDirtyMarkdownDrafts()
-    if (dirtyDrafts.length === 0) {
-      leaveSession()
-      return
-    }
-    Keyboard.dismiss()
-    setLeaveDrafts(dirtyDrafts)
-  }, [getDirtyMarkdownDrafts, holdLeaveForDictation, leaveSession])
+    requestLeave()
+  }, [holdLeaveForDictation, requestLeave])
 
   // Native always claims Back to avoid root exit; the web shell already pops, so only dirty drafts and dictation need a claim.
   const hasDirtyDraft = getDirtyMarkdownDrafts().length > 0
@@ -286,8 +298,10 @@ export function useMobileSessionMarkdownActions(scope: MobileSessionMarkdownActi
     copyMarkdownPath,
     getDirtyMarkdownDrafts,
     leaveSession,
-    leaveSessionDroppingDrafts,
     requestLeaveSession,
+    // The same drafts check Back runs; dictation keeps recording across an in-page leave.
+    requestLeaveForHandoff: requestLeave,
+    leaveRequest,
     discardMarkdownLocalContent,
     confirmDiscardMarkdown,
     saveMarkdownTab

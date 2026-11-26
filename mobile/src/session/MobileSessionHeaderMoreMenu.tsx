@@ -18,6 +18,7 @@ import { useMobileTranslation } from '../i18n/use-mobile-translation'
 import type { MobileSessionController } from './use-mobile-session-controller'
 import { getMobileNativeChatCliForkActions } from './native-chat/history/mobile-native-chat-cli-fork'
 import { useWorkspaceOnPairedHost } from '../navigation/workspace-execution-host'
+import { useSessionWorkspaceDeleteAction } from './use-session-workspace-delete-action'
 
 type Props = {
   controller: MobileSessionController
@@ -51,6 +52,7 @@ export function MobileSessionHeaderMoreMenu({ controller, anchorRef, actionsColl
     itemsOnPhone
   } = controller
   const workspaceOnPairedHost = useWorkspaceOnPairedHost()
+  const workspace = useSessionWorkspaceDeleteAction(controller)
   const tabActionsDisabled = createTabBusy || connState !== 'connected'
   const panels: ActionSheetAction[] = [
     ...(!isFloatingWorkspaceRoute
@@ -170,7 +172,7 @@ export function MobileSessionHeaderMoreMenu({ controller, anchorRef, actionsColl
     <PullDownMenu
       visible={showHeaderMoreActions}
       anchorRef={anchorRef}
-      groups={[panels, view, tabs]}
+      groups={[panels, view, tabs, workspace]}
       onClose={() => setShowHeaderMoreActions(false)}
     />
   )

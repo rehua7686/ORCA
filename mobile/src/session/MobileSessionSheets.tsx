@@ -66,7 +66,7 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
     quickCommandsSupported,
     showToast,
     readFileTab,
-    leaveSessionDroppingDrafts,
+    leaveRequest,
     discardMarkdownLocalContent,
     copyMarkdownPath,
     confirmDiscardMarkdown,
@@ -271,17 +271,21 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
             label: t('session.sheets.copyAllAndLeave', 'Copy All & Leave'),
             icon: FileText,
             onPress: () => {
-              const drafts = leaveDrafts ?? []
-              const combined = drafts
+              const ticket = leaveRequest.beginLeave()
+              if (!ticket) {
+                return
+              }
+              const combined = (leaveDrafts ?? [])
                 .map((draft) => `# ${draft.title}\n\n${draft.content}`)
                 .join('\n\n---\n\n')
               void clipboard
                 .writeText(combined)
-                .then(() => {
-                  setLeaveDrafts(null)
-                  leaveSessionDroppingDrafts(drafts)
-                })
+                .then(() => leaveRequest.finishLeave(ticket))
                 .catch(() => {
+                  // A leave revoked meanwhile (an edit, a newer Back, a pushed panel) says nothing.
+                  if (!leaveRequest.abandonLeave(ticket)) {
+                    return
+                  }
                   triggerError()
                   showToast(t('session.sheets.copyDraftsFailed', "Couldn't copy drafts"), 1500)
                 })
@@ -292,12 +296,18 @@ export function MobileSessionSheets({ controller }: { controller: MobileSessionC
             label: t('session.sheets.discardAndLeave', 'Discard & Leave'),
             destructive: true,
             onPress: () => {
-              setLeaveDrafts(null)
-              leaveSessionDroppingDrafts(leaveDrafts ?? [])
+              const ticket = leaveRequest.beginLeave()
+              if (ticket) {
+                leaveRequest.finishLeave(ticket)
+              }
             }
           }
         ]}
-        onClose={() => setLeaveDrafts(null)}
+        onClose={() => {
+          // Cancel keeps the session and arms nothing; a press already settling keeps its request.
+          leaveRequest.closeLeave()
+          setLeaveDrafts(null)
+        }}
       />
       <ConfirmModal
         visible={discardMarkdownTarget != null}
