@@ -66,7 +66,7 @@ export function safeSlackDownloadName(name: string, platform = process.platform)
   if (platform !== 'win32') {
     return name
   }
-  const deviceName = name.split('.')[0]
+  const deviceName = name.split('.')[0].replace(/ +$/, '')
   return /^(?:CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|CLOCK\$|COM[1-9\u00B9\u00B2\u00B3]|LPT[1-9\u00B9\u00B2\u00B3])$/iu.test(
     deviceName
   )

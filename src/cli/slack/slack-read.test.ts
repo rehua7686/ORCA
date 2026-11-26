@@ -13,6 +13,7 @@ describe('safeSlackDownloadName', () => {
   it.each([
     ['CON', '_CON'],
     ['NUL.txt', '_NUL.txt'],
+    ['NUL .txt', '_NUL .txt'],
     ['com1.log', '_com1.log'],
     ['LPT³.tar.gz', '_LPT³.tar.gz'],
     ['CONSOLE.txt', 'CONSOLE.txt']
