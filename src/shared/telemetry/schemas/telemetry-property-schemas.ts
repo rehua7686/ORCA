@@ -49,6 +49,7 @@ export const AGENT_KIND_VALUES = [
   'devin',
   'ante',
   'jcode',
+  'killi',
   'trae',
   'muse',
   'dsh',
