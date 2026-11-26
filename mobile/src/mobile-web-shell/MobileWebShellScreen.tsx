@@ -38,6 +38,7 @@ import { useReportedHostAreaServing } from './host-gates/host-area-serving'
 import { isHostRouteOf } from './routing/page-route-policy'
 import { isStandaloneSessionHref } from '../navigation/host-stack-navigation'
 import { nativeSessionReturn, nativeStackReturn } from './routing/native-stack-return'
+import { useShellSideRelease } from './use-shell-side-release'
 import { useResponsiveLayout } from '../layout/responsive-layout'
 import {
   storageReadParamsSchema,
@@ -317,6 +318,7 @@ export function MobileWebShellScreen({
 
   // paneKey changes keep the session mounted; the host deduplicates routes and preserves in-flight frames.
   useShellPageStorageRefresh(refreshStorage, bridge.publishStorage)
+  useShellSideRelease(overlay, routeGrants, bridge.publishStorage)
   useEffect(() => bridge.publishRoute(pageRoute), [bridge.publishRoute, pageRoute])
 
   usePublishedSafeAreaInsets(bridge.publishSafeAreaInsets, pageInsets)
