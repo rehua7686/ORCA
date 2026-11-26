@@ -17,7 +17,14 @@ import { connectorReviewText } from '../../shared/connector-review-text'
 import type { ConnectorResult } from './connector-cloud-request'
 import type { ConnectorTransport } from './connector-machine'
 import { connectorRetryDelayMs } from './connector-outbox'
-import { slackBotPostBody, slackReplyBody } from './connector-slack-text'
+import { matchingSlackPresentation, slackBotPostBody, slackReplyBody } from './connector-slack-text'
+import {
+  takesSlackAnswerPresentation,
+  SLACK_PRESENTATION_POST_VERSION,
+  SLACK_PRESENTATION_UNCONFIRMED,
+  type SlackAnswerPresentation
+} from '../../shared/connectors/slack-answer-presentation'
+import { isRefOf } from '../../shared/connector-place-names'
 
 const REPLY_ATTEMPTS = 3
 // A longer Retry-After fails the reply rather than holding the agent's command.
@@ -28,6 +35,7 @@ export type ConnectorReplyBody = {
   conversation: ConnectorConversation
   turnId: number
   text: string
+  presentation?: SlackAnswerPresentation
   review?: ConnectorReview
   // Whom the turn acts for when no delivery started it (bot-turn-for.ts).
   turnFor?: ConnectorTurnFor
@@ -40,6 +48,25 @@ export function foldConnectorReview(written: ConnectorReplyBody): ConnectorReply
   const body = slackReplyBody(written)
   const { review, ...rest } = body
   return review ? { ...rest, text: connectorReviewText(body.text, review) } : body
+}
+
+export function replyPresentationFor(
+  body: ConnectorReplyBody,
+  features: ReadonlySet<string> | null
+): ConnectorReplyBody {
+  if (
+    body.presentation &&
+    (!takesSlackAnswerPresentation(features) ||
+      body.conversation.source !== 'slack' ||
+      body.review ||
+      !matchingSlackPresentation(body.presentation, body.text))
+  ) {
+    const { presentation: _, ...plain } = body
+    return body.conversation.source === 'slack'
+      ? { ...plain, text: SLACK_PRESENTATION_UNCONFIRMED }
+      : plain
+  }
+  return body
 }
 
 /** Retries an unreachable or busy cloud with the same idempotency key, which never posts twice, and
@@ -80,7 +107,7 @@ export function postConnectorReply(
     transport,
     {
       path: CONNECTOR_PATHS.replies,
-      body: { v: 1, ...slackReplyBody(body) },
+      body: { v: body.presentation ? SLACK_PRESENTATION_POST_VERSION : 1, ...slackReplyBody(body) },
       schema: ConnectorReplyResponse
     },
     signal,
@@ -101,10 +128,41 @@ export function postConnectorOutboxReply(
 /** A message a bot posts on its own, in a Slack channel or as a Linear issue comment; one postId posts once. */
 // turnFor: whom the run behind it acts for (bot-turn-for.ts); a Slack post's only.
 export type ConnectorBotPostBody =
-  | { postId: string; channelId: string; text: string; turnFor?: ConnectorTurnFor }
+  | {
+      postId: string
+      channelId: string
+      text: string
+      turnFor?: ConnectorTurnFor
+      presentation?: SlackAnswerPresentation
+    }
   | { postId: string; issue: string; text: string }
   // A place by ref, posted through the actions route; only to a cloud that takes refs.
-  | { postId: string; ref: string; text: string; turnFor?: ConnectorTurnFor }
+  | {
+      postId: string
+      ref: string
+      text: string
+      turnFor?: ConnectorTurnFor
+      presentation?: SlackAnswerPresentation
+    }
+
+export function botPostPresentationFor(
+  body: ConnectorBotPostBody,
+  features: ReadonlySet<string> | null
+): ConnectorBotPostBody {
+  if (
+    'presentation' in body &&
+    body.presentation &&
+    (!takesSlackAnswerPresentation(features) ||
+      ('ref' in body && !isRefOf('slack', body.ref)) ||
+      !matchingSlackPresentation(body.presentation, body.text))
+  ) {
+    const { presentation: _, ...plain } = body
+    return 'ref' in plain && !isRefOf('slack', plain.ref)
+      ? plain
+      : { ...plain, text: SLACK_PRESENTATION_UNCONFIRMED }
+  }
+  return body
+}
 
 export async function postConnectorBotMessage(
   transport: ConnectorTransport,
@@ -116,17 +174,17 @@ export async function postConnectorBotMessage(
   const body = slackBotPostBody(written)
   if ('ref' in body) {
     // The actions route's post, queued once per postId as the bot's other posts are.
-    const { postId, ref, text, turnFor } = body
+    const { postId, ref, text, turnFor, presentation } = body
     const answer = await postWithRetries(
       transport,
       {
         path: CONNECTOR_ACTIONS_PATH,
         body: {
-          v: 1,
+          v: presentation ? SLACK_PRESENTATION_POST_VERSION : 1,
           botId,
           verb: 'post',
           ref,
-          args: { text, postId },
+          args: { text, postId, ...(presentation ? { presentation } : {}) },
           ...(turnFor ? { turnFor } : {})
         },
         schema: ConnectorActionResponse
@@ -147,7 +205,10 @@ export async function postConnectorBotMessage(
     transport,
     {
       path: `${CONNECTOR_PATHS.bots}/${encodeURIComponent(botId)}/${'issue' in body ? 'linear/comments' : 'posts'}`,
-      body: { v: 1, ...body },
+      body: {
+        v: 'presentation' in body && body.presentation ? SLACK_PRESENTATION_POST_VERSION : 1,
+        ...body
+      },
       schema: ConnectorBotPostResponse
     },
     signal,

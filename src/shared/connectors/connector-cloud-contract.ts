@@ -18,6 +18,7 @@ import { ConnectorAsker } from '../connector-asker-contract'
 import type { ConnectorWorkLink } from '../connector-work-link-contract'
 import type { AutomationConnectorEventTrigger } from '../automation-event-triggers'
 import type { JournalConnectorReplyOutcome } from '../agent-session/journal/journal-connector-reply'
+import type { SlackAnswerPresentation } from './slack-answer-presentation'
 
 export const CONNECTOR_CONTRACT_VERSION = 1
 
@@ -349,6 +350,7 @@ export type ConnectorEvent =
       at: number
       stopReason: string | null
       lastAssistantMessage?: string
+      presentation?: SlackAnswerPresentation
       /** Chats only; terminal turns omit it. */
       origin?: ConnectorTurnOrigin
       /** Why a failed chat turn failed. */
@@ -373,6 +375,7 @@ export type ConnectorEvent =
       answerDeliveryId: string
       outcome: JournalConnectorReplyOutcome
       prose?: string
+      presentation?: SlackAnswerPresentation
       failure?: ConnectorFailure
       links?: ConnectorWorkLink[]
       turnId?: number

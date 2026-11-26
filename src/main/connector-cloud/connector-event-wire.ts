@@ -17,6 +17,12 @@ import type { ConversationEvent } from '../external-conversations/external-conve
 import { capAnswer, jsonBytes, unsupported } from './connector-snapshot'
 import { redactLocalPaths } from '../../shared/connectors/slack-local-paths'
 import { isSlackConversation } from './connector-slack-text'
+import {
+  CONNECTOR_SLACK_PRESENTATION_TURN_END_FEATURE,
+  takesSlackAnswerPresentation,
+  SLACK_PRESENTATION_UNCONFIRMED,
+  slackAnswerText
+} from '../../shared/connectors/slack-answer-presentation'
 
 /** Within the per-event cap. */
 function promptEvent(event: Extract<ConnectorEvent, { kind: 'prompt' }>): ConnectorEvent {
@@ -85,15 +91,20 @@ export function toConnectorEvent(
             turnId: event.turnId,
             at: event.at,
             stopReason: event.stopReason,
-            ...(event.lastAssistantMessage
+            ...(event.presentation
               ? {
-                  // Kept whole to the long cap: what goes is cut to the cloud it goes to.
-                  lastAssistantMessage: capAnswer(
-                    shown(event.lastAssistantMessage),
-                    CONNECTOR_LONG_ANSWER_BYTES
-                  )
+                  lastAssistantMessage: SLACK_PRESENTATION_UNCONFIRMED,
+                  presentation: event.presentation
                 }
-              : {}),
+              : event.lastAssistantMessage
+                ? {
+                    // Kept whole to the long cap: what goes is cut to the cloud it goes to.
+                    lastAssistantMessage: capAnswer(
+                      shown(event.lastAssistantMessage),
+                      CONNECTOR_LONG_ANSWER_BYTES
+                    )
+                  }
+                : {}),
             ...(event.origin ? { origin: event.origin } : {}),
             ...(event.failure ? { failure: event.failure } : {}),
             ...(event.links?.length ? { links: event.links } : {}),
@@ -145,6 +156,19 @@ export function answerFor(
 ): ConnectorEvent {
   // One already within the cap goes as the same object: what binds to a sent event still finds it.
   if (event.kind === 'turn-ended' && event.lastAssistantMessage !== undefined) {
+    if (event.presentation) {
+      if (
+        takesSlackAnswerPresentation(cloudFeatures) &&
+        cloudFeatures.has(CONNECTOR_SLACK_PRESENTATION_TURN_END_FEATURE)
+      ) {
+        const text = slackAnswerText(event.presentation)
+        if (answerTextFor(redactLocalPaths(text), cloudFeatures) === text) {
+          return { ...event, lastAssistantMessage: text }
+        }
+      }
+      const { presentation: _, ...plain } = event
+      return { ...plain, lastAssistantMessage: SLACK_PRESENTATION_UNCONFIRMED }
+    }
     // Again here: a turn end saved to disk before it was scrubbed is sent from there.
     const said = isSlackConversation(event.conversation)
       ? redactLocalPaths(event.lastAssistantMessage)
@@ -159,6 +183,15 @@ export function answerFor(
       ? redactLocalPaths(event.prose)
       : event.prose
     const prose = answerTextFor(said, cloudFeatures)
+    if (
+      event.presentation &&
+      (!takesSlackAnswerPresentation(cloudFeatures) ||
+        !isSlackConversation(event.conversation) ||
+        prose !== slackAnswerText(event.presentation))
+    ) {
+      const { presentation: _, ...plain } = event
+      return { ...plain, prose: SLACK_PRESENTATION_UNCONFIRMED }
+    }
     return prose === event.prose ? event : { ...event, prose }
   }
   return event

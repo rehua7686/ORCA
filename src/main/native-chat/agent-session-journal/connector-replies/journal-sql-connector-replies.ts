@@ -5,19 +5,76 @@ import type {
   JournalConnectorReplyFill,
   JournalConnectorReplyKey,
   JournalConnectorReplyRetryRows,
-  JournalConnectorReplyRow
+  JournalConnectorReplyRow,
+  JournalSlackAnswerTurn
 } from '../../../../shared/agent-session/journal/journal-connector-reply'
+import {
+  SLACK_ANSWER_MAX_TEXT,
+  slackAnswerText,
+  type SlackAnswerPresentation
+} from '../../../../shared/connectors/slack-answer-presentation'
 import type { JournalSqlDatabase } from '../database/journal-sql-database'
 import type { JournalSqlMaintenance } from '../journal-sql-maintenance'
 
 // Writes share one lane of their own on the writer worker; reads use the reader pool.
 const LANE = 'journal.connector-replies'
+const presentationPresence = new WeakMap<object, Promise<boolean>>()
 
 /** The reply outbox's rows outside any chat's lane: never SQL on Electron main. */
 export class JournalSqlConnectorReplies {
   constructor(
     private readonly db: Pick<JournalSqlDatabase, 'readers' | 'serialize' | 'readOnly'>
   ) {}
+
+  async prepareAnswer(
+    turn: JournalSlackAnswerTurn,
+    presentation: SlackAnswerPresentation
+  ): Promise<boolean> {
+    const saved = await this.maintain({ kind: 'slack-answer-prepare', turn, presentation })
+    if (saved) {
+      presentationPresence.set(this.db, Promise.resolve(true))
+    }
+    return saved
+  }
+
+  /** Only the final root prose that the caller already selected can release its presentation. */
+  async answerPresentation(
+    turn: JournalSlackAnswerTurn,
+    prose: string
+  ): Promise<SlackAnswerPresentation | undefined> {
+    if (prose.length > SLACK_ANSWER_MAX_TEXT || !prose.includes('\nSource: ')) {
+      return undefined
+    }
+    let presence = presentationPresence.get(this.db)
+    if (!presence) {
+      presence = this.db.readers
+        .database({ kind: 'slack-answer-presence' })
+        .then((result) => result.kind === 'slack-answer-presence' && result.any)
+        .catch((error: unknown) => {
+          if (presentationPresence.get(this.db) === presence) {
+            presentationPresence.delete(this.db)
+          }
+          throw error
+        })
+      presentationPresence.set(this.db, presence)
+    }
+    if (!(await presence)) {
+      return undefined
+    }
+    const result = await this.db.readers.database({ kind: 'slack-answer-presentation', turn })
+    if (
+      result.kind === 'slack-answer-presentation' &&
+      !result.any &&
+      presentationPresence.get(this.db) === presence
+    ) {
+      presentationPresence.set(this.db, Promise.resolve(false))
+    }
+    const presentation =
+      result.kind === 'slack-answer-presentation' ? result.presentation : undefined
+    return presentation?.visual && slackAnswerText(presentation) === prose.trim()
+      ? presentation
+      : undefined
+  }
 
   /** Rows not yet accepted: one chat's, or all of them. */
   async read(sessionId?: string): Promise<JournalConnectorReplyRow[]> {
@@ -53,13 +110,15 @@ export class JournalSqlConnectorReplies {
   async readOwed(
     account: string,
     after: string | null,
-    limit: number
+    limit: number,
+    includePresentations?: boolean
   ): Promise<JournalConnectorReplyRow[]> {
     const result = await this.db.readers.database({
       kind: 'connector-replies-owed',
       account,
       after,
-      limit
+      limit,
+      includePresentations
     })
     if (result.kind !== 'connector-replies') {
       throw new Error('journal reader returned no connector replies')
