@@ -185,8 +185,11 @@ export class RuntimeClient {
         options?.requestSelection ? { requestSelection: options.requestSelection } : undefined
       )
     } catch (error) {
-      // A pre-send refusal has no outcome to recover; retry advice would resend the same bytes.
-      throw isRequestUnsent(error) ? error : recover(error, metadata.runtimeId ?? null)
+      // An orchestration request this dial never wrote keeps its key, which may name an earlier
+      // attempt; other unsent requests have no outcome to recover.
+      throw isRequestUnsent(error) && !orchestrationMutation
+        ? error
+        : recover(error, metadata.runtimeId ?? null)
     }
     if (response.ok === false) {
       throw recover(new RuntimeRpcFailureError(response), metadata.runtimeId ?? null)
