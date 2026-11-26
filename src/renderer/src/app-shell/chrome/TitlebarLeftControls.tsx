@@ -131,7 +131,7 @@ export function TitlebarLeftControls({ layout }: { layout: AppChromeLayout }): R
         layout.leftTitlebarChromeLayout.isFloating ? ' w-max' : ' w-full'
       }`}
     >
-      <div className="flex h-full items-center">
+      <div className="flex h-full items-center gap-1">
         {hasMacTrafficLights && !layout.isFullScreen ? (
           <div className="titlebar-traffic-light-pad" />
         ) : hasCustomTitleBar ? (
@@ -147,7 +147,7 @@ export function TitlebarLeftControls({ layout }: { layout: AppChromeLayout }): R
                   onClick={() => window.api.ui.popupMenu()}
                   {...keepPaneFocusPressProps}
                 >
-                  <MoreHorizontal size={14} />
+                  <MoreHorizontal size={16} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom" sideOffset={6}>
@@ -181,7 +181,7 @@ export function TitlebarLeftControls({ layout }: { layout: AppChromeLayout }): R
             <TooltipTrigger asChild>
               <button
                 ref={sidebarToggleRef}
-                className="sidebar-toggle"
+                className="sidebar-toggle titlebar-icon-button"
                 onClick={() => {
                   if (!showWorkspaceListThen(useAppStore)) {
                     toggleSidebar()
@@ -204,7 +204,7 @@ export function TitlebarLeftControls({ layout }: { layout: AppChromeLayout }): R
       {/* Show shared workspace/page history wherever its shortcut is available. */}
       {shouldShowWorktreeHistoryControls(layout.activeView) && (
         // Collapsed headers shrink-wrap, so ml-auto alone cannot leave a history-button gutter.
-        <div className="ml-auto mr-3 flex items-center pl-2">
+        <div className="ml-auto mr-3 flex items-center pl-3">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
