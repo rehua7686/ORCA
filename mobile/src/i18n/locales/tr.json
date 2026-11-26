@@ -7801,7 +7801,8 @@
         "finishing": "Oturum açma tamamlanıyor…",
         "updateHost": "{{host}} üzerindeki Orca'yı güncelle",
         "cantReach": "Ulaşılamıyor",
-        "unsupported": "Bu uygulama henüz desteklenmiyor"
+        "unsupported": "Bu uygulama henüz desteklenmiyor",
+        "interrupted": "Oturum açma kesildi"
       },
       "removeNamed": "{{app}} kaldır",
       "signIn": {
@@ -7842,6 +7843,7 @@
         "desktopOnly": "{{host}} üzerindeki Orca’dan oturum açın.",
         "denied": "Erişime izin verilmedi.",
         "expired": "Oturum açmanın süresi doldu. Yeniden deneyin.",
+        "interrupted": "Oturum açma bir yeniden başlatma nedeniyle kesildi. Yeniden deneyin.",
         "couldNotSignIn": "Oturum açılamadı. Yeniden deneyin."
       },
       "edit": "Düzenle",
