@@ -1,11 +1,8 @@
 import {
-  createMarkdownCodeSpanScanner,
+  scanMarkdownCode,
   skipMarkdownBacktickRun
 } from '../../../../../../shared/markdown/markdown-code-span-scanner'
-import {
-  forEachMarkdownLine,
-  getMarkdownFenceRanges
-} from '../../../../../../shared/markdown/markdown-fence-scanner'
+import { forEachMarkdownLine } from '../../../../../../shared/markdown/markdown-fence-scanner'
 
 export function stripMarkdownCode(content: string): string {
   const ranges = getMarkdownCodeRanges(content)
@@ -32,8 +29,7 @@ export function stripMarkdownCode(content: string): string {
 
 /** Fenced blocks and inline code spans, sorted and non-overlapping. */
 function getMarkdownCodeRanges(content: string): [number, number][] {
-  const fences = getMarkdownFenceRanges(content)
-  const spans = createMarkdownCodeSpanScanner(content)
+  const { fences, spans } = scanMarkdownCode(content)
   const ranges: [number, number][] = []
   let fenceIndex = 0
   let index = 0
