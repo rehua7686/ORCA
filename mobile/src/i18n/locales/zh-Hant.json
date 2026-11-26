@@ -1149,13 +1149,10 @@
     "voiceModelList": {
       "deleteModel": "刪除 {{label}}",
       "downloadModel": "下載 {{label}}",
-      "inUse": "使用中",
       "modelExtracting": "{{size}} · 解壓縮中…",
       "modelProgress": "{{size}} · {{progress}}%",
       "modelSize": "{{size}} MB",
-      "recommended": "推薦",
-      "use": "使用",
-      "useModel": "使用 {{label}}"
+      "recommended": "推薦"
     },
     "workspaceDetailPlaceholder": {
       "description": "從側邊欄選擇工作區，即可在這裡開啟其終端機。",
@@ -2892,7 +2889,6 @@
       "checkUpdates": "檢查更新",
       "checkUpdatesStatus": "檢查更新，{{status}}",
       "checking": "檢查中…",
-      "installedVersion": "版本 {{version}}",
       "lastCheckedDays_one": "上次檢查：{{count}} 天前",
       "lastCheckedDays_other": "上次檢查：{{count}} 天前",
       "lastCheckedHours_one": "上次檢查：{{count}} 小時前",
@@ -2902,7 +2898,6 @@
       "lastCheckedMinutes_other": "上次檢查：{{count}} 分鐘前",
       "neverChecked": "從未",
       "upToDate": "已是最新",
-      "update": "更新",
       "updateToVersion": "更新至 Orca {{version}}"
     },
     "appearance": {
@@ -2938,7 +2933,6 @@
       "about": "關於",
       "appearance": "外觀",
       "browser": "瀏覽器",
-      "chatUi": "聊天介面",
       "notifications": "通知",
       "terminal": "終端機",
       "troubleshooting": "疑難排解",
@@ -2953,8 +2947,7 @@
       "defaultViewHeading": "預設檢視",
       "off": "關閉",
       "on": "開啟",
-      "openInChatUi": "以聊天介面開啟工作階段",
-      "title": "聊天介面"
+      "openInChatUi": "以聊天介面開啟工作階段"
     },
     "nativeNotificationDeliverySettings": {
       "loadFailed": "無法載入通知傳送設定。請重新開啟此畫面再試一次。",
@@ -3011,21 +3004,13 @@
     "voiceSettingsScreen": {
       "connectDesktop": "連線至電腦以管理語音設定。",
       "deleteFailed": "刪除失敗",
-      "dictationDescription": "將聽寫文字輸入電腦上目前取得焦點的任意窗格。",
-      "dictationHeading": "聽寫",
-      "dictationMode": "聽寫模式",
-      "dictationModeDescription": "切換：按一次開始，再按一次停止。按住：按住期間進行聽寫。",
-      "dictationModeWithAutoDescription": "自動：輕按開始和停止；在電腦上按住快捷鍵會一直錄音，直到放開。按住：按住期間進行聽寫。切換：按一次開始，再按一次停止。",
       "autoMode": "自動",
       "downloadFailed": "下載失敗",
-      "enableDictation": "啟用語音聽寫",
       "holdMode": "按住",
       "loadFailed": "無法載入語音設定",
       "loadFailedMessage": "無法載入語音設定。",
       "noneSelected": "尚未選擇",
       "selectModelFailed": "無法選擇模型",
-      "speechModel": "語音模型",
-      "speechModelHeading": "語音模型",
       "title": "語音",
       "toggleMode": "切換",
       "updateFailed": "無法更新"
@@ -3035,7 +3020,6 @@
     },
     "voiceTranscribeOn": {
       "heading": "轉寫位置",
-      "description": "此手機聽到的語音只會留在手機上。選擇「自動」時，若此手機無法轉寫，會改用你的電腦。",
       "automatic": "自動",
       "phone": "此手機",
       "computer": "電腦",
