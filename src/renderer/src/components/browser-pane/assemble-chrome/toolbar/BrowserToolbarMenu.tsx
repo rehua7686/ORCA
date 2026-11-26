@@ -380,6 +380,7 @@ export function BrowserToolbarMenu({
                 allProfiles,
                 switching: switchingProfile,
                 effectiveProfileId,
+                canRefreshFromChrome: showsCookieImport && pageRoute.kind === 'local',
                 onSwitchProfile: handleSwitchProfile,
                 onNewProfile: () => setNewProfileDialogOpen(true)
               }

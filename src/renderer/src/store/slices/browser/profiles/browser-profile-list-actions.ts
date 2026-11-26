@@ -80,15 +80,30 @@ export function createBrowserProfileListActions(
             undefined,
             { timeoutMs: 15_000, expectedEnvironmentPairingRevision: pairingRevision }
           )
-          // Server never observes client imports; overlay desktop-tracked import badges onto each environment’s jar.
+          // The client and server can both have a source for the same profile id.
+          let clientListingFailed = false
           const clientImportSources = await window.api.browser
             .sessionClientRouteImportSources?.({ environmentId: runtimeEnvironmentId })
-            .catch(() => ({}))
-          const profiles = result.profiles.map((profile) =>
-            !profile.source && clientImportSources?.[profile.id]
-              ? { ...profile, source: clientImportSources[profile.id] }
-              : profile
-          )
+            .catch(() => {
+              clientListingFailed = true
+              return null
+            })
+          const profiles =
+            clientImportSources == null && !clientListingFailed
+              ? result.profiles
+              : result.profiles.map((profile) => {
+                  const previous = clientListingFailed
+                    ? getBrowserProfilesForHost(get(), hostId).find(({ id }) => id === profile.id)
+                    : undefined
+                  const fallback = previous?.source ?? profile.source
+                  return {
+                    ...profile,
+                    // Server and cached sources can describe a different jar than the current client.
+                    source:
+                      clientImportSources?.[profile.id] ??
+                      (fallback ? { ...fallback, chromeProfile: undefined } : null)
+                  }
+                })
           if (isLatest()) {
             await landListing(hostId, profiles)
           }

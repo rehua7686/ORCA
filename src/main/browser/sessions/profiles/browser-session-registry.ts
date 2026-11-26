@@ -53,7 +53,7 @@ import {
 } from '../../extensions/profile-sessions/browser-extension-route-profiles'
 import { isBrowserExtensionSupportEnabled } from '../../extensions/browser-extension-support'
 import { trackBrowserSessionCookies } from '../../cookies/session-restore/browser-session-cookie-restore'
-import { clearBrowserCookieJar } from '../../cookies/session-restore/browser-session-cookie-clear'
+import { clearBrowserCookieJarWithSource } from '../../cookies/session-restore/browser-session-cookie-clear'
 
 type ExtensionIdListKey = 'enabledExtensionIdsByProfileId' | 'pinnedExtensionIdsByProfileId'
 type ExtensionIdListUpdate = (byProfile: Record<string, string[]>) => Record<string, string[]>
@@ -308,16 +308,19 @@ class BrowserSessionRegistry {
 
   /** Clears every cookie in one profile's own jar; false for an unknown profile or a failed clear. */
   async clearProfileSessionCookies(profileId: string): Promise<boolean> {
-    const profile = this.profiles.get(profileId)
-    if (!profile) {
+    const partition = this.profiles.get(profileId)?.partition
+    if (!partition) {
       return false
     }
-    try {
-      // Clear import metadata first so quitting during storage cleanup cannot leave a stale source badge.
+    return clearBrowserCookieJarWithSource(partition, () => {
+      const profile = this.profiles.get(profileId)
+      if (profile?.partition !== partition) {
+        return false
+      }
+      // Clear metadata first so quitting during storage cleanup cannot leave a stale badge.
       this.profiles.set(profileId, { ...profile, source: null })
-      const meta = this.loadPersistedMeta()
-      const pendingCookieImports = { ...meta.pendingCookieImports }
-      delete pendingCookieImports[profile.partition]
+      const pendingCookieImports = { ...this.loadPersistedMeta().pendingCookieImports }
+      delete pendingCookieImports[partition]
       this.persistMeta({
         ...(profileId === 'default'
           ? { defaultSource: null, pendingCookieDbPath: null }
@@ -325,12 +328,8 @@ class BrowserSessionRegistry {
         pendingCookieImports
       })
       this.onProfilesChanged?.()
-
-      await clearBrowserCookieJar(session.fromPartition(profile.partition))
       return true
-    } catch {
-      return false
-    }
+    }).catch(() => false)
   }
 
   /** False when it rejected an entry: a profile on disk the registry lacks, not a deleted one. */

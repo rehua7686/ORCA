@@ -16,6 +16,7 @@ import type { ManagedBrowserProfileOwner } from '../../../shared/browser/profile
 import type { GrabIntent } from '../../../shared/browser/element-grab/browser-grab-types'
 import type {
   BrowserClientHostCookieImportArgs,
+  BrowserCookieImportSelection,
   BrowserProfileCookieImportArgs
 } from '../../../shared/browser/workspaces/browser-workspace-types'
 import type {
@@ -207,11 +208,10 @@ export const browserPageInteractionAndSessionsApi = {
   sessionDetectBrowsers: () => ipcRenderer.invoke('browser:session:detectBrowsers'),
   sessionDetectBrowsersForClientHost: (args: { environmentId: string }) =>
     ipcRenderer.invoke('browser:session:detectBrowsersForClientHost', args),
-  sessionImportFromBrowser: (
-    args: BrowserProfileCookieImportArgs & { browserFamily: string; browserProfile?: string }
-  ) => ipcRenderer.invoke('browser:session:importFromBrowser', args),
+  sessionImportFromBrowser: (args: BrowserProfileCookieImportArgs & BrowserCookieImportSelection) =>
+    ipcRenderer.invoke('browser:session:importFromBrowser', args),
   sessionImportFromBrowserForClientHost: (
-    args: BrowserClientHostCookieImportArgs & { browserFamily: string; browserProfile?: string }
+    args: BrowserClientHostCookieImportArgs & BrowserCookieImportSelection
   ) => ipcRenderer.invoke('browser:session:importFromBrowserForClientHost', args),
   sessionClientRouteImportSources: (args: { environmentId: string } | { sshTargetId: string }) =>
     ipcRenderer.invoke('browser:session:clientRouteImportSources', args),

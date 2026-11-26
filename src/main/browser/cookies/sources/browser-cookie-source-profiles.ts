@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { BrowserSessionProfileSource } from '../../../../shared/browser/workspaces/browser-workspace-types'
@@ -14,7 +15,25 @@ export type DetectedBrowser = {
   keychainService?: string
   keychainAccount?: string
   profiles: BrowserProfile[]
+  profilesFromLocalState?: boolean
   selectedProfile: string
+}
+
+export function importedBrowserProfileSource(
+  browser: DetectedBrowser
+): BrowserSessionProfileSource {
+  const directory = browser.selectedProfile
+  return {
+    browserFamily: browser.family,
+    profileName:
+      browser.profiles.find((profile) => profile.directory === directory)?.name ?? directory,
+    ...(browser.family === 'chrome' &&
+      browser.profilesFromLocalState &&
+      browser.profiles.some((profile) => profile.directory === directory) && {
+        chromeProfile: { directory, id: randomUUID() }
+      }),
+    importedAt: Date.now()
+  }
 }
 
 export type ChromiumBrowserDef = {
@@ -118,8 +137,9 @@ export function browserRootPath(def: ChromiumBrowserDef): string | null {
   return join(configHome, def.linuxRoot)
 }
 
-export function isSafeBrowserProfileDirectory(directory: string): boolean {
+export function isSafeBrowserProfileDirectory(directory: unknown): directory is string {
   return (
+    typeof directory === 'string' &&
     directory.length > 0 &&
     directory !== '.' &&
     !directory.includes('\0') &&
@@ -130,17 +150,14 @@ export function isSafeBrowserProfileDirectory(directory: string): boolean {
 }
 
 // Local State maps profile directories to display names.
-export function discoverProfiles(browserRoot: string): BrowserProfile[] {
+export function discoverListedChromiumProfiles(browserRoot: string): BrowserProfile[] {
   try {
     const localStatePath = join(browserRoot, 'Local State')
-    if (!existsSync(localStatePath)) {
-      return [{ name: 'Default', directory: 'Default' }]
-    }
     const raw = readFileSync(localStatePath, 'utf-8')
     const localState = JSON.parse(raw)
     const infoCache = localState?.profile?.info_cache
-    if (!infoCache || typeof infoCache !== 'object') {
-      return [{ name: 'Default', directory: 'Default' }]
+    if (!infoCache || typeof infoCache !== 'object' || Array.isArray(infoCache)) {
+      return []
     }
     const profiles: BrowserProfile[] = []
     for (const [dir, info] of Object.entries(infoCache)) {
@@ -151,9 +168,9 @@ export function discoverProfiles(browserRoot: string): BrowserProfile[] {
       const profileName = (info as { name?: string })?.name ?? dir
       profiles.push({ name: profileName, directory: dir })
     }
-    return profiles.length > 0 ? profiles : [{ name: 'Default', directory: 'Default' }]
+    return profiles
   } catch {
-    return [{ name: 'Default', directory: 'Default' }]
+    return []
   }
 }
 

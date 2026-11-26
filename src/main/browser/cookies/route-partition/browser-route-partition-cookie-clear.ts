@@ -1,6 +1,5 @@
-import { session } from 'electron'
 import { restoreBrowserRoutePartitionSessionCookies } from '../session-restore/browser-session-cookie-route-restore'
-import { clearBrowserCookieJar } from '../session-restore/browser-session-cookie-clear'
+import { clearBrowserCookieJarWithSource } from '../session-restore/browser-session-cookie-clear'
 import { boundLocalSshBrowserPartition } from '../../routing/local-host-partitions/local-ssh-browser-partition-bindings'
 import { browserSessionRegistry } from '../../sessions/profiles/browser-session-registry'
 import {
@@ -8,11 +7,19 @@ import {
   sshCookieImportRoute
 } from '../client-route/client-route-cookie-import-source-store'
 
-/** Clears a route jar (SSH or This-device pages) durably; throws when it couldn't. */
-export async function clearRoutePartitionCookies(partition: string): Promise<void> {
-  // A route jar restores its saved session cookies lazily; a later restore would undo this clear.
-  await restoreBrowserRoutePartitionSessionCookies(partition)
-  await clearBrowserCookieJar(session.fromPartition(partition))
+/** Clears a route jar after checking its binding and clearing its source. */
+export function clearRoutePartitionCookies(
+  partition: string,
+  clearSource: () => Promise<boolean>
+): Promise<boolean> {
+  return clearBrowserCookieJarWithSource(partition, async () => {
+    if (!(await clearSource())) {
+      return false
+    }
+    // A route jar restores its saved session cookies lazily; a later restore would undo this clear.
+    await restoreBrowserRoutePartitionSessionCookies(partition)
+    return true
+  })
 }
 
 /** Clears the jar this SSH host's pages of one local profile use, on this computer. */
@@ -25,11 +32,18 @@ export async function clearSshRouteProfileCookies(
   }
   // Read before the badge goes, so a binding conflict fails with the badge still telling the truth.
   const partition = boundLocalSshBrowserPartition(targetId, profileId)
-  // Badge first, like the local clear, so quitting mid-clear can't leave "Imported from" behind.
-  await forgetClientRouteCookieImportSource({ route: sshCookieImportRoute(targetId), profileId })
+  const forgetSource = () =>
+    forgetClientRouteCookieImportSource({ route: sshCookieImportRoute(targetId), profileId })
   // No page or import has bound this host's jar for the profile: it holds nothing.
-  if (partition !== null) {
-    await clearRoutePartitionCookies(partition)
+  if (partition === null) {
+    await forgetSource()
+    return true
   }
-  return true
+  return clearRoutePartitionCookies(partition, async () => {
+    if (boundLocalSshBrowserPartition(targetId, profileId) !== partition) {
+      return false
+    }
+    await forgetSource()
+    return true
+  })
 }
