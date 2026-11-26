@@ -31,7 +31,7 @@ import {
 } from './mobile-native-chat-reading-place'
 import type { MobileNativeChatListHandle } from './use-mobile-native-chat-tail-follow'
 import type { MobileNativeChatScrollRoots } from './mobile-native-chat-scroll-roots'
-import { scrollWritesStopMomentum } from './mobile-native-chat-scroll-motion'
+import { useMobileNativeChatPageMotion } from './use-mobile-native-chat-page-motion'
 import {
   savedMobileNativeChatDrawn,
   useMobileNativeChatPlaceKeeper,
@@ -61,9 +61,6 @@ type Scroller = MobileNativeChatScrollNode & {
 // RN 0.88 types these handles as native tags; on web they are the DOM nodes this list observes.
 function isScroller(node: unknown): node is Scroller {
   return typeof node === 'object' && node !== null && 'addEventListener' in node
-}
-function domElementOf(node: unknown): Element | null {
-  return typeof Element !== 'undefined' && node instanceof Element ? node : null
 }
 type Held = {
   rows: readonly NativeChatMessage[]
@@ -273,21 +270,58 @@ export function MobileNativeChatPageList({
     [isFollowing]
   )
 
+  useMobileNativeChatPageItemJump({
+    itemJump,
+    scroller,
+    forgetPlace,
+    first,
+    keepDrawn: (at) =>
+      setDrawn({ scope: rowKeys.scope, firstKey: keys[at] ?? null, count: n - at }),
+    write
+  })
+
+  const { align, scrolled } = useMobileNativeChatPageMotion({
+    scroller,
+    write,
+    notePlace,
+    keepPlace,
+    latest,
+    setDrawn,
+    keys,
+    first,
+    resting,
+    drawAndFetch,
+    roots,
+    scroll,
+    hold,
+    unhold,
+    onScroll,
+    onEndDistance,
+    isFollowing,
+    own,
+    readerScrolledAt,
+    touching
+  })
+
   useImperativeHandle(
     ref,
     () => ({
       scrollToEnd: () => {
+        align.cancelAlign()
         const s = scroller()
         if (s) {
           write(s, 0)
         }
       },
       scrollToOffset: ({ offset }) => {
+        align.cancelAlign()
         const s = scroller()
         if (s) {
           write(s, offset - (s.scrollHeight - s.clientHeight))
         }
       },
+      hasPreviousMessage: align.hasPreviousMessage,
+      revealPreviousMessage: align.revealPreviousMessage,
       scrollRowToTop: (key) => {
         const s = scroller()
         const by = s ? mobileNativeChatRowOffset(s, key) : undefined
@@ -299,110 +333,14 @@ export function MobileNativeChatPageList({
         }
       }
     }),
-    [scroller, write, notePlace]
-  )
-
-  useMobileNativeChatPageItemJump({
-    itemJump,
-    scroller,
-    forgetPlace,
-    first,
-    keepDrawn: (at) =>
-      setDrawn({ scope: rowKeys.scope, firstKey: keys[at] ?? null, count: n - at }),
-    write
-  })
-
-  const drawnHead = useRef<string | undefined>(undefined)
-  useLayoutEffect(() => {
-    const s = scroller()
-    if (!s) {
-      return
-    }
-    // Chromium keeps a touch scroll's offset from the top, so rows drawn or cut above would carry the reader with them; a write hands the scroll the end-anchored offset.
-    if (keys[first] !== drawnHead.current) {
-      drawnHead.current = keys[first]
-      if (!resting() && !scrollWritesStopMomentum()) {
-        const top = s.scrollTop
-        s.scrollTop = top - 1
-        write(s, top)
-      }
-    }
-    keepPlace(s)
-    drawAndFetch(s)
-  })
-
-  // Content and viewport resizes (e.g. the composer growing) bypass commits; restore nested scroll boxes first.
-  useEffect(() => {
-    const s = scroller()
-    const viewport = domElementOf(scroll.current?.getScrollableNode())
-    const content = domElementOf(scroll.current?.getInnerViewNode())
-    if (!s || !viewport || !content || typeof ResizeObserver === 'undefined') {
-      return
-    }
-    const observer = new ResizeObserver(() => {
-      roots?.restoreAll()
-      keepPlace(s)
-      drawAndFetch(s)
-    })
-    observer.observe(viewport)
-    observer.observe(content)
-    roots?.observeWith(observer)
-    return () => {
-      roots?.observeWith(null)
-      observer.disconnect()
-    }
-  }, [scroller, roots, keepPlace, drawAndFetch])
-
-  useEffect(() => {
-    const s = scroller()
-    if (!s) {
-      return
-    }
-    // A release that hands over to a fling comes right after a scroll, which still counts.
-    const down = () => {
-      touching.current = true
-      hold()
-    }
-    const up = () => {
-      touching.current = false
-    }
-    const options = { capture: true, passive: true }
-    // Listen to both touch and pointer events because either can arrive first or be missing.
-    const downs = ['touchstart', 'pointerdown']
-    const ups = ['touchend', 'touchcancel', 'pointerup', 'pointercancel']
-    downs.forEach((type) => s.addEventListener(type, down, options))
-    ups.forEach((type) => s.addEventListener(type, up, options))
-    return () => {
-      downs.forEach((type) => s.removeEventListener(type, down, options))
-      ups.forEach((type) => s.removeEventListener(type, up, options))
-    }
-  }, [scroller, hold])
-
-  const scrolled = useCallback(
-    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-      onScroll(event)
-      const s = scroller()
-      if (!s) {
-        return
-      }
-      const byReader = own.current === null || Math.abs(s.scrollTop - own.current) >= 1
-      // RN Web repeats the last scroll event 100 ms after scrolling stops; keep our write so that repeat is ours too.
-      if (byReader) {
-        own.current = null
-        readerScrolledAt.current = Date.now()
-      }
-      onEndDistance(Math.max(0, -s.scrollTop), byReader)
-      if (isFollowing()) {
-        unhold()
-      } else if (byReader) {
-        hold()
-      }
-      if (byReader) {
-        notePlace(s)
-      }
-      drawAndFetch(s)
-    },
-    [onScroll, scroller, onEndDistance, isFollowing, hold, unhold, notePlace, drawAndFetch]
+    [
+      align.cancelAlign,
+      align.hasPreviousMessage,
+      align.revealPreviousMessage,
+      scroller,
+      write,
+      notePlace
+    ]
   )
 
   return (

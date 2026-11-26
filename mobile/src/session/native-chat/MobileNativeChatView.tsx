@@ -162,7 +162,7 @@ export function MobileNativeChatView({
     sendSurfaceId
   )
   const tail = useMobileNativeChatTailFollow({ hasItems: data.length > 0, scopeKey: sendSurfaceId })
-  const { jumpToTail, recordScrollMetrics, scrollMayLoadEarlier } = tail
+  const { jumpToTail, recordScrollMetrics, scrollMayLoadEarlier, jumpToPreviousMessage } = tail
 
   // Lock only terminal-backed Send: it can answer an agent prompt, while drafting is harmless and structured sends queue.
   const promptShown = !collapsedPrompt && (ask ?? permission ?? question) != null
@@ -401,6 +401,7 @@ export function MobileNativeChatView({
                         roots={disclosures.roots}
                         contentContainerStyle={styles.listContent}
                         pinchGesture={pinchGesture}
+                        resolveRow={turns.resolveRow}
                       />
                     </MobileWorkerApprovalReceiptsContext>
                   </MobileNativeChatScrollRootsBoundary>
@@ -410,6 +411,8 @@ export function MobileNativeChatView({
             <MobileNativeChatFloatingControls
               showJumpToTail={tail.showJumpToTail}
               onJumpToTail={jumpToTail}
+              showPreviousMessage={tail.showPreviousMessage}
+              onJumpToPrevious={jumpToPreviousMessage}
             />
           </GestureHandlerRootView>
         )}
