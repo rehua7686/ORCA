@@ -9,6 +9,11 @@ import {
   forEachMarkdownLine,
   type MarkdownFenceRanges
 } from './markdown-fence-tracker'
+import {
+  splitMarkdownContainerPrefix,
+  stripMarkdownContainerPrefix,
+  type MarkdownContainer
+} from './markdown-block-containers'
 
 const BLANK_LINE = /^[ \t\r]*$/
 const BLOCKQUOTE_PREFIX = /^(?: {0,3}>[ \t]?)+/
@@ -54,83 +59,16 @@ function splitBlockquotePrefix(line: string): { depth: number; rest: string } {
   return { depth, rest: line.slice(prefix.length) }
 }
 
-type TableContainer = number | 'quote'
-
-const TABLE_QUOTE_PREFIX = /^ {0,3}>[ \t]?/
-const TABLE_LIST_PREFIX = /^( {0,3}(?:[*+-]|\d{1,9}[.)]))([ \t]+)/
-
-function tableHeaderContent(line: string): { containers: TableContainer[]; rest: string } {
-  const containers: TableContainer[] = []
-  let rest = line
-  for (;;) {
-    const quote = TABLE_QUOTE_PREFIX.exec(rest)
-    if (quote) {
-      containers.push('quote')
-      rest = rest.slice(quote[0].length)
-      continue
-    }
-    const list = TABLE_LIST_PREFIX.exec(rest)
-    if (!list) {
-      return { containers, rest }
-    }
-    const markerWidth = list[1].length
-    let width = markerWidth
-    for (const character of list[2]) {
-      width += character === '\t' ? 4 - (width % 4) : 1
-    }
-    // As marked does, excess padding leaves an indented code block after one space.
-    if (width - markerWidth > 4) {
-      containers.push(markerWidth + 1)
-      rest = ' '.repeat(width - markerWidth - 1) + rest.slice(list[0].length)
-    } else {
-      containers.push(width)
-      rest = rest.slice(list[0].length)
-    }
-  }
-}
-
-function tableContainerContent(
-  line: string,
-  containers: TableContainer[],
-  allowLazy = true
-): string | null {
-  let rest = line
-  for (const container of containers) {
-    if (container === 'quote') {
-      const quote = TABLE_QUOTE_PREFIX.exec(rest)
-      if (!quote) {
-        return null
-      }
-      rest = rest.slice(quote[0].length)
-      continue
-    }
-    let width = 0
-    let end = 0
-    while (end < rest.length && width < container && /[ \t]/.test(rest[end])) {
-      width += rest[end] === '\t' ? 4 : 1
-      end += 1
-    }
-    // List items may contain lazy continuation lines with less indentation.
-    if (width >= container) {
-      rest = ' '.repeat(width - container) + rest.slice(end)
-    } else if (!BLANK_LINE.test(rest) && (!allowLazy || TABLE_LIST_PREFIX.test(rest))) {
-      // A sibling list marker ends the current item before lazy continuation applies.
-      return null
-    }
-  }
-  return rest
-}
-
 function findTableDelimiterAhead(
   content: string,
   start: number,
-  containers: TableContainer[]
+  containers: MarkdownContainer[]
 ): string | null {
   if (start >= content.length) {
     return null
   }
   const next = content.slice(start, findMarkdownLineEnd(content, start))
-  const rest = tableContainerContent(next, containers)
+  const rest = stripMarkdownContainerPrefix(next, containers)
   return rest !== null && TABLE_DELIMITER_ROW.test(rest) ? rest : null
 }
 
@@ -191,16 +129,16 @@ function scanMarkdownCodeLines(content: string, includeSpans: boolean): Markdown
   let previousQuoteDepth = 0
   let insideTable = false
   let insideTableCells = false
-  let tableContainers: TableContainer[] | null = null
-  let listContainers: TableContainer[] = []
-  let fenceContainers: TableContainer[] = []
+  let tableContainers: MarkdownContainer[] | null = null
+  let listContainers: MarkdownContainer[] = []
+  let fenceContainers: MarkdownContainer[] = []
   let previousListBoundary = true
 
   forEachMarkdownLine(content, (lineStart, lineEnd, nextLineStart) => {
     const line = content.slice(lineStart, lineEnd)
     let wasInsideFence = fence.insideFence
     const continuedFence = wasInsideFence
-      ? tableContainerContent(line, fenceContainers, false)
+      ? stripMarkdownContainerPrefix(line, fenceContainers, false)
       : null
     if (wasInsideFence && continuedFence === null) {
       fenceRanges.push([openFenceStart, lineStart])
@@ -211,16 +149,16 @@ function scanMarkdownCodeLines(content: string, includeSpans: boolean): Markdown
     }
     const activeRow =
       insideTableCells && tableContainers !== null
-        ? tableContainerContent(line, tableContainers)
+        ? stripMarkdownContainerPrefix(line, tableContainers)
         : null
     const keepsOrderedRow = activeRow !== null && TABLE_BODY_ORDERED_ITEM.test(activeRow)
-    let header = tableHeaderContent(line)
+    let header = splitMarkdownContainerPrefix(line)
     if (keepsOrderedRow && activeRow !== null && tableContainers !== null) {
       header = { containers: tableContainers, rest: activeRow }
     }
     if (!wasInsideFence && !keepsOrderedRow && !BLANK_LINE.test(header.rest)) {
       let continued =
-        listContainers.length > 0 ? tableContainerContent(line, listContainers, false) : null
+        listContainers.length > 0 ? stripMarkdownContainerPrefix(line, listContainers, false) : null
       if (
         continued === null &&
         !previousListBoundary &&
@@ -229,10 +167,10 @@ function scanMarkdownCodeLines(content: string, includeSpans: boolean): Markdown
         !LEAF_BLOCK_START.test(header.rest) &&
         !/^ {0,3}(?:`{3,}|~{3,})/.test(header.rest)
       ) {
-        continued = tableContainerContent(line, listContainers)
+        continued = stripMarkdownContainerPrefix(line, listContainers)
       }
       if (continued !== null) {
-        const nested = tableHeaderContent(continued)
+        const nested = splitMarkdownContainerPrefix(continued)
         header = { containers: [...listContainers, ...nested.containers], rest: nested.rest }
       } else {
         listContainers = []
@@ -262,7 +200,7 @@ function scanMarkdownCodeLines(content: string, includeSpans: boolean): Markdown
     const tableRest =
       tableContainers === null
         ? (quote?.rest ?? null)
-        : tableContainerContent(line, tableContainers)
+        : stripMarkdownContainerPrefix(line, tableContainers)
     const isDelimiterRow = tableRest !== null && TABLE_DELIMITER_ROW.test(tableRest)
     const delimiter = !isBoundary
       ? findTableDelimiterAhead(content, nextLineStart, header.containers)
