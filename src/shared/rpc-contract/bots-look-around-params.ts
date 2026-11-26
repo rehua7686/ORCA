@@ -85,7 +85,13 @@ export const BotRequestOutcomeParams = lazyZodSchema(() =>
   z.object({
     messageId: requiredString('Missing messageId'),
     /** Asked of an agent on a paired computer: read from this host's own record of the ask. */
-    onClient: z.boolean().optional()
+    onClient: z.boolean().optional(),
+    sendingCard: z
+      .object({
+        sessionId: requiredString('Missing sessionId'),
+        itemId: requiredString('Missing itemId')
+      })
+      .optional()
   })
 )
 

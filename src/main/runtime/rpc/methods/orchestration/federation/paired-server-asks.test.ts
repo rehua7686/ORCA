@@ -595,11 +595,11 @@ describe('agents on a paired server messaging an agent on this computer', () => 
     await introduce()
     const denied = await ask()
     await vi.waitFor(async () => expect(await cards()).toHaveLength(1))
-    expect(outcome(denied.message.id)).toMatchObject({ outcome: null, answer: null })
+    expect(await outcome(denied.message.id)).toMatchObject({ outcome: null, answer: null })
     await call('pairedServerAsks.decide', { messageId: denied.message.id, decision: 'deny' })
-    await vi.waitFor(() => expect(outcome(denied.message.id).outcome).toBe('dropped'))
+    await vi.waitFor(async () => expect((await outcome(denied.message.id)).outcome).toBe('dropped'))
 
-    const answered = await ask({ subject: 'Second question' })
+    const answered = await ask({ subject: 'Follow-up handoff', type: 'handoff' })
     await vi.waitFor(async () => expect(await cards()).toHaveLength(1))
     await call('pairedServerAsks.decide', { messageId: answered.message.id, decision: 'once' })
     await vi.waitFor(() =>
@@ -612,8 +612,8 @@ describe('agents on a paired server messaging an agent on this computer', () => 
       runtime: computer.runtime,
       orchestrationCaller: sessionCaller(DOCS_HOME)
     } as RpcContext)
-    await vi.waitFor(() =>
-      expect(outcome(answered.message.id)).toMatchObject({
+    await vi.waitFor(async () =>
+      expect(await outcome(answered.message.id)).toMatchObject({
         outcome: 'answered',
         answer: 'docs/install.md'
       })
@@ -628,10 +628,18 @@ describe('agents on a paired server messaging an agent on this computer', () => 
       )
     )
     await settlePairedServerAsksOnRemoval(computer.runtime, 'env_s')
-    await vi.waitFor(() => expect(outcome(unpaired.message.id).outcome).toBe('dropped'))
-    expect(outcome(unpaired.message.id).answer).toContain(
+    await vi.waitFor(async () =>
+      expect((await outcome(unpaired.message.id)).outcome).toBe('dropped')
+    )
+    expect((await outcome(unpaired.message.id)).answer).toContain(
       "Docs's owner unpaired its computer from this one"
     )
+
+    server.db.resetTasks()
+    expect(await outcome(answered.message.id)).toMatchObject({
+      outcome: 'answered',
+      answer: 'docs/install.md'
+    })
   })
 
   /** An item as the server queued it for this computer, read from the server's relay. */

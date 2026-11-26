@@ -1,13 +1,17 @@
 // The row Orca leaves in the owner's chat when its bot asks or hands work to another bot: who it went
 // to, which kind, and its answer or why it wasn't sent, read from Orca's record as that bot's chat changes.
 import { cn } from '@/lib/class-names'
-import { callBotRpc } from '@/lib/bot-hosts'
-import { useEffect, useState } from 'react'
+import { botTarget } from '@/lib/bot-hosts'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
+import { useEffect, useReducer, useState } from 'react'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
+import { RuntimeRpcCallError } from '@/runtime/rpc/calls/runtime-rpc-result'
 import { Send } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { translate } from '@/i18n/i18n'
 import { openBotHomeTab, useBots } from '@/lib/bot-catalog'
 import { openBotSession } from '../bots/bot-session-open'
+import { usePairedActivityRefresh } from '../bots/use-paired-activity-refresh'
 import { useWorktreeActivityStatus } from '@/components/sidebar/workspace-card/activity/use-worktree-activity-status'
 import { folderWorkspaceKey } from '../../../../shared/workspace/identity/workspace-scope'
 import type { Bot } from '../../../../shared/bot-types'
@@ -24,6 +28,7 @@ import {
 import type { BotCardCopyValues } from '../../../../shared/native-chat/bot-cards/bot-card-copy'
 import { NativeChatEventRow } from './messages/events/NativeChatEventRow'
 import { NativeChatClientAskRequestCard } from './NativeChatClientAskRequestCard'
+import { useNativeChatVisualOwner } from './media/visuals/native-chat-visual-owner'
 import {
   NATIVE_CHAT_INLINE_NAME,
   NATIVE_CHAT_ROW_SHARE
@@ -45,6 +50,7 @@ const say: BotRequestCardSay = (id, values) => PIECES[id](values)
 function useOutcome(
   bot: Bot,
   messageId: string | undefined,
+  cardId: string,
   status: string
 ): BotRequestCardReading {
   const [reading, setReading] = useState<BotRequestCardReading>({
@@ -52,28 +58,67 @@ function useOutcome(
     answer: null,
     mailIds: []
   })
-  const settled = reading.outcome === 'answered' && reading.answer !== null
-  const { hostId } = bot
+  const owner = useNativeChatVisualOwner()
+  const pairedOwner = owner?.target.kind === 'environment' && !isWebClientLocation() ? owner : null
+  const target = pairedOwner?.target ?? botTarget(bot)
+  const sendingSessionId = pairedOwner?.sessionId
+  const settled =
+    reading.outcome === 'answered' && (sendingSessionId !== undefined || reading.answer !== null)
+  const [refresh, reread] = useReducer((revision: number) => revision + 1, 0)
+  const [scopeRefused, setScopeRefused] = useState(false)
+  // A reply need not change the receiving bot's activity. Retry pending reads while the card is visible.
+  usePairedActivityRefresh(
+    sendingSessionId !== undefined && !!messageId && reading.outcome === null && !scopeRefused,
+    reread
+  )
   // An answer or a dropped request lands as that bot's chat changes, so each change rereads it.
   useEffect(() => {
     if (settled || !messageId) {
       return
     }
     let live = true
-    void callBotRpc<BotRequestCardReading>({ hostId }, 'bots.request.outcome', {
-      messageId
-    })
+    void callRuntimeRpc<BotRequestCardReading>(
+      target,
+      'bots.request.outcome',
+      {
+        messageId,
+        ...(sendingSessionId
+          ? { sendingCard: { sessionId: sendingSessionId, itemId: cardId } }
+          : {})
+      },
+      { background: sendingSessionId !== undefined }
+    )
       .then((result) => {
         foldBotRequestMail(result.mailIds ?? [])
         if (live) {
+          setScopeRefused(false)
           setReading(result)
         }
       })
-      .catch(() => {})
+      .catch((error: unknown) => {
+        if (
+          live &&
+          sendingSessionId !== undefined &&
+          error instanceof RuntimeRpcCallError &&
+          error.code === 'invalid_argument'
+        ) {
+          setScopeRefused(true)
+        }
+      })
     return () => {
       live = false
     }
-  }, [hostId, messageId, status, bot.paused, bot.chatSessionId, settled])
+  }, [
+    target,
+    messageId,
+    cardId,
+    sendingSessionId,
+    status,
+    bot.paused,
+    bot.chatSessionId,
+    settled,
+    refresh
+  ])
   return reading
 }
 
@@ -131,7 +176,7 @@ function KnownBotRequestCard({
   timestamp: number | null
 }): React.JSX.Element {
   const status = useWorktreeActivityStatus(folderWorkspaceKey(bot.folderWorkspaceId))
-  const reading = useOutcome(bot, card.messageId, status)
+  const reading = useOutcome(bot, card.messageId, cardId, status)
   // The chat the request went to, unless that is Home now; Home until it's known.
   const { chatId } = reading
   const openChat = () =>

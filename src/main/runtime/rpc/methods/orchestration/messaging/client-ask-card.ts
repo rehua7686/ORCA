@@ -12,6 +12,7 @@ import {
 } from '../../../../../../shared/bots/bot-request-card'
 import type { OrchestrationDb } from '../../../../orchestration/db/orchestration-db'
 import { OrchestrationError } from '../../../../orchestration/orchestration-error'
+import { CLIENT_ENVIRONMENT_PREFIX } from '../../../../orchestration/federation/client-asks/client-ask-environment'
 
 /** Writes the card once the send settles: a chat's question or handoff only, never a terminal's. */
 export function clientAskCard(args: {
@@ -53,21 +54,51 @@ export function clientAskCard(args: {
   }
 }
 
+function isOutgoingClientAsk(db: OrchestrationDb, messageId: string): boolean {
+  return Boolean(
+    db.db
+      .prepare(
+        `SELECT 1 FROM peer_questions_out
+         WHERE message_id = ?2 AND environment_id GLOB ?1
+         UNION ALL
+         SELECT 1 FROM peer_mail_conversations c
+         JOIN federation_relay_items i ON i.dispatch_id = c.conversation_id
+         WHERE c.role = 'home' AND c.environment_id GLOB ?1
+           AND i.direction = 'to_worker' AND i.kind = 'client_ask' AND i.message_id = ?2
+         LIMIT 1`
+      )
+      .get(`${CLIENT_ENVIRONMENT_PREFIX}*`, messageId)
+  )
+}
+
 /** How an ask to a paired computer's agent stands here: declined on that computer's notice, answered
  *  by its agent's answer, or not answered when its question settled without one (an unpair or
  *  re-pair notice, shown as the answer is). A handoff, which awaits no answer, takes its first reply. */
 export function readClientAskOutcome(
   db: OrchestrationDb,
-  messageId: string
+  messageId: string,
+  paired = false
 ): BotRequestCardReading {
-  const replies = db.db
-    .prepare('SELECT id, body, payload FROM messages WHERE thread_id = ? ORDER BY rowid')
-    .all(messageId)
-    .map((row) => ({
-      id: String(row.id),
-      body: String(row.body),
-      payload: typeof row.payload === 'string' ? row.payload : null
-    }))
+  // Task reset removes the outbound handoff record. In that case only show the actual returned mail.
+  const rows =
+    paired && !isOutgoingClientAsk(db, messageId)
+      ? db.db
+          .prepare(
+            `SELECT m.id, m.body, m.payload FROM messages m
+             JOIN peer_mail_messages p ON p.message_id = m.id
+             JOIN peer_mail_conversations c ON c.conversation_id = p.conversation_id
+             WHERE m.thread_id = ? AND c.role = 'home' AND c.environment_id GLOB ?
+             ORDER BY m.rowid`
+          )
+          .all(messageId, `${CLIENT_ENVIRONMENT_PREFIX}*`)
+      : db.db
+          .prepare('SELECT id, body, payload FROM messages WHERE thread_id = ? ORDER BY rowid')
+          .all(messageId)
+  const replies = rows.map((row) => ({
+    id: String(row.id),
+    body: String(row.body),
+    payload: typeof row.payload === 'string' ? row.payload : null
+  }))
   const question = db.db
     .prepare('SELECT awaiting FROM peer_questions_out WHERE message_id = ?')
     .get(messageId)
