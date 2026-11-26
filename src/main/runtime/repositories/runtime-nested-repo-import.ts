@@ -10,11 +10,7 @@ import type {
   ProjectGroupImportResult
 } from '../../../shared/project/groups/project-group-types'
 import type { Repo } from '../../../shared/repository/repo-types'
-import {
-  getRepoDialableSshTargetId,
-  getRepoExecutionHostId,
-  getRepoRoutingConnectionId
-} from '../../../shared/execution-host/execution-host'
+import { runtimeRepoIsRegistrationCandidate } from '../workspaces/catalog/runtime-worktree-selection'
 import { awaitWindowsHostGitEnvironmentReady } from '../../git/command-runner/host-routing/windows-host-git-environment'
 import { getRepoName } from '../../git/repositories/repository-name'
 import { isGitRepoAsync } from '../../git/repositories/discovery/repo-detection'
@@ -24,6 +20,7 @@ import {
   resolveNestedRepoSelection
 } from '../../project-groups/nested-repo-import'
 import { createNestedRepoImportTargetResolver } from '../../project-groups/nested-repo-import-target'
+import { matchCheckoutFamily } from '../../workspaces/catalog/checkout-family'
 import type { RuntimeStore } from '../construction/runtime-store-contract'
 import { refuseWslHostWindowsDrivePath } from '../terminal/launch/wsl-host-windows-drive-guard'
 
@@ -118,16 +115,20 @@ export class RuntimeNestedRepoImport {
           continue
         }
         // Import native rows only; SSH may share the path string. Paired hosts stamp native rows runtime:<env>, which still match.
-        const existing = store.getRepos().find(
-          (repo) =>
-            getRepoDialableSshTargetId(repo) === null &&
-            (normalizeRuntimePathForComparison(repo.path) === normalizedImportRepoPath ||
-              // The resolved spelling names this machine's folder, so only native rows may match it.
-              (resolvedImportRepoPath !== null &&
-                getRepoRoutingConnectionId(repo) === null &&
-                !getRepoExecutionHostId(repo).startsWith('ssh:') &&
-                normalizeRuntimePathForComparison(repo.path) === resolvedImportRepoPath))
+        // A project registered for a sibling worktree already owns this repository.
+        const isSameCheckoutFamily = matchCheckoutFamily(
+          null,
+          importTargetResolver.getFamilyPaths(importRepoPath)
         )
+        const existing = store.getRepos().find((repo) => {
+          const repoPathKey = normalizeRuntimePathForComparison(repo.path)
+          return (
+            runtimeRepoIsRegistrationCandidate(repo) &&
+            (repoPathKey === normalizedImportRepoPath ||
+              repoPathKey === resolvedImportRepoPath ||
+              isSameCheckoutFamily(repo))
+          )
+        })
         const group = groupResolver.getGroupForRepo(repoPath)
         if (existing) {
           // A rescan can reuse the group, so keep its members' order and append the rest.

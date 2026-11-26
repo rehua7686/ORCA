@@ -31350,6 +31350,15 @@
     "moveRight": "Move right",
     "reset": "Reset tab order"
   },
+  "projectAdmission": {
+    "checkout": {
+      "ownerUnavailable": "The project host could not be identified. Add the project again from the intended host.",
+      "saveFailed": "Could not save the selected checkout’s visibility. Retry to open it.",
+      "missing": "The selected folder could not be matched to an available checkout on this host.",
+      "refreshFailed": "Could not refresh checkouts on {{host}}. Retry when the host is available.",
+      "openFailed": "Could not open selected checkout"
+    }
+  },
   "mcpServers": {
     "paste": {
       "badCommand": "Put the values themselves in the mcp add command: Orca can’t fill in $VARIABLES or other shell expressions.",

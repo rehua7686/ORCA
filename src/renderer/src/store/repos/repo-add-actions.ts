@@ -15,7 +15,7 @@ import {
   toRuntimeExecutionHostId
 } from '../../../../shared/execution-host/execution-host'
 import type { RepoSlice } from './repo-state'
-import { ERROR_TOAST_DURATION } from './repo-state'
+import { ERROR_TOAST_DURATION, projectAddToastId } from './repo-state'
 import { fetchRuntimeAddProjectPathStatus, getRuntimeEnvironmentDisplayName } from './owner-routing'
 import { adoptFromEndpoint } from '../host-catalog/endpoint-catalog-adoption'
 import { mergeProjectCompatibilityForHostRepoChange } from './repo-catalog-identity'
@@ -36,6 +36,7 @@ export function createRepoAddActions(
 ): Pick<RepoSlice, 'addRepoPath' | 'addRepo' | 'addNonGitFolder'> {
   return {
     addRepoPath: async (path, kind = 'git', options) => {
+      const canPublish = (): boolean => options?.canPublish?.() !== false
       try {
         // Why: a new project has no row yet; without a picked host it goes to the default host.
         const target =
@@ -44,6 +45,7 @@ export function createRepoAddActions(
             : defaultCreationHost(get().settings)
         const displayName = options?.displayName?.trim() || undefined
         let repo: Repo
+        let selectedPath: string | undefined
         try {
           if (target.kind === 'local') {
             const result = await window.api.repos.add({
@@ -55,21 +57,21 @@ export function createRepoAddActions(
               throw new Error(result.error)
             }
             repo = result.repo
+            selectedPath = result.selectedPath
           } else {
             const environmentId = target.environmentId
             // Queued behind any replayed removal, so a re-add of the same project is never undone.
             repo = await runExclusiveForRuntimeEnvironment(environmentId, async () => {
-              const added = (
-                await callRuntimeRpc<{ repo: Repo }>(
-                  target,
-                  'repo.add',
-                  { path, kind, ...(displayName ? { displayName } : {}) },
-                  // Adding a repo is the user's act: it may wake an idle-stopped WSL host (#46567).
-                  { timeoutMs: 15_000, wake: true }
-                )
-              ).repo
-              clearPendingRuntimeRepoRemoval(environmentId, added.id)
-              return added
+              const result = await callRuntimeRpc<{ repo: Repo; selectedPath?: string }>(
+                target,
+                'repo.add',
+                { path, kind, ...(displayName ? { displayName } : {}) },
+                // Adding a repo is the user's act: it may wake an idle-stopped WSL host (#46567).
+                { timeoutMs: 15_000, wake: true }
+              )
+              selectedPath = result.selectedPath
+              clearPendingRuntimeRepoRemoval(environmentId, result.repo.id)
+              return result.repo
             })
           }
         } catch (err) {
@@ -80,6 +82,9 @@ export function createRepoAddActions(
           if (target.kind !== 'local') {
             const status = await fetchRuntimeAddProjectPathStatus({ target, path })
             if (status?.exists !== true) {
+              if (!canPublish()) {
+                return null
+              }
               const hostName = getRuntimeEnvironmentDisplayName(get(), target.environmentId)
               toast.error(
                 translate(
@@ -99,6 +104,9 @@ export function createRepoAddActions(
             }
           }
           // Why: folder mode is a capability downgrade (no worktrees/SCM/PRs/checks), so confirm via dialog rather than silently falling back.
+          if (!canPublish()) {
+            return null
+          }
           const { openModal } = get()
           openModal('confirm-non-git-folder', {
             folderPath: path,
@@ -107,6 +115,7 @@ export function createRepoAddActions(
           })
           return null
         }
+        options?.onResolvedSelectedPath?.(selectedPath ?? path)
         repo = adoptFromEndpoint(target, { kind: 'repo', row: repo })
         const repoIdentity = getRepoHostIdentity(repo)
         const alreadyAdded = get().repos.some((r) => getRepoHostIdentity(r) === repoIdentity)
@@ -131,6 +140,7 @@ export function createRepoAddActions(
         })
         if (alreadyAdded) {
           toast.info(translate('auto.store.slices.repos.a8e4b3af5b', 'Project already added'), {
+            id: projectAddToastId(repo.id),
             description: repo.displayName
           })
         } else {
@@ -139,17 +149,23 @@ export function createRepoAddActions(
               ? translate('auto.store.slices.repos.8bb3ad7935', 'Project added')
               : translate('auto.store.slices.repos.90d129b48b', 'Folder added'),
             {
+              id: projectAddToastId(repo.id),
               description: repo.displayName
             }
           )
           // Why: the cross-profile advisory applies to SSH-added projects too; the presence lookup already keys on connection/host.
-          await warnIfProjectKnownInAnotherProfile(repo, get().activeOrcaProfileId)
+          await warnIfProjectKnownInAnotherProfile(repo, get().activeOrcaProfileId, canPublish)
           // Why after the set(): the project row carrying the runtime override only exists once the repo is in state.
-          warnIfProjectCrossesWslFilesystemBoundary(repo, get().projects, get().settings)
+          if (canPublish()) {
+            warnIfProjectCrossesWslFilesystemBoundary(repo, get().projects, get().settings)
+          }
         }
         return repo
       } catch (err) {
         console.error('Failed to add project:', err)
+        if (!canPublish()) {
+          return null
+        }
         const driveRefusal =
           err instanceof RuntimeRpcCallError
             ? readWslHostWindowsDriveRefusal(err.response.error.data)

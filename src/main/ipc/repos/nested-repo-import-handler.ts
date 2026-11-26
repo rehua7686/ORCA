@@ -16,11 +16,10 @@ import {
   resolveNestedRepoSelection
 } from '../../project-groups/nested-repo-import'
 import { createNestedRepoImportTargetResolver } from '../../project-groups/nested-repo-import-target'
-import {
-  getRepoExecutionHostId,
-  LOCAL_EXECUTION_HOST_ID
-} from '../../../shared/execution-host/execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from '../../../shared/execution-host/execution-host'
+import { runtimeRepoIsRegistrationCandidate as isThisMachineRepo } from '../../runtime/workspaces/catalog/runtime-worktree-selection'
 import { detectRepoLocalMetadata } from '../../repository-icons/repo-icon-autodetect'
+import { matchCheckoutFamily } from '../../workspaces/catalog/checkout-family'
 import { prepareLocalWorktreeRootForRepo } from '../../workspaces/creation/worktree-root-preparation'
 import { invalidateAuthorizedRootsCache } from '../worktrees/removal/registered-worktree-roots-cache'
 import { emitRepoAdded } from './repo-added-telemetry'
@@ -120,23 +119,34 @@ export function registerNestedRepoImportHandler(
             })
             continue
           }
-          const existing = store.getRepos().find(
-            (repo) =>
-              (repo.connectionId ?? null) === (args.connectionId ?? null) &&
-              (normalizeRuntimePathForComparison(repo.path) === normalizedImportRepoPath ||
-                // The resolved spelling names this machine's folder, so only local rows may match it.
-                (resolvedImportRepoPath !== null &&
-                  getRepoExecutionHostId(repo) === LOCAL_EXECUTION_HOST_ID &&
-                  normalizeRuntimePathForComparison(repo.path) === resolvedImportRepoPath))
+          // A project registered for a sibling worktree already owns this repository.
+          const isSameCheckoutFamily = matchCheckoutFamily(
+            null,
+            importTargetResolver.getFamilyPaths(importRepoPath)
           )
+          // SSH imports returned above, so every candidate is this machine's: never an SSH row.
+          const findExisting = (): Repo | undefined =>
+            store.getRepos().find((repo) => {
+              const repoPathKey = normalizeRuntimePathForComparison(repo.path)
+              return (
+                isThisMachineRepo(repo) &&
+                (repoPathKey === normalizedImportRepoPath ||
+                  repoPathKey === resolvedImportRepoPath ||
+                  isSameCheckoutFamily(repo))
+              )
+            })
           const group = groupResolver.getGroupForRepo(repoPath)
-          if (existing) {
+          const reuseExisting = (existing: Repo): void => {
             // A rescan can reuse the group, so keep its members' order and append the rest.
             if (group && existing.projectGroupId !== group.id) {
               store.moveProjectToGroup(existing, group.id)
             }
             importedProjectIdsByRepoPath.set(normalizedImportRepoPath, existing.id)
             results.push({ path: repoPath, projectId: existing.id, status: 'already-known' })
+          }
+          const existing = findExisting()
+          if (existing) {
+            reuseExisting(existing)
             continue
           }
           const detected = await detectRepoLocalMetadata({
@@ -144,6 +154,12 @@ export function registerNestedRepoImportHandler(
             kind: 'git',
             executionHostId: LOCAL_EXECUTION_HOST_ID
           })
+          // Another add can register this repository while icon discovery is pending.
+          const raceWinner = findExisting()
+          if (raceWinner) {
+            reuseExisting(raceWinner)
+            continue
+          }
           const repo: Repo = {
             id: randomUUID(),
             path: importRepoPath,

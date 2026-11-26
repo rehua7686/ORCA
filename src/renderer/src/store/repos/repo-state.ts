@@ -48,6 +48,9 @@ export type FolderWorkspaceDeleteOptions = {
 }
 export const ERROR_TOAST_DURATION = 60_000
 
+/** A failed checkout handoff replaces this add's toast, so one add never reports both outcomes. */
+export const projectAddToastId = (repoId: string): string => `project-add:${repoId}`
+
 export type RepoUpdate = Partial<
   Pick<
     Repo,
@@ -169,6 +172,9 @@ export type DeleteProjectGroupWithContainedProjectsResult =
 export type FolderWorkspacePathStatusRouteOptions = { runtimeEnvironmentId: string | null }
 
 export type AddRepoPathOptions = {
+  onResolvedSelectedPath?: (path: string) => void
+  /** False once the caller's request lost the foreground: failures and follow-up prompts are dropped; a registration still commits. */
+  canPublish?: () => boolean
   runtimeEnvironmentId?: string | null
   /** Overrides the host's basename naming for the new project. */
   displayName?: string
@@ -315,7 +321,7 @@ export type RepoSlice = {
   // options.hostId targets a specific host's row + RPC target when the id exists on multiple hosts; else the focused host is assumed.
   updateRepo: (
     projectId: string,
-    updates: RepoUpdate,
+    updates: RepoUpdate | ((latestRepo: Repo) => RepoUpdate),
     options?: { hostId?: ExecutionHostId }
   ) => Promise<boolean>
   setActiveRepo: (projectId: string | null) => void

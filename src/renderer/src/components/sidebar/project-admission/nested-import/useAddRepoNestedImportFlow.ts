@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import { track } from '@/diagnostics/telemetry/telemetry'
 import { useAppStore } from '@/store/index'
+import { repoMatchesHostIdentity } from '@/store/repos/repo-host-identity'
 import { getSelectedNestedRepoPathsInScanOrder } from '@/lib/workspace/creation/nested-repo-selected-paths'
 import {
   buildNestedRepoImportActionTelemetry,
@@ -165,8 +166,10 @@ export function useAddRepoNestedImportFlow({
         const importedRepoIds = result.projects
           .map((entry) => entry.projectId)
           .filter((projectId): projectId is string => typeof projectId === 'string')
-        const firstRepoId = importedRepoIds[0]
-        if (!firstRepoId) {
+        // The host's own spelling of the checkout the user picked; a reused sibling's project path is another checkout.
+        const firstEntry = result.projects.find((entry) => typeof entry.projectId === 'string')
+        const firstRepoId = firstEntry?.projectId
+        if (!firstEntry || !firstRepoId) {
           if (gen === nestedImportGenRef.current) {
             toastNoNestedRepositoriesImported(
               result.projects.find((entry) => entry.status === 'failed')
@@ -185,7 +188,15 @@ export function useAddRepoNestedImportFlow({
         if (result.failedCount > 0) {
           toastSomeNestedRepositoriesFailed(result.failedCount)
         }
-        const repo = useAppStore.getState().repos.find((entry) => entry.id === firstRepoId)
+        // The row the originating endpoint owns: another host may hold a row with this same id.
+        const completionHostId = completionOwnerOptions.executionHostId
+        const repo = useAppStore
+          .getState()
+          .repos.find((entry) =>
+            completionHostId
+              ? repoMatchesHostIdentity(entry, firstRepoId, completionHostId)
+              : entry.id === firstRepoId
+          )
         if (repo) {
           const source: AddRepoExistingWorkspaceSource = nestedConnectionId
             ? 'ssh_remote_path'
@@ -197,14 +208,12 @@ export function useAddRepoNestedImportFlow({
           await reportAfterGitRepoReady(
             takeNestedProjectReporter(),
             () =>
-              onGitRepoReady(
-                repo.id,
-                source,
-                completionOwnerOptions.executionHostId,
-                mode === 'group' && result.group
+              onGitRepoReady(repo.id, source, completionHostId, {
+                selectedPath: firstEntry.path,
+                ...(mode === 'group' && result.group
                   ? { importedProjectGroupId: result.group.id }
-                  : undefined
-              ),
+                  : {})
+              }),
             // Every imported repo starts checked, so a new group is not split across hosts.
             { repo, imported: importedRepoIds.map((id) => ({ kind: 'repo', id })) }
           )
