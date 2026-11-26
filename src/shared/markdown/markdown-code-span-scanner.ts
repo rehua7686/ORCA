@@ -6,8 +6,9 @@ import {
 import {
   createMarkdownFenceTracker,
   findMarkdownLineEnd,
-  forEachMarkdownLine
-} from './markdown-fence-scanner'
+  forEachMarkdownLine,
+  type MarkdownFenceRanges
+} from './markdown-fence-tracker'
 
 const BLANK_LINE = /^[ \t\r]*$/
 const BLOCKQUOTE_PREFIX = /^(?: {0,3}>[ \t]?)+/
@@ -112,7 +113,8 @@ function tableContainerContent(
     // List items may contain lazy continuation lines with less indentation.
     if (width >= container) {
       rest = ' '.repeat(width - container) + rest.slice(end)
-    } else if (!allowLazy) {
+    } else if (!BLANK_LINE.test(rest) && (!allowLazy || TABLE_LIST_PREFIX.test(rest))) {
+      // A sibling list marker ends the current item before lazy continuation applies.
       return null
     }
   }
@@ -157,14 +159,31 @@ function countTableCells(line: string): number {
   return count
 }
 
+type MarkdownCodeScan = { spans: MarkdownCodeSpanScanner; fences: MarkdownFenceRanges }
+
+/** Collect spans and fences together so consumers share the same container boundaries. */
+export function scanMarkdownCode(content: string): MarkdownCodeScan {
+  return scanMarkdownCodeLines(content, true)
+}
+
 /** Index backtick runs once so each lookup binary-searches instead of rescanning the remaining document. */
 export function createMarkdownCodeSpanScanner(content: string): MarkdownCodeSpanScanner {
+  return scanMarkdownCode(content).spans
+}
+
+export function getMarkdownCodeFenceRanges(content: string): MarkdownFenceRanges {
+  return scanMarkdownCodeLines(content, false).fences
+}
+
+function scanMarkdownCodeLines(content: string, includeSpans: boolean): MarkdownCodeScan {
   const starts: number[] = []
   const lengths: number[] = []
   // marked pairs backticks only within one leaf block, excluding blank lines, fences and new blocks.
   const blocks: number[] = []
   const escaped: boolean[] = []
   const runsByLength = new Map<number, number[]>()
+  const fenceRanges: [number, number][] = []
+  let openFenceStart = -1
 
   let fence = createMarkdownFenceTracker()
   let blockId = 0
@@ -183,7 +202,9 @@ export function createMarkdownCodeSpanScanner(content: string): MarkdownCodeSpan
     const continuedFence = wasInsideFence
       ? tableContainerContent(line, fenceContainers, false)
       : null
-    if (wasInsideFence && continuedFence === null && !BLANK_LINE.test(line)) {
+    if (wasInsideFence && continuedFence === null) {
+      fenceRanges.push([openFenceStart, lineStart])
+      openFenceStart = -1
       fence = createMarkdownFenceTracker()
       wasInsideFence = false
       listContainers = []
@@ -224,6 +245,10 @@ export function createMarkdownCodeSpanScanner(content: string): MarkdownCodeSpan
       fence.consume(wasInsideFence ? (continuedFence ?? '') : header.rest) || wasInsideFence
     if (!wasInsideFence && fence.insideFence) {
       fenceContainers = header.containers
+      openFenceStart = lineStart
+    } else if (wasInsideFence && !fence.insideFence) {
+      fenceRanges.push([openFenceStart, nextLineStart])
+      openFenceStart = -1
     }
     const lineQuote = isFenceBoundary ? null : splitBlockquotePrefix(line)
     const isBoundary = isFenceBoundary || BLANK_LINE.test(header.rest)
@@ -281,7 +306,7 @@ export function createMarkdownCodeSpanScanner(content: string): MarkdownCodeSpan
     }
     previousWasBoundary = isBoundary || endsWithLine
     previousQuoteDepth = quoteDepth
-    if (isBoundary) {
+    if (isBoundary || !includeSpans) {
       return
     }
 
@@ -312,7 +337,13 @@ export function createMarkdownCodeSpanScanner(content: string): MarkdownCodeSpan
     }
   })
 
-  return createMarkdownBacktickRunLookup(starts, lengths, runsByLength, blocks, escaped)
+  if (openFenceStart !== -1) {
+    fenceRanges.push([openFenceStart, content.length])
+  }
+  return {
+    spans: createMarkdownBacktickRunLookup(starts, lengths, runsByLength, blocks, escaped),
+    fences: fenceRanges
+  }
 }
 
 export function skipMarkdownBacktickRun(content: string, index: number): number {

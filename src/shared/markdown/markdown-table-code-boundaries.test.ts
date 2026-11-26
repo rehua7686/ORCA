@@ -38,6 +38,19 @@ it('keeps later ordered markers and subsequent rows inside an active table', () 
   )
 })
 
+it.each([
+  ['1. ', '   ', '2. '],
+  ['> 1. ', '>    ', '> 2. '],
+  ['- 1. ', '     ', '  2. ']
+])('ends a table before an ordered sibling of %j', (prefix, continuation, sibling) => {
+  const source = `${prefix}| a | b |\n${continuation}|---|---|\n${sibling}ordinary \`a|b\`\n`
+  const opener = source.indexOf('`')
+  expect(createMarkdownCodeSpanScanner(source).findSpanEnd(opener)).toBe(opener + 5)
+
+  const row = `${prefix}| a | b |\n${continuation}|---|---|\n${continuation}2. first \` | second \`\n`
+  expect(createMarkdownCodeSpanScanner(row).findSpanEnd(row.indexOf('`'))).toBeNull()
+})
+
 it('ends a quoted table at a quote-stripped blank line', () => {
   const table = '> | a | b |\n> |---|---|\n> | first ` | second ` |\n'
   expect(createMarkdownCodeSpanScanner(table).findSpanEnd(table.indexOf('`'))).toBeNull()
