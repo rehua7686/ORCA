@@ -741,6 +741,7 @@ import {
   RunShowParams,
   RunUseParams
 } from './orchestration/orchestration-runs-params'
+import { WorkerAcknowledgeParams } from './orchestration/orchestration-worker-acknowledge-params'
 import {
   WorkerDispatchParams,
   WorkerReadParams
@@ -2026,6 +2027,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'orchestration.taskCreate': TaskCreateParams,
   'orchestration.taskList': TaskListParams,
   'orchestration.workerAbandon': WorkerDispatchParams,
+  'orchestration.workerAcknowledge': WorkerAcknowledgeParams,
   'orchestration.workerApprovalsSubscribe': WorkerApprovalsSubscribeParams,
   'orchestration.workerApprovalsUnsubscribe': WorkerApprovalsUnsubscribeParams,
   'orchestration.workerAutoClose': OrchestrationWorkerSubjectParams,
