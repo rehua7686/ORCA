@@ -34,6 +34,7 @@ import {
   withNativeChatVisualsEnv
 } from '../../native-chat/conversation-files/native-chat-visuals-delivery'
 import type { AcpLaunchSpec } from './acp-launch-contract'
+import { acpFullAccessForLaunch } from './acp-launch-permission-modes'
 import { acpLaunchSpecForAccount, resolveAcpLaunchCommand } from './acp-launch-command'
 import { homeBeforeFirstTurn } from './acp-launch-home-before-first-turn'
 import {
@@ -202,6 +203,7 @@ export function acpStructuredLaunchPart(
         ...(deps.inheritedEnv ? { inheritedEnv: deps.inheritedEnv } : {}),
         dataDirectory: deps.dataDirectory
       })
+    const fullAccess = acpFullAccessForLaunch(spec, basis.permissionMode)
     noteManagedServerUse(spec.agent, spec.managedRuntime, version)
     const cwd = await basis.launchDirectory()
     const visuals = spec.skillRoots || visualsByInstructions(spec) ? await basis.visuals() : null
@@ -267,7 +269,6 @@ export function acpStructuredLaunchPart(
     )
     const instructions = delivered.launch
     const visualsLoaded = skillLoaded ?? (delivered.visuals ? visuals : null)
-    const fullAccess = basis.permissionMode === 'full-access'
     const botServers = toolsOff ? [] : acpBotMcpServers(tools)
     // On a shared name the bot's server wins; the host list's never shares one (above).
     const mcpServers = [

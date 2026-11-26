@@ -149,8 +149,9 @@ export async function acquireAcpStructuredSession(input: {
   )
   // Until the process exits, only its session's tools can name the chat.
   sharedTools = SharedToolProcessSession.forLaunch(spec, launch.env, launch.version)
-  if (!spec.permissionModeConfig) {
-    options.applied.set('permissionMode', launch.fullAccess ? 'full-access' : 'ask')
+  if (spec.autonomousTools || !spec.permissionModeConfig) {
+    const orcaMode = launch.fullAccess ? 'full-access' : 'ask'
+    options.applied.set('permissionMode', spec.autonomousTools ? 'own' : orcaMode)
   }
   // From here, cancellation closes this connection even before exit is proven.
   input.track(connection)
