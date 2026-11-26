@@ -32,7 +32,7 @@ export class ExternalAutomationProbeScheduler {
   private readonly concurrency: number
   private readonly queue: QueuedProbe[] = []
   private readonly active = new Set<QueuedProbe>()
-  private readonly shared = new Map<string, Promise<unknown>>()
+  private readonly shared = new Map<string, { promise: Promise<unknown>; signal: AbortSignal }>()
   private priorityHolds = 0
 
   constructor(options?: { concurrency?: number }) {
@@ -49,8 +49,9 @@ export class ExternalAutomationProbeScheduler {
 
   schedule<T>(job: ExternalAutomationProbeJob<T>): Promise<T> {
     const existing = this.shared.get(job.key)
-    if (existing) {
-      return existing as Promise<T>
+    if (existing && !existing.signal.aborted) {
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Callers sharing an owner/provider key share the same result type; the map erases T across keys.
+      return existing.promise as Promise<T>
     }
     const controller = new AbortController()
     let settled!: Promise<T>
@@ -73,7 +74,7 @@ export class ExternalAutomationProbeScheduler {
             .then(resolve, reject)
             .finally(() => {
               this.active.delete(entry)
-              if (this.shared.get(entry.key) === settled) {
+              if (this.shared.get(entry.key)?.promise === settled) {
                 this.shared.delete(entry.key)
               }
               this.pump()
@@ -85,7 +86,7 @@ export class ExternalAutomationProbeScheduler {
     settled = promise.finally(() => {
       this.pump()
     })
-    this.shared.set(job.key, settled)
+    this.shared.set(job.key, { promise: settled, signal: controller.signal })
     this.pump()
     return settled
   }
