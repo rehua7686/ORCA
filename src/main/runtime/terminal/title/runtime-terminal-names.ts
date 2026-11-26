@@ -4,15 +4,37 @@ import type {
 } from '../../../../shared/terminal/runtime/runtime-terminal-contracts'
 import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../../shared/workspace-layout/layout-owner-switch'
 import { RuntimeWorkspaceArchive } from '../../workspaces/archive/runtime-workspace-archive'
+import { UnlandedWindowRenames } from './manual-title-admission'
 
 export abstract class RuntimeTerminalNames extends RuntimeWorkspaceArchive {
-  async renameTerminal(handle: string, title: string | null): Promise<RuntimeTerminalRename> {
+  protected abstract getTerminalManualTitle(handle: string): string | null
+  private readonly unlandedWindowRenames = new UnlandedWindowRenames()
+
+  async renameTerminal(
+    handle: string,
+    title: string | null,
+    options: { ifManualTitle?: string } = {}
+  ): Promise<RuntimeTerminalRename> {
+    const { ifManualTitle } = options
+    const conditional = ifManualTitle !== undefined ? { ifManualTitle } : {}
     // Switch point: a terminal main owns is renamed in main's layout, with or without a window.
+    // That path compares the manual name inside its queued durable write.
     const mainRename = ORCA_LAYOUT_OWNER_IS_MAIN
-      ? await this.renameTerminalInMainLayout(handle, title)
+      ? await this.renameTerminalInMainLayout(handle, title, ifManualTitle)
       : null
     if (mainRename) {
-      return mainRename
+      return { ...mainRename, ...conditional }
+    }
+    // The window saves a sent rename later, so one still in flight counts as a changed name.
+    const saved = this.getTerminalManualTitle(handle) ?? ''
+    if (
+      ifManualTitle !== undefined &&
+      (saved !== ifManualTitle.trim() || this.unlandedWindowRenames.inFlight(handle, saved))
+    ) {
+      throw new Error('terminal_title_changed')
+    }
+    if (this.notifier?.renameTerminal) {
+      this.unlandedWindowRenames.record(handle, saved, title)
     }
     const pty = this.getLivePtyForHandle(handle)
     if (pty) {
@@ -28,7 +50,7 @@ export abstract class RuntimeTerminalNames extends RuntimeWorkspaceArchive {
       for (const leaf of this.leaves.values()) {
         if (leaf.ptyId === pty.pty.ptyId) {
           this.notifier?.renameTerminal(leaf.tabId, title)
-          return { handle, tabId: leaf.tabId, title }
+          return { handle, tabId: leaf.tabId, title, ...conditional }
         }
       }
       const tabId = recordedTabId() ?? pty.record.tabId
@@ -37,12 +59,12 @@ export abstract class RuntimeTerminalNames extends RuntimeWorkspaceArchive {
         this.publishUnrenderedTerminalTitle(pty.pty.worktreeId, tabId, customTitle)
         this.notifier.renameTerminal(tabId, title)
       }
-      return { handle, tabId, title }
+      return { handle, tabId, title, ...conditional }
     }
     this.assertGraphReady()
     const { leaf } = this.getLiveLeafForHandle(handle)
     this.notifier?.renameTerminal(leaf.tabId, title)
-    return { handle, tabId: leaf.tabId, title }
+    return { handle, tabId: leaf.tabId, title, ...conditional }
   }
 
   private publishUnrenderedTerminalTitle(
