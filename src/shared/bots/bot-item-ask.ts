@@ -60,6 +60,60 @@ export const BotItemAskSchema = z.object({
 
 export type BotItemAsk = z.infer<typeof BotItemAskSchema>
 
+// "(Recommended)" or "[recommended]" an agent wrote at the end of an option after a space (or as all of
+// it); a mark written twice goes too. Mismatched pairs like "(recommended]", or a mark with no space
+// before it, are the label's own words.
+const RECOMMENDED_SUFFIX = /(?:(?:^|\s+)(?:\(\s*recommended\s*\)|\[\s*recommended\s*\]))+\s*$/i
+// Anything that still reads as a mark at a label's end, spaced or not, matched or not: what the phone's
+// own reading of a label would also take as one.
+const ANY_TRAILING_MARK = /[([]\s*recommended\s*[)\]]\s*$/i
+
+const folded = (label: string): string => label.replace(/\s+/g, ' ')
+
+/** The ask as stored: `recommended` is the one mark of the recommended option, so a "(Recommended)"
+ *  an agent also wrote into a label leaves the label, and marks that option when --recommended didn't
+ *  and it is the only one. A label is cleaned only when its answer still can't be mistaken for another:
+ *  one of several lines, or one the words would empty, leave still ending in a mark, or leave reading
+ *  like a sibling (spacing aside, as answers are sent) keeps them, and so does every label of a
+ *  pick-several question whose labels hold ", " as written or cleaned, the way its picks are joined. A
+ *  recommendation is read from the words only when they leave the label, and several marked with no
+ *  flag keep their words. Cleaning never makes the ask's text longer. */
+export function normalizeBotItemAsk(ask: BotItemAsk): BotItemAsk {
+  return {
+    ...ask,
+    questions: ask.questions.map((question) => {
+      const written = question.options.map((option) => option.label)
+      const bare = written.map((label) => label.replace(RECOMMENDED_SUFFIX, ''))
+      const marked = bare.flatMap((label, index) => (label === written[index] ? [] : [index]))
+      const keys = bare.map(folded)
+      const joined =
+        question.multi === true &&
+        [...written.map(folded), ...keys].some((label) => label.includes(', '))
+      const cleans = (index: number): boolean =>
+        !joined &&
+        bare[index] !== written[index] &&
+        keys[index] !== '' &&
+        !ANY_TRAILING_MARK.test(bare[index]!) &&
+        // A label of several lines can read like a whole answer to several questions once cleaned.
+        !/[\r\n]/.test(written[index]!) &&
+        keys.indexOf(keys[index]!) === keys.lastIndexOf(keys[index]!)
+      const recommended =
+        question.recommended ?? (marked.length === 1 && cleans(marked[0]!) ? marked[0] : undefined)
+      if (recommended === undefined || !marked.some(cleans)) {
+        return question
+      }
+      return {
+        ...question,
+        options: question.options.map((option, index) => ({
+          ...option,
+          label: cleans(index) ? bare[index]! : option.label
+        })),
+        recommended
+      }
+    })
+  }
+}
+
 /** A question's first line with words, as plain words, for a one-line row, so a question the agent wrote in
  *  Markdown reads cleanly there. */
 export function botItemQuestionLine(text: string): string {

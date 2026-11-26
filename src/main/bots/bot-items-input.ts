@@ -7,7 +7,12 @@ import {
   type BotItemLinkKind,
   type BotItemStatus
 } from '../../shared/bots/bot-items'
-import { BotItemAskSchema, botItemAskText, type BotItemAsk } from '../../shared/bots/bot-item-ask'
+import {
+  BotItemAskSchema,
+  botItemAskText,
+  normalizeBotItemAsk,
+  type BotItemAsk
+} from '../../shared/bots/bot-item-ask'
 import type { BotRequestAsker } from '../../shared/bots/bot-acts-for'
 import { BotItemError } from './bot-item-error'
 import type { BotItemMadeBy, BotItemRecord, BotItemSource } from './bot-items-schema'
@@ -120,9 +125,11 @@ export function botItemCommentData(
   if (!parsed.success) {
     throw new BotItemError('invalid_argument', parsed.error.issues[0]?.message ?? 'Invalid --ask.')
   }
-  const text = botItemAskText(parsed.data)
+  // Never longer than the ask as written, so what fit as written still fits.
+  const normalized = normalizeBotItemAsk(parsed.data)
+  const text = botItemAskText(normalized)
   assertBotItemText('text', text)
-  return { text, ask: parsed.data }
+  return { text, ask: normalized }
 }
 
 /** Each link once, first spelling kept: what an add checks and then stores. */

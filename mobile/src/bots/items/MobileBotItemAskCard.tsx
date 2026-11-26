@@ -59,6 +59,8 @@ function askPrompt({ shape, open }: OpenAsk): AskPrompt {
         multiSelect: decision.multi === true,
         options: decision.replies.map((reply) => ({
           label: reply.label,
+          // The stored flag is the one mark: words left in a label are its own.
+          literal: true as const,
           ...(reply.detail ? { description: reply.detail } : {}),
           ...(reply.recommended ? { recommended: true as const } : {})
         }))
@@ -193,6 +195,9 @@ export function useMobileBotItemAskSlot({
           return true
         }}
         cancelLabel={t('bots.items.ask.notNow', 'Not now')}
+        // Its options show as written and may say "Other…" themselves: the free-text row reads as
+        // an action, as desktop's own-words chip does.
+        ownWords={t('bots.items.ask.typeAnswer', 'Type your answer')}
         onCollapse={fold}
       />
     )

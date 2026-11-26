@@ -1,5 +1,5 @@
 import { Pressable, Text, View } from 'react-native'
-import { Check } from 'lucide-react-native'
+import { Check, Pencil } from 'lucide-react-native'
 import { MobileNativeChatOptionThumbnail } from '../session-options/MobileNativeChatOptionThumbnail'
 import { colors, radii, spacing, typography, pressedStyle } from '../../../../theme/mobile-theme'
 import { ASK_CHOICE_RADIUS } from './MobileNativeChatAsk.styles'
@@ -12,6 +12,8 @@ export function MobileNativeChatAskOptionRow({
   label,
   description,
   recommended,
+  literal,
+  action,
   preview,
   onPreview,
   selected,
@@ -22,6 +24,10 @@ export function MobileNativeChatAskOptionRow({
   label: string
   description?: string
   recommended?: boolean
+  /** Shown as written, with the pill only from `recommended`. */
+  literal?: boolean
+  /** The card's own free-text action, not an option: a pencil before muted words. */
+  action?: boolean
   /** Read-only inspection is separate from choosing the option. */
   preview?: string
   onPreview?: () => void
@@ -33,12 +39,20 @@ export function MobileNativeChatAskOptionRow({
   useMobileColorScheme()
   const t = useMobileTranslation()
   const hasPreview = Boolean(preview && onPreview)
-  // Agents mark their pick inline ("Tabs (Recommended)"); the answer keeps the full label.
-  const shown = nativeChatQuestionOptionLabel(label)
+  // Agents mark their pick inline ("Tabs (Recommended)"); the answer keeps the full label. A literal
+  // label (an item's ask, whose flag is its mark) shows as written.
+  const shown = literal
+    ? { shown: label, recommended: false }
+    : nativeChatQuestionOptionLabel(label)
   const row = (
     <Pressable
-      accessibilityRole={multi ? 'checkbox' : 'radio'}
-      accessibilityState={{ checked: selected, disabled }}
+      // The card's own free-text action is a button that opens the box, never a choice, so a screen
+      // reader tells it from an option written in the same words.
+      accessibilityRole={action ? 'button' : multi ? 'checkbox' : 'radio'}
+      accessibilityState={{ [action ? 'expanded' : 'checked']: selected, disabled }}
+      accessibilityHint={
+        action ? t('chat.ask.ownWordsHint', 'Opens a box for your answer') : undefined
+      }
       style={({ pressed }) => [
         styles.option,
         selected && styles.optionSelected,
@@ -59,15 +73,22 @@ export function MobileNativeChatAskOptionRow({
         {selected ? <Check size={12} color={colors.bgBase} strokeWidth={3} /> : null}
       </View>
       <View style={styles.optionBody}>
-        <Text style={styles.optionLabel}>
-          {shown.shown}
-          {recommended || shown.recommended ? (
-            <Text style={styles.recommended}>
-              {'  '}
-              {t('chat.ask.recommended', 'Recommended')}
-            </Text>
-          ) : null}
-        </Text>
+        {action ? (
+          <View style={styles.actionRow}>
+            <Pencil size={13} color={colors.textMuted} />
+            <Text style={[styles.optionLabel, styles.actionLabel]}>{shown.shown}</Text>
+          </View>
+        ) : (
+          <Text style={styles.optionLabel}>
+            {shown.shown}
+            {recommended || shown.recommended ? (
+              <Text style={styles.recommended}>
+                {'  '}
+                {t('chat.ask.recommended', 'Recommended')}
+              </Text>
+            ) : null}
+          </Text>
+        )}
         {description ? (
           <Text style={styles.optionDescription} numberOfLines={3}>
             {description}
@@ -136,6 +157,16 @@ const styles = themedStyleSheet(() => ({
     color: colors.textPrimary,
     fontSize: typography.bodySize,
     fontWeight: '600'
+  },
+  // The card's free-text action reads quieter than the options it sits under.
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6
+  },
+  actionLabel: {
+    color: colors.textMuted,
+    fontWeight: '400'
   },
   // The phone's Recommended tag (the voice model list's).
   recommended: {
