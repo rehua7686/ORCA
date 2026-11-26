@@ -1,5 +1,5 @@
 import React from 'react'
-import { CircleDot } from 'lucide-react'
+import { CircleDot, Link2 } from 'lucide-react'
 import { LinearIcon } from '@/components/icons/LinearIcon'
 import { JiraIcon } from '@/components/icons/JiraIcon'
 import { getWorkspaceAttachmentKey } from '../../../../../../shared/workspace-attachments/workspace-attachment-normalization'
@@ -32,6 +32,9 @@ function singleReferenceLabel(item: WorkspaceAttachment, t: Translate = translat
       value0: item.identifier ?? item.jiraIdentifier
     })
   }
+  if (item.provider === 'link') {
+    return workspaceAttachmentLabel(item)
+  }
   return item.type === 'issue'
     ? t('auto.components.sidebar.WorktreeCardMeta.3f2649eeb8', 'Linked issue #{{value0}}', {
         value0: item.number
@@ -58,6 +61,9 @@ function ReferenceGlyph({
   }
   if (item.provider === 'jira') {
     return <JiraIcon className="text-muted-foreground" />
+  }
+  if (item.provider === 'link') {
+    return <Link2 className="text-muted-foreground" />
   }
   return <CircleDot className="text-muted-foreground" />
 }
