@@ -327,7 +327,7 @@ function LinkedItemChip({
       }
       tip={item?.title}
       disabled={!item?.owner.name}
-      onClick={item ? () => openLinkedBotItem(bot, item.owner.botId, row.uid) : undefined}
+      onClick={item ? () => openLinkedBotItem(bot, item, row.uid) : undefined}
     />
   )
 }
