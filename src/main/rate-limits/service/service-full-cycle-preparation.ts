@@ -2,6 +2,8 @@ import { fetchActiveClaudeRateLimits } from '../providers/claude/claude-active-u
 import { fetchCodexRateLimits } from '../providers/codex/codex-fetcher'
 import { fetchGrokRateLimits } from '../providers/grok/grok-fetcher'
 import { readGrokAuthSession } from '../providers/grok/grok-auth'
+import { fetchKimchiRateLimits } from '../providers/kimchi/kimchi-fetcher'
+import { isKimchiUsageCredentialCurrent } from '../providers/kimchi/kimchi-usage-credentials'
 import { fetchCursorRateLimits } from '../providers/cursor/cursor-fetcher'
 import { readCursorAuthSession } from '../providers/cursor/cursor-auth'
 import { fetchZcodeRateLimits } from '../providers/zcode/zcode-usage-fetcher'
@@ -89,10 +91,6 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
       this.fullFetchQueued ??= { force: options?.force ?? false }
       return null
     }
-    // Preserve live usage received while credentials were loading.
-    const previousState = this.state
-    const codexStateBeforeFetch =
-      previousState.codex?.status === 'fetching' ? null : previousState.codex
     // Probe auth during fetch, not hot renderer/mobile getState calls.
     const grokAuthReadResult = readGrokAuthSession()
     this.grokAuthConfigured = grokAuthReadResult.status === 'ok'
@@ -131,6 +129,16 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
           baseUrl: ZCODE_PLAN_SITE_BASE_URLS[zcodePlanConfigResult.config.site]
         }
       : null
+    const kimchiRetryState = this.state.kimchi
+    const kimchiFetchGated =
+      !options?.force &&
+      this.isRetryAfterActive(kimchiRetryState) &&
+      (await isKimchiUsageCredentialCurrent(kimchiRetryState)) &&
+      this.state.kimchi === kimchiRetryState
+    // Preserve live usage received while credentials were loading.
+    const previousState = this.state
+    const codexStateBeforeFetch =
+      previousState.codex?.status === 'fetching' ? null : previousState.codex
     this.updateState({
       ...previousState,
       claude: this.claudeStateAtCycleStart(previousState.claude),
@@ -142,6 +150,9 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
         ? this.withFetchingStatus(null, 'opencode-go')
         : this.withFetchingStatus(previousState.opencodeGo, 'opencode-go'),
       kimi: this.withFetchingStatus(previousState.kimi, 'kimi'),
+      kimchi: kimchiFetchGated
+        ? previousState.kimchi
+        : this.withFetchingStatus(previousState.kimchi, 'kimchi'),
       antigravity: antigravityFetchAllowed
         ? this.withFetchingStatus(previousState.antigravity, 'antigravity')
         : (previousState.antigravity ?? antigravityUsageDisabledSnapshot()),
@@ -164,6 +175,14 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
         (value) => ({ status: 'fulfilled', value }) as const,
         (reason) => ({ status: 'rejected', reason }) as const
       )
+    const kimchiResultPromise = (
+      kimchiFetchGated && previousState.kimchi !== null
+        ? Promise.resolve(previousState.kimchi)
+        : fetchKimchiRateLimits({ signal })
+    ).then(
+      (value) => ({ status: 'fulfilled', value }) as const,
+      (reason) => ({ status: 'rejected', reason }) as const
+    )
     const zcodeResultPromise = (
       zcodePlanConfigResult.error
         ? Promise.resolve(this.getZcodePlanCredentialError(zcodePlanConfigResult.error))
@@ -286,9 +305,11 @@ export abstract class RateLimitServiceFullCyclePreparation extends RateLimitServ
       zcodeGeneration,
       antigravityGeneration,
       claudeFetchGated,
+      kimchiFetchGated,
       results: [claudeResult, codexResult, opencodeGoResult, kimiResult, miniMaxResult],
       grokResultPromise,
       cursorResultPromise,
+      kimchiResultPromise,
       zcodeResultPromise,
       antigravityResultPromise
     }

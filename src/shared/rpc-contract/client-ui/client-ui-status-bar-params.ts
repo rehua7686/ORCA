@@ -8,6 +8,7 @@ export const StatusBarItem = lazyZodSchema(() =>
     'antigravity',
     'opencode-go',
     'kimi',
+    'kimchi',
     'minimax',
     'grok',
     'cursor',
