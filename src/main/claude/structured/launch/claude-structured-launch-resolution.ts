@@ -184,7 +184,11 @@ export function claudeStructuredLaunchPart(
     const continuesChain = head?.nativeId === providerSessionId
     const cwd = await basis.launchDirectory()
     const envDeps: ClaudeEnvDeps & Pick<ClaudeStructuredLaunchPartDeps, 'resolveAuthPolicy'> = {
-      ...(deps.resolveCommand ? { resolveCommand: deps.resolveCommand } : {}),
+      ...(basis.copy
+        ? { resolveCommand: basis.copy.resolveCommand }
+        : deps.resolveCommand
+          ? { resolveCommand: deps.resolveCommand }
+          : {}),
       resolveEnv: () => basis.launchEnv(),
       resolveInheritedEnv: basis.baseEnvironment,
       refreshEnvironmentAfterMiss: basis.refreshAfterMissingProgram,
@@ -204,7 +208,7 @@ export function claudeStructuredLaunchPart(
       record.sessionId,
       probeLaunch
     )
-    const launchArgs = await deps.resolveLaunchArgs()
+    const launchArgs = basis.copy ? [...basis.copy.launchArgs] : await deps.resolveLaunchArgs()
     const { thinkingDisplayArgs, visuals, promptSuggestions, refused } = await launchFlags
     noteClaudeMcpConfigRefused(refused.mcpConfig)
     // Refused, Orca's servers go nowhere this launch, so no list edit is this chat's.

@@ -4,6 +4,7 @@ import { botRefKey, botTarget } from '@/lib/bot-hosts'
 import { useAntigravityChatSignIn } from '@/components/provider-accounts/use-antigravity-chat-sign-in'
 import type { Bot } from '../../../../shared/bot-types'
 import {
+  useAgentCopyOwnCommand,
   nativeChatInstallSlotState,
   type NativeChatInstallSlotInstall
 } from '../native-chat/host-access/NativeChatInstallSlot'
@@ -36,7 +37,9 @@ export function useBotSetupInstall(
   // A bot on the host program follows it too: Orca's agy may be what it needs installed.
   const observation = useManagedRuntimeInstall(target, bot.agent, shown)
   const slot = nativeChatInstallSlotState(observation, 'strip', hostProgram)
-  const install = shown && slot.kind === 'install' ? slot : null
+  // A bot that runs as a copy with its own Command needs Orca's runtime no more than the agent does.
+  const ownCommand = useAgentCopyOwnCommand(bot.agent, bot.agentCopy ?? null, target)
+  const install = shown && !ownCommand && slot.kind === 'install' ? slot : null
   const state =
     shown && observation.kind === 'active' && observation.snapshot.kind === 'known'
       ? observation.snapshot.state
@@ -44,13 +47,15 @@ export function useBotSetupInstall(
   const installed = state !== null && state.source !== null
   // An update of Orca's agy isn't settled until it ends, so nothing is ready meanwhile.
   const changing = state?.operation ? CHANGING_PHASES.has(state.operation.phase) : false
-  // Same rule as the chat's own strip.
-  const signsIn = bot.agent === 'antigravity' && installed
+  // Same rule as the chat's own strip: a copy with its own Command runs no agy to sign in.
+  const signsIn = bot.agent === 'antigravity' && !ownCommand && installed
   const signIn = useAntigravityChatSignInStrip(signsIn ? target : null, bot.agent)
   const signInStatus = useAntigravityChatSignIn(signsIn ? target : null).status
   const waiting = install !== null || signIn !== null
   // A sign-in the host has not reported yet could still be owed, so the retry waits for it.
-  const ready = installed && !changing && !waiting && (!signsIn || signInStatus === 'known')
+  // A copy with its own Command needs no managed runtime, so its setup retries without one.
+  const ready =
+    (installed || ownCommand) && !changing && !waiting && (!signsIn || signInStatus === 'known')
   const latestRetry = useRef(retry)
   useEffect(() => {
     latestRetry.current = retry

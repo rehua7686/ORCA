@@ -50,6 +50,7 @@ import {
 } from '../../../../../orchestration/workers/launch/worker-start-card'
 import { rebindReusedStructuredWorker } from '../../structured-workers/orchestration-structured-worker-session'
 import { placedWorkerParty, type WorkerFollowUp } from '../follow-up/worker-follow-up-placement'
+import { selectsAgent } from '../../../../../../../shared/agent-launch/catalog/agent-copies'
 
 export async function startLocalWorker(args: {
   params: WorkerStartInput
@@ -102,7 +103,7 @@ export async function startLocalWorker(args: {
     )
   )
   let openCodeModelLaunchSupported = false
-  if (!createsWorktree && launchParams.agent === 'opencode' && launchParams.model) {
+  if (!createsWorktree && selectsAgent(launchParams.agent, 'opencode') && launchParams.model) {
     openCodeModelLaunchSupported = await refuseUnmatchedWorkerSelector(targetLabel, () =>
       probeWorkerOpenCodeModelLaunchSupport(runtime, launchParams, { worktree: existingWorktree })
     )

@@ -1,3 +1,4 @@
+import { isAgentCopyId } from './agent-launch/catalog/agent-copies'
 import * as z from 'zod'
 import { BotImportedFromSchema } from './bots/bot-import'
 import { BotSharedFromSchema } from './bots/bot-shared-from'
@@ -103,21 +104,6 @@ export const BotNameSchema = BotNameText.refine((name) => name.length > 0, 'Miss
 /** A new bot's name; empty names it `UNNAMED_BOT_NAME`, numbered past the host's bots that hold it. */
 export const NewBotNameSchema = BotNameText
 
-export const UNNAMED_BOT_NAME = 'New bot'
-
-/** `requested`, or with none "New bot", else the first free "New bot 2", "New bot 3"… among `bots`. */
-export function newBotName(requested: string, bots: readonly { name: string }[]): string {
-  if (requested.trim()) {
-    return requested.trim()
-  }
-  const used = new Set(bots.map((bot) => bot.name.toLowerCase()))
-  let name = UNNAMED_BOT_NAME
-  for (let n = 2; used.has(name.toLowerCase()); n += 1) {
-    name = `${UNNAMED_BOT_NAME} ${n}`
-  }
-  return name
-}
-
 /** A person the owner lets ask the bot, by their user id on one connector's service. */
 export const BotMemberSchema = z.object({
   id: z.string().min(1),
@@ -186,6 +172,8 @@ export const BotSchema = z.object({
   /** The bot's home folder workspace, in the hidden Bots project group. */
   folderWorkspaceId: z.string().min(1),
   agent: z.enum(BOT_AGENTS),
+  /** A named copy of `agent` the bot's chats run as; older hosts drop it and run `agent`. */
+  agentCopy: z.string().refine(isAgentCopyId).optional().catch(undefined),
   avatar: z.string().nullable(),
   /** The mascot's tile color; absent or null, its own sky blue. Older hosts drop it. */
   avatarColor: BotAvatarColorSchema.nullable().optional().catch(undefined),
@@ -418,3 +406,4 @@ export function normalizePersistedBots(value: unknown): Bot[] {
 }
 
 export { botFolderName } from './bots/bot-folder-name'
+export { newBotName, UNNAMED_BOT_NAME } from './bots/bot-new-name'

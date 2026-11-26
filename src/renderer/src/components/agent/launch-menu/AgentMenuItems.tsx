@@ -14,6 +14,8 @@ import { toast } from 'sonner'
 import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
 
 import { createNonSecureContextUuid } from '../../../../../shared/identifiers/non-secure-context-uuid'
+import { AGENT_COPY_OPTION_ID } from '../../../../../shared/agent-launch/catalog/agent-copies'
+import { AgentCopyMenuItems } from './AgentCopyMenuItems'
 import { captureNativeChatComposerFocusIntent } from '@/components/native-chat/composer/focus/native-chat-composer-focus-intent'
 import {
   agentLaunchPromptOwnership,
@@ -106,7 +108,18 @@ export function useTabAgentMenuLaunch({
       }
       const { agent } = row
       const entry = getCatalogEntry(agent)
-      const label = entry?.label ?? agent
+      const { copy } = row
+      const label = copy?.name ?? entry?.label ?? agent
+      const draftInputs = draft
+        ? agentPickerFreshLaunchInputs(
+            draft,
+            {
+              surface: row.kind === 'chat' ? 'chat' : 'terminal',
+              executionHostId: row.executionHostId
+            },
+            pickerEntry
+          )
+        : undefined
       const result = launchAgentInNewTabWithOutcome({
         requestId: createNonSecureContextUuid(),
         focusIntent: captureNativeChatComposerFocusIntent(),
@@ -117,15 +130,13 @@ export function useTabAgentMenuLaunch({
             }
           : {}),
         agent,
-        ...(draft
-          ? agentPickerFreshLaunchInputs(
-              draft,
-              {
-                surface: row.kind === 'chat' ? 'chat' : 'terminal',
-                executionHostId: row.executionHostId
-              },
-              pickerEntry
-            )
+        ...draftInputs,
+        // After the panel's inputs: its model and effort options must not drop the copy.
+        ...(copy
+          ? {
+              requestedSurface: row.kind === 'chat' ? ('chat' as const) : ('terminal' as const),
+              sessionOptions: { ...draftInputs?.sessionOptions, [AGENT_COPY_OPTION_ID]: copy.id }
+            }
           : {}),
         worktreeId,
         groupId,
@@ -342,6 +353,16 @@ export function ProjectedAgentMenuItems({
             </React.Fragment>
           )
         })
+      )}
+      {/* The picker lists each copy as its own entry, with the base agent's submenu. */}
+      {pickerInventory ? null : (
+        <AgentCopyMenuItems
+          rows={rows}
+          detectedIds={detectedIds}
+          disabled={disabled}
+          terminalPending={model.terminalPending}
+          runLaunch={runLaunch}
+        />
       )}
       <OpenAgentSettingsMenuItem />
     </>

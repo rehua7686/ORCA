@@ -285,6 +285,7 @@ export function renderTabBarSurface(
             <>
               <TabBarAgentPickerEntry
                 inventory={agentPickerInventory}
+                detectedIds={agentMenu.state === 'settled' ? agentMenu.detection.detectedIds : null}
                 terminalPending={agentMenu.state === 'settled' && agentMenu.terminalPending}
                 worktreeId={worktreeId}
                 groupId={resolvedGroupId}

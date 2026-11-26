@@ -1,3 +1,4 @@
+import type { AgentCopySettings } from '../../../../shared/agent-launch/catalog/agent-copies'
 import { agentSessionPinnedLaunchDirectory } from '../../../runtime/agent-session/records/agent-session-record-launch-directory'
 import { prepareStructuredAgentSessionFork } from './structured-agent-session-fork'
 import { resolveCommittedStructuredAgentSessionAdoptionIntent } from '../../../runtime/agent-session/ownership/structured-agent-session-create-adoption'
@@ -15,6 +16,7 @@ export async function resolveStructuredAgentSessionForkIntent(input: {
   location: AgentSessionExecutionLocation
   envelope: { sessionId: string; clientOperationId: string }
   callerKey?: string
+  readAgentCopySettings?: () => AgentCopySettings
 }): Promise<AgentSessionAttachParams & { hostLaunchDirectory?: string }> {
   const { host } = input
   if (!host) {
