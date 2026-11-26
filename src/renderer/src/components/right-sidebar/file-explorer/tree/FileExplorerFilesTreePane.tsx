@@ -8,6 +8,7 @@ import { useTranslate } from '@/i18n/use-translate'
 import type { Repo } from '../../../../../../shared/repository/repo-types'
 import type { RightSidebarExplorerView } from '../../../../../../shared/ui-chrome/ui-chrome-types'
 import { FileExplorerTreeStatus } from './FileExplorerTreeStatus'
+import { useMissingRootFolderRetry } from './use-missing-root-folder-retry'
 import { FileExplorerVirtualRows } from '../panel/FileExplorerVirtualRows'
 import { canShowAddAsProjectAction } from '../navigation/file-explorer-add-project-action'
 import type { FileExplorerRowProjection } from './file-explorer-row-projection'
@@ -109,6 +110,13 @@ export function FileExplorerFilesTreePane({
   const isLoading = isEmptyState && isRootLoading
   const treeError = displayRootPath ? (rootCache?.error ?? null) : rootError
   const hasError = isEmptyState && !isLoading && treeError !== null
+  useMissingRootFolderRetry({
+    rootPath: displayRootPath,
+    // Why not hasError: a failed refresh can leave rows visible beside the error, and the folder is still missing.
+    error: hasNameFilter || isLoading ? null : treeError,
+    isLocal: !activeRepo?.connectionId && !runtimeDownloadContext,
+    reload: (rootPath) => void tree.refreshDir(rootPath)
+  })
   const showTree = !isEmptyState
   // Retry cannot succeed while WSL hosts are off; offer the switch instead.
   const wslHostsTurnedOff = hasError && wslHostUnavailable === 'turned-off'
