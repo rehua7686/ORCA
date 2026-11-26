@@ -187,6 +187,9 @@ export const ConnectorDeliverySchema = z.discriminatedUnion('kind', [
     // A bot's: an older machine ignores it.
     asker: ConnectorAskerSchema.optional(),
     automations: TurnAutomations,
+    // An older cloud omitted this; a newer one says whether this start explicitly @mentioned the
+    // bot, so a machine can distinguish it from a legacy start.
+    mentioned: z.boolean().optional(),
     bareMention: BareMention,
     askedAt: AskedAt
   }),
