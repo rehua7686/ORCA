@@ -48,6 +48,7 @@ import { BotItemsReadFailed } from './BotItemsReadFailed'
 import { BotItemNavRow } from './BotItemStepper'
 import { BotItemLoading } from './BotItemLoading'
 import { BotItemCloseNote } from './BotItemCloseNote'
+import { useBotItemQuickAnswerReport } from './bot-item-quick-answer'
 
 const NO_FOLDERS: never[] = []
 
@@ -289,6 +290,8 @@ export function BotItemBody({
       loadEarlier()
     }
   }, [questionUnread, hasEarlier, earliest, loadEarlier])
+  const answering = steps?.sending ?? pending.shown.some(({ failed }) => !failed)
+  useBotItemQuickAnswerReport(item, view.events, !deleted && !answering, quick, quickReplies?.type)
   const waitingOn = waitingLine ? { ...waitingLine, asker: item.owner.name ?? bot.name } : null
   const links = useNativeChatLinkActions(fileContext?.fileLinkContext ?? null, pane, {
     sessionId: null,
