@@ -5,6 +5,7 @@ import { getWorkspaceFileRevealOwner } from '@/lib/files/os-open/reveal-in-file-
 import { getRouteForLocalPathOpenOwner } from '@/lib/files/os-open/local-path-open-guard'
 import { useActiveWorktree } from '@/store/workspaces/selection/use-selected-worktree'
 import { useRepoById } from '@/store/repos/use-repository-catalog'
+import { resolveWorktreeDisplayName } from '@/lib/workspace/display/worktree-default-display-name'
 import {
   getExplorerDisplayRootOptions,
   resolveExplorerDisplayRootChoice,
@@ -90,6 +91,9 @@ function FileExplorerFiles(): React.JSX.Element {
   })
   const repoName = activeRepo?.displayName ?? (worktreePath ? basename(worktreePath) : '')
   const activeRepoSupportsGit = activeRepo ? isGitRepoKind(activeRepo) : false
+  const worktreeName = activeWorktree ? resolveWorktreeDisplayName(activeWorktree).trim() : ''
+  const headerWorktreeName =
+    activeRepoSupportsGit && worktreeName && worktreeName !== repoName ? worktreeName : ''
 
   const expanded = useMemo(() => activeExpandedDirs ?? new Set<string>(), [activeExpandedDirs])
 
@@ -222,6 +226,7 @@ function FileExplorerFiles(): React.JSX.Element {
       >
         <FileExplorerToolbar
           repoName={repoName}
+          worktreeName={headerWorktreeName}
           worktreePath={worktreePath}
           {...getRouteForLocalPathOpenOwner(openInOwner)}
           workspaceId={activeWorktreeId}
