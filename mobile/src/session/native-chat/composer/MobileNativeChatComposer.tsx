@@ -39,6 +39,8 @@ import { MobileNativeChatComposerPlanChip } from './commands/MobileNativeChatCom
 import type { MobileNativeChatComposerProps } from './mobile-native-chat-composer-props'
 import { MobileNativeChatMcpTray } from '../mcp/MobileNativeChatMcpTray'
 import { MobileNativeChatQuoteTab } from './quotes/MobileNativeChatQuoteTab'
+import { MobileNativeChatActionGap } from './MobileNativeChatActionGap'
+import { ComposerUsageStrip } from '../../../composer-usage/ComposerUsageMeter'
 
 const NO_FILE_PATHS: string[] = []
 const NO_ATTACHMENTS: PendingNativeChatImage[] = []
@@ -90,7 +92,9 @@ export function MobileNativeChatComposer({
   onNeedSkills,
   stop = null,
   sendFollowUp = null,
-  steerHead
+  steerHead,
+  fitScreenCorners = false,
+  widthToggle = null
 }: Props): React.JSX.Element {
   useMobileColorScheme()
   const t = useMobileTranslation()
@@ -104,6 +108,8 @@ export function MobileNativeChatComposer({
     sessionOptions?.controller.optionPickerRequest
   )
   const files = structured?.files ?? NO_FILES
+  const insetStyle = fitScreenCorners ? styles.composerInsetCornerFit : styles.composerInset
+  const barStyle = fitScreenCorners ? styles.barCornerFit : styles.bar
   const onWebPaste = mobileNativeChatComposerPasteHandler({
     disabled: disabled || offline || editSession?.locked === true,
     onPasteImages,
@@ -255,12 +261,13 @@ export function MobileNativeChatComposer({
         onOpenBotChats={menu.openBotChats}
         nestedScrollEnabled={editSession ? true : undefined}
       />
-      <View style={styles.composerInset} testID="native-chat-composer-inset">
+      <View style={insetStyle} testID="native-chat-composer-inset">
         {editSession ? null : <MobileNativeChatMcpTray panel={structured?.mcpPanel} />}
         {orca.usageSheet}
         {goal.strip}
         {editSession ? null : <MobileNativeChatQuoteTab {...{ value, onChangeText, fieldRef }} />}
-        <View {...contextRing.barProps} style={styles.bar} testID="native-chat-composer">
+        <View {...contextRing.barProps} style={barStyle} testID="native-chat-composer">
+          {editSession ? null : <ComposerUsageStrip agent={agent} spanSideStrip />}
           <MobileNativeChatComposerAttachments
             images={attachments}
             files={files}
@@ -322,7 +329,14 @@ export function MobileNativeChatComposer({
           />
           <View style={inputStyles.actionRow} testID="native-chat-composer-actions">
             <MobileNativeChatDictationLeading
-              {...{ micActive, micStarting, micProcessing, cancelRef, trailing: contextRing.ring }}
+              {...{ micActive, micStarting, micProcessing, cancelRef }}
+              trailing={
+                <MobileNativeChatActionGap
+                  agent={editSession ? null : (agent ?? null)}
+                  ring={contextRing.ring}
+                  toggle={widthToggle ?? null}
+                />
+              }
             >
               <MobileNativeChatComposerAttachButton
                 onAttachImage={onAttachImage}

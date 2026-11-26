@@ -28,7 +28,6 @@ export function MobileSessionCommandDock({ controller }: { controller: MobileSes
   // The mic and attach buttons keep the field focused, like the key row: a closing keyboard ends a held mic.
   const keepsKeyboard = useKeyboardPersistingTaps('always')
   const {
-    insets,
     dictationMode,
     dictationEnabled,
     canSend,
@@ -39,7 +38,8 @@ export function MobileSessionCommandDock({ controller }: { controller: MobileSes
     handleDictationPressIn,
     handleDictationPressOut,
     isAttaching,
-    attachImage
+    attachImage,
+    dockBottomInset
   } = controller
   if (!sessionCommandDockShown(controller)) {
     return null
@@ -48,7 +48,7 @@ export function MobileSessionCommandDock({ controller }: { controller: MobileSes
     <View
       style={[
         dockStyles.dock,
-        { paddingBottom: insets.bottom, transform: [{ translateY: -keyboardLift }] }
+        { paddingBottom: dockBottomInset, transform: [{ translateY: -keyboardLift }] }
       ]}
     >
       {rail.keysInRail ? (
