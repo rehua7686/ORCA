@@ -10,13 +10,24 @@ export type EmulatorApi = {
     streamId: string
   }>
   stopFrameStream: (args: { streamId: string }) => Promise<void>
+  /** Loopback URLs here that tunnel to a paired runtime's simulator helper. */
+  forwardRuntimeSession: (args: {
+    environmentId: string
+    streamUrl?: string
+    wsUrl?: string
+  }) => Promise<{ streamUrl?: string; wsUrl?: string }>
   onFrameStreamFrame: (
     callback: (data: { streamId: string; bytes: ArrayBuffer }) => void
   ) => () => void
   onFrameStreamError: (
     callback: (data: { streamId: string; message: string }) => void
   ) => () => void
-  startVideoStream: (args: { deviceId: string; streamId: string }) => Promise<{ streamId: string }>
+  /** `streamUrl` names a forwarded runtime stream; local sessions resolve by device. */
+  startVideoStream: (args: {
+    deviceId: string
+    streamId: string
+    streamUrl?: string
+  }) => Promise<{ streamId: string }>
   stopVideoStream: (args: { streamId: string }) => Promise<void>
   onVideoStreamMeta: (
     callback: (data: {

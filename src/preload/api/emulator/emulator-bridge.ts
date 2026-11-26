@@ -10,6 +10,12 @@ export const emulatorApi = {
   }> => ipcRenderer.invoke('emulator:frameStreamStart', args),
   stopFrameStream: (args: { streamId: string }): Promise<void> =>
     ipcRenderer.invoke('emulator:frameStreamStop', args),
+  forwardRuntimeSession: (args: {
+    environmentId: string
+    streamUrl?: string
+    wsUrl?: string
+  }): Promise<{ streamUrl?: string; wsUrl?: string }> =>
+    ipcRenderer.invoke('emulator:forwardRuntimeSession', args),
   onFrameStreamFrame: (
     callback: (data: { streamId: string; bytes: ArrayBuffer }) => void
   ): (() => void) => {
@@ -30,8 +36,11 @@ export const emulatorApi = {
     ipcRenderer.on('emulator:frameStreamError', listener)
     return () => ipcRenderer.removeListener('emulator:frameStreamError', listener)
   },
-  startVideoStream: (args: { deviceId: string; streamId: string }): Promise<{ streamId: string }> =>
-    ipcRenderer.invoke('emulator:videoStreamStart', args),
+  startVideoStream: (args: {
+    deviceId: string
+    streamId: string
+    streamUrl?: string
+  }): Promise<{ streamId: string }> => ipcRenderer.invoke('emulator:videoStreamStart', args),
   stopVideoStream: (args: { streamId: string }): Promise<void> =>
     ipcRenderer.invoke('emulator:videoStreamStop', args),
   onVideoStreamMeta: (
