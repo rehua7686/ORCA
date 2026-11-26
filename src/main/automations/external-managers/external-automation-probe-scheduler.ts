@@ -50,6 +50,7 @@ export class ExternalAutomationProbeScheduler {
   schedule<T>(job: ExternalAutomationProbeJob<T>): Promise<T> {
     const existing = this.shared.get(job.key)
     if (existing && !existing.signal.aborted) {
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Callers sharing an owner/provider key share the same result type; the map erases T across keys.
       return existing.promise as Promise<T>
     }
     const controller = new AbortController()
