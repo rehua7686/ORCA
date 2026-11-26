@@ -12,6 +12,7 @@ import '../activity/worktree-card-empty-inputs'
 import { FilledBellIcon } from '../identity/worktree-card-glyphs'
 import { checksLabel } from '../review/workspace-review-check-label'
 import StatusIndicator from './StatusIndicator'
+import { resolveClassicStatusSlotMode } from './worktree-card-status-display'
 import { useWorktreeActivityStatus } from '../activity/use-worktree-activity-status'
 import { laneStatusWithLineage } from './worktree-card-lineage-lane-status'
 import { useShallow } from 'zustand/react/shallow'
@@ -282,9 +283,17 @@ export function WorktreeCardStatusSlot({
   const actionLabel = isUnread
     ? t('auto.components.sidebar.WorktreeCardStatusSlot.markAsRead', 'Mark as read')
     : t('auto.components.sidebar.WorktreeCardStatusSlot.markAsUnread', 'Mark as unread')
+  const classicMode = resolveClassicStatusSlotMode({
+    showStatus,
+    isUnread,
+    hasVmState: Boolean(vmState),
+    status
+  })
   const statusTooltipLabel = vmState ? getVmStateLabel(vmState, t) : passiveStatusLabel
   const tooltip =
-    showStatus && !isUnread ? `${statusTooltipLabel} · ${unreadTooltip}` : unreadTooltip
+    showStatus && (!isUnread || classicMode === 'live-status-with-unread-dot')
+      ? `${statusTooltipLabel} · ${unreadTooltip}`
+      : unreadTooltip
 
   return (
     <>
@@ -325,6 +334,21 @@ export function WorktreeCardStatusSlot({
               ) : (
                 <span className="sr-only">{actionLabel}</span>
               )
+            ) : classicMode === 'live-status-with-unread-dot' ? (
+              <>
+                <span
+                  data-worktree-status-lane-unread=""
+                  className="relative inline-flex size-4 shrink-0 items-center justify-center transition-opacity group-hover/unread:opacity-0 group-focus-within/unread:opacity-0"
+                >
+                  <StatusIndicator status={status} aria-hidden="true" showTooltip={false} />
+                  <span
+                    data-worktree-unread-alert=""
+                    className={unreadAlertDotClassName}
+                    aria-hidden="true"
+                  />
+                </span>
+                <FilledBellIcon className="absolute size-[13px] text-amber-500 drop-shadow-sm opacity-0 transition-opacity group-hover/unread:opacity-100 group-focus-within/unread:opacity-100" />
+              </>
             ) : isUnread ? (
               <FilledBellIcon className="size-[13px] text-amber-500 drop-shadow-sm" />
             ) : showStatus ? (
