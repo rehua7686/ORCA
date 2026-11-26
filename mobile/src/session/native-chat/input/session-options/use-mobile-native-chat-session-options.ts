@@ -1,3 +1,4 @@
+import type { ClaudeSessionStatus } from '../../../../../../src/shared/native-chat/claude-session-status'
 import type { AgentSessionConversationCommand } from '../../../../../../src/shared/agent-session/conversation-context/agent-session-conversation-command'
 import {
   useCallback,
@@ -36,8 +37,11 @@ import {
 import { setBoundedScopeCacheEntry } from '../../../../../../src/shared/native-chat/input/composer/native-chat-scope-cache'
 import { nativeChatCommandOpensTerminal } from '../../../../../../src/shared/native-chat/input/commands/native-chat-agent-profiles'
 import { sayMobileNativeChatSessionOption } from './native-chat-session-option-copy'
+import { withAnsweringModelLabel } from './mobile-answering-model-label'
 
 export type MobileNativeChatSessionOptionsController = {
+  /** Read by the composer's status row; only a terminal-backed Claude chat has one. */
+  claudeSessionStatus?: ClaudeSessionStatus | null
   optionSurface?: SessionOptionsSurface
   conversationCommands?: readonly AgentSessionConversationCommand[]
   compactInstructions?: boolean
@@ -69,6 +73,8 @@ type HookArgs = {
   reportedModel: string | null
   reportedEffort?: string
   reportingSessionId?: string
+  /** The session file's view of the chat, passed through to the composer's status row. */
+  sessionReport?: ClaudeSessionStatus | null
   discoveredModels?: CatalogModel[] | null
   modelSwitchCommand?: string
   dispatchCommand: (
@@ -251,10 +257,19 @@ export function useMobileNativeChatSessionOptions(
     surface
   ])
 
-  const snapshot = useSyncExternalStore(
+  const liveSnapshot = useSyncExternalStore(
     surface?.subscribe ?? subscribeEmpty,
     surface?.getSnapshot ?? getEmptySnapshot,
     surface?.getSnapshot ?? getEmptySnapshot
+  )
+  const fileModel = args.sessionReport?.model ?? null
+  // The catalog names a family; the session file names the version that actually answered.
+  const snapshot = useMemo(
+    () =>
+      fileModel
+        ? liveSnapshot.map((descriptor) => withAnsweringModelLabel(descriptor, fileModel))
+        : liveSnapshot,
+    [fileModel, liveSnapshot]
   )
 
   const track = useCallback(
@@ -301,7 +316,14 @@ export function useMobileNativeChatSessionOptions(
   const pendingId = pending && pending.identity === identity ? pending.id : null
 
   return useMemo(
-    () => ({ snapshot, pendingId, setOption, invokeAction, recordCommand }),
-    [snapshot, pendingId, setOption, invokeAction, recordCommand]
+    () => ({
+      snapshot,
+      pendingId,
+      setOption,
+      invokeAction,
+      recordCommand,
+      claudeSessionStatus: args.sessionReport
+    }),
+    [snapshot, pendingId, setOption, invokeAction, recordCommand, args.sessionReport]
   )
 }

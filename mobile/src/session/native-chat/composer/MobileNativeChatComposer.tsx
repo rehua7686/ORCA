@@ -15,6 +15,7 @@ import { useMobileColorScheme } from '../../../theme/use-mobile-color-scheme'
 import { useMobileTranslation } from '../../../i18n/use-mobile-translation'
 import { MobileNativeChatComposerSuggestions } from './menus/MobileNativeChatComposerMenu'
 import { MobileNativeChatComposerField } from './field/MobileNativeChatComposerField'
+import { MobileClaudeStatusRow } from './MobileClaudeStatusRow'
 import { MobileNativeChatComposerAttachments } from './attachments/MobileNativeChatComposerAttachments'
 import type { PendingNativeChatFile } from './attachments/mobile-native-chat-file-attachment'
 import { MobileNativeChatComposerAttachButton } from './attachments/MobileNativeChatComposerAttachButton'
@@ -261,6 +262,7 @@ export function MobileNativeChatComposer({
         {goal.strip}
         {editSession ? null : <MobileNativeChatQuoteTab {...{ value, onChangeText, fieldRef }} />}
         <View {...contextRing.barProps} style={styles.bar} testID="native-chat-composer">
+          <MobileClaudeStatusRow status={sessionOptions?.controller.claudeSessionStatus} />
           <MobileNativeChatComposerAttachments
             images={attachments}
             files={files}
