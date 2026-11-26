@@ -682,6 +682,9 @@
         "OrchestrationPane": {
           "coordinatorApprovalsKeywordApprove": "approve",
           "coordinatorApprovalsKeywordPermission": "permission",
+          "orchestrationNoticesKeywordHide": "hide",
+          "orchestrationNoticesKeywordMail": "mail",
+          "orchestrationNoticesKeywordMessages": "messages",
           "workerAutoReleaseKeywordClose": "close",
           "workerAutoReleaseKeywordRelease": "release"
         },
