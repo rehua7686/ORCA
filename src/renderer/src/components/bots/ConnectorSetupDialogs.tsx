@@ -7,6 +7,7 @@ import { isPairedWebClientWindow } from '@/app-shell/chrome/desktop-window-chrom
 import type { BotConnectorId } from './AddConnectorDialog'
 import { openGitHubInstallPage } from './github/github-install-page'
 import { BotLinearSetupDialog } from './linear/BotLinearSetupDialog'
+import { BotDiscordSetupDialog } from './discord/BotDiscordSetupDialog'
 import { BotSlackSetupDialog } from './slack/BotSlackSetupDialog'
 import { GoogleAccountsDialog } from './google/GoogleAccountsChoice'
 import { refreshGoogle } from './google/google-connect-client'
@@ -89,6 +90,11 @@ export function useConnectorSetup(bot: Bot): {
         bot={bot}
         open={setupOpen === 'google-accounts'}
         onOpenChange={(next) => setSetupOpen(next ? 'google-accounts' : null)}
+      />
+      <BotDiscordSetupDialog
+        bot={bot}
+        open={setupOpen === 'discord'}
+        onOpenChange={(next) => setSetupOpen(next ? 'discord' : null)}
       />
       <GoogleHostChoiceDialog
         bot={bot}

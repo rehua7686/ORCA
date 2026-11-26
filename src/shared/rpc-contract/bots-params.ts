@@ -12,13 +12,11 @@ import {
   BotNameSchema,
   NewBotNameSchema,
   BotNotificationsSchema,
+  BotDiscordSchema,
   BotGitHubSchema,
   BotLinearSchema,
   BotSlackAppSchema,
-  botMemberSource,
-  botSlackApps,
   withoutBotMember,
-  withSlackMembersTagged,
   type Bot,
   type BotMember
 } from '../bot-types'
@@ -29,6 +27,8 @@ import { botMembersFullError, planBotMemberAdds } from '../bots/bot-member-capac
 import { HANDED_WORKSPACES_MAX, HandedWorkspaceSchema } from '../bots/bot-made-for-workspaces'
 import { BotProposalSchema, BotProposalSeedSchema } from '../bots/bot-proposal'
 import { BotTakeOverSchema } from '../bots/bot-take-over'
+import { membersInDiscordGuilds } from '../bots/bot-discord-members'
+import { membersInSlackWorkspaces } from '../bots/bot-slack-members'
 import { BotLookAroundSchema, botLookAround, patchLookAround } from '../bots/bot-look-around'
 import { BotLaunchSchema } from '../bots/bot-launch'
 import {
@@ -159,6 +159,8 @@ export const BotUpdate = z.object({
       linear: BotLinearSchema.nullable().optional(),
       linearWorkspaces: z.array(BotLinearSchema).max(BOT_MAX_CONNECTOR_WORKSPACES).optional(),
       github: BotGitHubSchema.nullable().optional(),
+      /** The bot's Discord bot and its servers' limits; a server's people go with it. */
+      discord: BotDiscordSchema.nullable().optional(),
       skillProjects: z.array(z.string().min(1)).max(BOT_MAX_SKILL_PROJECTS).optional(),
       // Only the changed fields; the host merges them into the saved setting.
       lookAround: BotLookAroundSchema.omit({ since: true }).partial().optional(),
@@ -371,20 +373,10 @@ export function applyBotUpdates(bot: Bot, updates: BotHostUpdates): Bot {
   }
   if (next.slackApps) {
     // A workspace's people go with it, so a removed workspace never hands them to another.
-    // Untagged people are the first workspace's as it was before this update.
-    const first = botSlackApps(bot)[0] ?? botSlackApps(next)[0]
-    const teams = new Set(next.slackApps.map((app) => app.teamId))
-    const tagged = withSlackMembersTagged({
-      members: next.members,
-      slack: null,
-      slackApps: first ? [first] : []
-    }).members
-    next.members = tagged.filter(
-      (member) =>
-        botMemberSource(member) !== 'slack' ||
-        member.workspaceId === undefined ||
-        teams.has(member.workspaceId)
-    )
+    next.members = membersInSlackWorkspaces(bot, next)
+  }
+  if (rest.discord !== undefined) {
+    next.members = membersInDiscordGuilds(next)
   }
   if (rest.linearWorkspaces) {
     next.linear = rest.linearWorkspaces[0] ?? null

@@ -18,6 +18,7 @@ import {
   isBotRetiredAgent,
   migrateRetiredBotAgent
 } from './bots/bot-retired-agents'
+import { BotDiscordGuildSchema } from './bots/bot-discord-guild'
 
 /** Native-chat agents a bot cannot run on yet; each waits on a live check of its preamble delivery. */
 export const BOT_HELD_BACK_AGENTS = [] as const
@@ -52,31 +53,6 @@ export const BOT_AGENTS = [
 export const BotAgentReadSchema = z
   .enum([...BOT_AGENTS, ...BOT_RETIRED_AGENTS])
   .transform((agent): BotAgent => (isBotRetiredAgent(agent) ? BOT_AGENT_SUCCESSORS[agent] : agent))
-
-/** Agents the previous release's bot schema reads; it drops bots on any other agent when it loads. */
-const BOT_AGENTS_OLDER_BUILDS_READ: ReadonlySet<string> = new Set([
-  'claude',
-  'codex',
-  'grok',
-  'opencode',
-  'omp',
-  'pi',
-  'antigravity'
-])
-
-/** Bots saved where an older build, after a rollback, cannot drop them: it ignores keys it does not know. */
-export function splitBotsByOlderBuildSupport(bots: readonly Bot[]): {
-  readable: Bot[]
-  newer: Bot[]
-} {
-  const readable: Bot[] = []
-  const newer: Bot[] = []
-  for (const bot of bots) {
-    const side = BOT_AGENTS_OLDER_BUILDS_READ.has(bot.agent) ? readable : newer
-    side.push(bot)
-  }
-  return { readable, newer }
-}
 
 export function isBotAgent(agent: string): agent is BotAgent {
   return BOT_AGENTS.some((entry) => entry === agent)
@@ -160,8 +136,17 @@ const BotLinkOwner = { ownerUserId: z.string().min(1).optional() }
 /** Workspaces one connector can hold for a bot. */
 export const BOT_MAX_CONNECTOR_WORKSPACES = 8
 export const BOT_MAX_SKILL_PROJECTS = 20
+
+/** The bot's own Discord bot (an application its owner made; Orca Cloud keeps its token) and the
+ *  servers it is in, as the cloud last reported them. */
+export const BotDiscordSchema = z.object({
+  applicationId: z.string().min(1),
+  guilds: z.array(BotDiscordGuildSchema).max(BOT_MAX_CONNECTOR_WORKSPACES)
+})
+
 const BotSlackLinkSchema = BotSlackAppSchema.extend(BotLinkOwner)
 const BotLinearLinkSchema = BotLinearSchema.extend(BotLinkOwner)
+const BotDiscordLinkSchema = BotDiscordSchema.extend(BotLinkOwner)
 
 export const BotItemsStaleSchema = z.union([
   z.literal(3),
@@ -215,6 +200,8 @@ export const BotSchema = z.object({
   linear: BotLinearLinkSchema.nullable().default(null),
   linearWorkspaces: z.array(BotLinearLinkSchema).max(BOT_MAX_CONNECTOR_WORKSPACES).optional(),
   github: BotGitHubSchema.extend(BotLinkOwner).nullable().default(null),
+  /** Its own Discord bot and the servers it is in; older hosts drop it. Null: removed. */
+  discord: BotDiscordLinkSchema.nullable().optional(),
   /** Whether a new Slack thread the owner starts posts the owner's Orca messages back to it; absent is on.
    *  Threads others start, and the owner's teammates' DMs, start off whatever this says. */
   slackMirror: z.boolean().optional().catch(undefined),
@@ -288,6 +275,9 @@ export type BotGitHub = z.infer<typeof BotGitHubSchema>
 export type Bot = z.infer<typeof BotSchema>
 export type BotSlackLink = z.infer<typeof BotSlackLinkSchema>
 export type BotLinearLink = z.infer<typeof BotLinearLinkSchema>
+export type BotDiscord = z.infer<typeof BotDiscordSchema>
+export type BotDiscordGuild = z.infer<typeof BotDiscordGuildSchema>
+export type BotDiscordLink = z.infer<typeof BotDiscordLinkSchema>
 
 /** Every Slack workspace the bot is in, first one first. */
 export function botSlackApps(bot: Pick<Bot, 'slack' | 'slackApps'>): BotSlackLink[] {
@@ -301,11 +291,21 @@ export function botLinearWorkspaces(
   return bot.linearWorkspaces ?? (bot.linear ? [bot.linear] : [])
 }
 
-/** Whether the cloud can bring the bot work: a Slack app, a Linear workspace or a GitHub link. */
+/** Whether the cloud can bring the bot work: a Slack app, a Linear workspace, a GitHub link or a Discord bot. */
 export function botHasConnector(
-  bot: Pick<Bot, 'slack' | 'slackApps' | 'linear' | 'linearWorkspaces' | 'github'>
+  bot: Pick<Bot, 'slack' | 'slackApps' | 'linear' | 'linearWorkspaces' | 'github' | 'discord'>
 ): boolean {
-  return botSlackApps(bot).length > 0 || botLinearWorkspaces(bot).length > 0 || bot.github !== null
+  return (
+    botSlackApps(bot).length > 0 ||
+    botLinearWorkspaces(bot).length > 0 ||
+    bot.github !== null ||
+    Boolean(bot.discord)
+  )
+}
+
+/** The Discord servers the bot's own Discord bot is in, first one first. */
+export function botDiscordGuilds(bot: Pick<Bot, 'discord'>): BotDiscordGuild[] {
+  return bot.discord?.guilds ?? []
 }
 
 /**
@@ -360,6 +360,11 @@ export function withoutBotMember(members: readonly BotMember[], key: BotMemberKe
       botMemberSource(member) !== key.source ||
       (key.workspaceId !== undefined && member.workspaceId !== key.workspaceId)
   )
+}
+
+/** The Discord people (user ids) allowed to ask the bot in one server. */
+export function discordMembersOf(members: readonly BotMember[], guildId: string): BotMember[] {
+  return botMembersFrom(members, 'discord').filter((member) => member.workspaceId === guildId)
 }
 
 /** The Linear people allowed to ask the bot in one Linear workspace. */

@@ -6359,6 +6359,7 @@
       "fromClosedChatInline": "from closed chat",
       "statusUnknown": "Status unknown",
       "kindSlack": "Slack thread",
+      "kindDiscord": "Discord thread",
       "kindLinear": "Linear issue",
       "kindGithub": "GitHub thread",
       "kindAutomation": "Automation run",
