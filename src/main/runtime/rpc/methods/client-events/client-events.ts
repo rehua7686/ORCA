@@ -18,6 +18,7 @@ import {
 } from '../../../../../shared/agent-session/requests/structured-chat-dispatch-telemetry'
 import { subscribeStructuredChatTelemetry } from '../../../../telemetry/structured-chat-dispatch'
 import { structuredCallerFor } from '../structured-sessions/creation/structured-agent-session-gate'
+import { subscribeLegacyJournalRetirement } from './legacy-journal-retirement'
 
 let clientEventSubscriptionSeq = 0
 
@@ -78,6 +79,7 @@ export const CLIENT_EVENT_METHODS = [
 
         const seq = ++clientEventSubscriptionSeq
         const subscriptionId = `runtime-client-events-${connectionId ?? 'inproc'}-${seq}`
+        const retirement = subscribeLegacyJournalRetirement(ctx, subscriptionId, emit)
         runtime.registerSubscriptionCleanup(
           subscriptionId,
           () => {
@@ -85,6 +87,7 @@ export const CLIENT_EVENT_METHODS = [
             unregisterHostVolunteer?.()
             unregisterCardRenderer?.()
             unsubscribeTelemetry?.()
+            retirement?.unsubscribe()
             emit({ type: 'end' })
             resolve()
           },
@@ -108,6 +111,9 @@ export const CLIENT_EVENT_METHODS = [
         emit({
           type: 'ready',
           subscriptionId,
+          ...(retirement && {
+            legacyJournalRetirementAvailable: retirement.available
+          }),
           snapshot: {
             sshStates,
             nativeChatQueueFollowUps: settings.nativeChatQueueFollowUps,

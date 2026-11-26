@@ -59,6 +59,7 @@ import { ENVIRONMENT_DOCTOR_METHODS } from './host-management/environment-doctor
 import { SPEECH_METHODS } from './speech/speech'
 import { CLIENT_UI_METHODS } from './client-state/client-ui'
 import { CLIENT_EVENT_METHODS } from './client-events/client-events'
+import { LEGACY_JOURNAL_RETIREMENT_METHODS } from './client-events/legacy-journal-retirement'
 import { WORKSPACE_PORT_METHODS } from './workspace-ports/workspace-ports'
 import { NETWORK_PORT_FORWARD_METHODS } from './workspace-ports/network-port-forward'
 import { LINK_PREVIEW_METHODS } from './link-preview/link-preview'
@@ -262,6 +263,7 @@ const SERVICE_RPC_METHODS = [
   ...MOBILE_WEB_BUNDLE_METHODS,
   ...RUNTIME_CLIENT_CAPABILITY_METHODS,
   ...CLIENT_EVENT_METHODS,
+  ...LEGACY_JOURNAL_RETIREMENT_METHODS,
   ...CLIENT_UI_METHODS,
   ...EMULATOR_METHODS,
   ...PAIRING_METHODS,

@@ -343,7 +343,9 @@ import {
 import { BrowserOpenUrlParams, BrowserTabCreateParams } from './browser/browser-tab-create-params'
 import {
   ClientEventsSubscribeParams,
-  ClientEventsUnsubscribeParams
+  ClientEventsUnsubscribeParams,
+  LegacyJournalRetirementAckParams,
+  LegacyJournalRetirementClaimParams
 } from './client-ui/client-events-params'
 import {
   NativeChatSessionOptionsMutation,
@@ -2139,6 +2141,8 @@ export const RPC_PARAMS_BY_METHOD = {
   'runtime.clientCapabilities.update': ClientCapabilitiesUpdate,
   'runtime.clientEvents.subscribe': ClientEventsSubscribeParams,
   'runtime.clientEvents.unsubscribe': ClientEventsUnsubscribeParams,
+  'runtime.legacyJournalRetirement.ack': LegacyJournalRetirementAckParams,
+  'runtime.legacyJournalRetirement.claim': LegacyJournalRetirementClaimParams,
   'runtimeEnvironment.wakeRecipeVm': RecipeVmWakeParams,
   'session.readTerminalScrollback': SessionReadTerminalScrollbackParams,
   'session.tabs.activate': BotLinkActivateTab,
