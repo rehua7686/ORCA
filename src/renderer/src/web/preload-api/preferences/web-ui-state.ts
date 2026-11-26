@@ -92,6 +92,7 @@ export function mergeHostWebUIState(
     agentsGroupBy: local.agentsGroupBy,
     activityClearedAtByPaneKey: local.activityClearedAtByPaneKey,
     manuallyUnreadTurnsByPaneKey: local.manuallyUnreadTurnsByPaneKey,
+    chatReadMarksCopiedHere: local.chatReadMarksCopiedHere,
     wslMovedSectionCollapsed: local.wslMovedSectionCollapsed,
     hiddenWslMovedProjectKeys: local.hiddenWslMovedProjectKeys
   } satisfies Record<PairingLocalUiField, unknown> & Partial<PersistedUIState>

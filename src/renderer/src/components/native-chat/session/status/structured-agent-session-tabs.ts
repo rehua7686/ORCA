@@ -1,7 +1,7 @@
-import { structuredAgentSessionPaneKey } from '../../../../../../shared/agent-session/view/structured-agent-session-projection'
 import { isStructuredTab } from '../../../../../../shared/agent-session/view/structured-agent-session-tab'
 import type { Tab } from '../../../../../../shared/workspace-layout/tab-groups/tab-types'
 import { readTabMapChanges } from '@/store/record-transitions/keyed-record-change-reads'
+import { chatPaneKey } from '../../../../../../shared/agent-session/view/structured-agent-session-projection'
 
 export type StructuredTab = Tab & { contentType: 'agent-session' }
 
@@ -27,6 +27,8 @@ type Lineage = {
   list: readonly StructuredTab[] | null
   /** The last materialized list, reused when a rebuild yields the same chats. */
   stale: readonly StructuredTab[] | null
+  /** Open tabs per conversation pane key, kept with `chats` so a close never walks every tab. */
+  byConversation: Map<string, Set<StructuredTab>>
 }
 let lineage: Lineage | null = null
 
@@ -79,11 +81,33 @@ function placeInOrder(target: Lineage, worktreeId: string, present: boolean): vo
   }
 }
 
+function indexConversations(
+  byConversation: Map<string, Set<StructuredTab>>,
+  tabs: readonly StructuredTab[],
+  present: boolean
+): void {
+  for (const tab of tabs) {
+    const key = chatPaneKey(tab.entityId)
+    const showing = byConversation.get(key)
+    if (present) {
+      if (showing) {
+        showing.add(tab)
+      } else {
+        byConversation.set(key, new Set([tab]))
+      }
+    } else if (showing?.delete(tab) && showing.size === 0) {
+      byConversation.delete(key)
+    }
+  }
+}
+
 function setChats(target: Lineage, worktreeId: string, tabs: readonly StructuredTab[]): void {
   const before = target.chats.get(worktreeId) ?? NO_TABS
   if (tabs === before) {
     return
   }
+  indexConversations(target.byConversation, before, false)
+  indexConversations(target.byConversation, tabs, true)
   if (!before.length !== !tabs.length) {
     placeInOrder(target, worktreeId, tabs.length > 0)
   }
@@ -105,13 +129,15 @@ function rebuildFromSnapshot(source: TabsByWorktree, previous: Lineage | null): 
     chats: new Map(),
     order: null,
     list: null,
-    stale: previous?.list ?? previous?.stale ?? null
+    stale: previous?.list ?? previous?.stale ?? null,
+    byConversation: new Map()
   }
   for (const worktreeId of Object.keys(source)) {
     rebuilt.rank.set(worktreeId, rebuilt.nextRank++)
     const tabs = structuredTabsOf(source[worktreeId] ?? [], previous?.chats.get(worktreeId))
     if (tabs.length) {
       rebuilt.chats.set(worktreeId, tabs)
+      indexConversations(rebuilt.byConversation, tabs, true)
     }
   }
   return rebuilt
@@ -169,6 +195,16 @@ function materialize(current: Lineage): readonly StructuredTab[] {
   return current.list
 }
 
+const NO_CONVERSATION_TABS: ReadonlySet<StructuredTab> = new Set()
+
+/** Every open tab showing the conversation with this pane key, in any workspace. */
+export function structuredTabsShowingConversation(
+  unifiedTabsByWorktree: TabsByWorktree,
+  paneKey: string
+): ReadonlySet<StructuredTab> {
+  return advance(unifiedTabsByWorktree).byConversation.get(paneKey) ?? NO_CONVERSATION_TABS
+}
+
 /** Structured-session tabs; the same list while no chat tab changed, so non-chat tab writes stay quiet. */
 export function getStructuredAgentSessionTabs(
   unifiedTabsByWorktree: TabsByWorktree
@@ -182,15 +218,9 @@ export function getStructuredAgentSessionTabs(
   return list
 }
 
-// Chat tabs keep their objects across non-chat writes, so a full pass never re-hashes a session id.
-const paneKeysByTab = new WeakMap<StructuredTab, string>()
+/** A chat tab's pane key: its conversation's, whatever tab it sits in. */
 export function structuredTabPaneKey(tab: StructuredTab): string {
-  let paneKey = paneKeysByTab.get(tab)
-  if (paneKey === undefined) {
-    paneKey = structuredAgentSessionPaneKey(tab.id, tab.entityId)
-    paneKeysByTab.set(tab, paneKey)
-  }
-  return paneKey
+  return chatPaneKey(tab.entityId)
 }
 
 const emptyPaneTabs: ReadonlyMap<string, StructuredTab> = new Map()
@@ -214,7 +244,14 @@ export function structuredTabsByPaneKey(
   if (cached) {
     return cached
   }
-  const result = new Map(structuredTabs.map((tab) => [structuredTabPaneKey(tab), tab]))
+  // The first listed tab stands for a conversation, as the status member and projection do.
+  const result = new Map<string, StructuredTab>()
+  for (const tab of structuredTabs) {
+    const key = chatPaneKey(tab.entityId)
+    if (!result.has(key)) {
+      result.set(key, tab)
+    }
+  }
   paneTabs.set(structuredTabs, result)
   return result
 }

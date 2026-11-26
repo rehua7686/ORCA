@@ -10,7 +10,6 @@ import {
   CONNECTOR_REPLY_HTML_PAGE_AS_FILE
 } from '../../../../../shared/rpc-contract/connectors/connector-params'
 import type { ExternalConversationSeam } from '../../../../external-conversations/external-conversation-seam'
-import { chatPaneKey } from '../../../../external-conversations/external-conversation-chat'
 import type { OrcaRuntimeService } from '../../../orca-runtime'
 import { defineMethod } from '../../core'
 import { botTurnFor } from '../../../../bots/bot-turn-for'
@@ -18,6 +17,7 @@ import { sessionCallerOf } from '../../../orchestration/addressing/orchestration
 import { CONNECTOR_ACT_METHOD } from '../connector-act'
 import { connectorPostAttempts } from '../../../../external-conversations/connector-post-attempts'
 import { CONNECTOR_REACT_METHOD } from '../connector-react'
+import { chatPaneKey } from '../../../../../shared/agent-session/view/structured-agent-session-projection'
 import { CONNECTOR_LEAVE_THREAD_METHOD } from '../connector-leave-thread'
 import { splitHtmlDocumentFences } from '../../../../../shared/markdown/html-document-fences'
 import type { ConnectorCloudFeature } from '../../../../../shared/connector-cloud-features'

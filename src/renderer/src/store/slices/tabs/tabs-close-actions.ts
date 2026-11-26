@@ -1,5 +1,11 @@
 import { editorTabRetirement } from '../editor/tabs/editor-tab-retirement'
-import { structuredAgentSessionAddressTabId } from '../../../../../shared/agent-session/view/structured-agent-session-projection'
+import type { Tab } from '../../../../../shared/workspace-layout/tab-groups/tab-types'
+import type { AppState } from '../../types'
+import {
+  chatPaneAddressTabId,
+  chatPaneKey
+} from '../../../../../shared/agent-session/view/structured-agent-session-projection'
+import { structuredTabsShowingConversation } from '@/components/native-chat/session/status/structured-agent-session-tabs'
 import {
   landsOnEmptiedWorktree,
   emptiedWorktreeLandingPatch,
@@ -38,6 +44,24 @@ import {
   replaceRecordEntries,
   replaceTabBuckets
 } from '../../record-transitions/keyed-record-transitions'
+
+/** A closed chat tab's pane markers sit under its conversation address, which another open tab
+ *  showing the same conversation still owns. */
+function closedChatPaneTabIds(
+  state: Pick<AppState, 'unifiedTabsByWorktree'>,
+  closed: Pick<Tab, 'id' | 'entityId'>
+): string[] {
+  const showing = structuredTabsShowingConversation(
+    state.unifiedTabsByWorktree,
+    chatPaneKey(closed.entityId)
+  )
+  for (const tab of showing) {
+    if (tab.id !== closed.id) {
+      return []
+    }
+  }
+  return [chatPaneAddressTabId(closed.entityId)]
+}
 
 export function createTabsCloseActions(
   set: TabsSliceSet,
@@ -138,19 +162,26 @@ export function createTabsCloseActions(
       const closeHere = (): void =>
         settleAttentionRemovedBy(set, get, () =>
           set((current) => {
+            let closed: Tab | undefined
             const nextTabs = (current.unifiedTabsByWorktree[worktreeId] ?? []).filter((item) => {
-              if (item.id === tabId) {
-                retireRemovedNativeChatTabs([item], [])
+              if (item.id !== tabId) {
+                return true
               }
-              return item.id !== tabId
+              closed = item
+              return false
             })
+            if (closed?.contentType === 'agent-session') {
+              retireRemovedNativeChatTabs([closed], nextTabs)
+            }
             // Bulk closes bypass terminals.closeTab, so clear entity-keyed unread markers here too.
             const nextUnreadTerminalTabs = terminalEntityId
               ? omitRecordKeys(current.unreadTerminalTabs, [terminalEntityId])
               : current.unreadTerminalTabs
             // Why: a structured chat tab owns its markers directly; nothing else retires them.
             const structuredAttention =
-              tab.contentType === 'agent-session' ? removeTabsAttention(current, [tabId]) : null
+              tab.contentType === 'agent-session'
+                ? removeTabsAttention(current, [tabId], closedChatPaneTabIds(current, tab))
+                : null
             let nextGroups = (current.groupsByWorktree[worktreeId] ?? []).map((candidate) =>
               candidate.id === group?.id
                 ? {
@@ -240,10 +271,7 @@ export function createTabsCloseActions(
                     // The tab is gone by now, so its chat's pane address is named here.
                     () =>
                       set((current) =>
-                        removeTabsAttention(current, [
-                          tabId,
-                          structuredAgentSessionAddressTabId(tabId, tab.entityId)
-                        ])
+                        removeTabsAttention(current, [tabId], closedChatPaneTabIds(current, tab))
                       ),
                     { tabsBefore: state }
                   )

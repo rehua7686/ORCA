@@ -18,11 +18,7 @@ import { isClientAuthoritativeAgentStatusPane } from '@/components/terminal-pane
 import { observeAgentHookCompletionForNotification } from '@/components/terminal-pane/agent-completion/hook-lane/agent-hook-completion-notifications'
 import { remapHostAgentStatus } from '../agent-status/agent-status-primitives'
 import { agentStatusEntryEqual } from './state-equality-core'
-import {
-  HOST_WORKING_CLIENT_BOUNDARY_LIMIT,
-  hostWorkingClientBoundaryByPaneKey,
-  type WebSessionTabsSyncState
-} from '../state'
+import { HOST_WORKING_CLIENT_BOUNDARY_LIMIT, hostWorkingClientBoundaryByPaneKey } from '../state'
 import { markHostMirrorPatchFullResync } from './scoped-patch-annotation'
 import { reportVisibleTabPickToHost } from '../navigation/web-session-visible-tab-pick-report'
 import {
@@ -31,13 +27,57 @@ import {
   type HostSessionMirrorSettle
 } from '../hydration/mirror-settle'
 import { recordAgentFinishDropped } from '@/attention/agent-finish-drop-breadcrumb'
+import { isWebClientLocation } from '@/app-shell/platform/web-client-location'
+import { copyWebClientChatReadMarksForTabLists } from '@/store/slices/agent-status/structured-sessions/chat-read-mark-web-copy'
+import { isHostMirroredWorktree } from '../identity/host-mirrored-worktree'
+import { hostSnapshotAffirmsAgentSessions } from '../../../../../shared/remote-runtime/session-graph/host-session-snapshot-authority'
+
+function copyWebClientChatReadMarksForPatch(
+  state: AppState,
+  patch: AppState | Partial<AppState>,
+  verdict: HostSessionMirrorPatchVerdict
+): AppState | Partial<AppState> {
+  const fullInventory = verdict.fullInventory
+  const fullInventoryWorkspaceIds = fullInventory?.mirroredWorkspaceIds
+  const workspaceIds = fullInventoryWorkspaceIds
+    ? verdict.frames
+        .filter(
+          ({ decision, source, worktreeId }) =>
+            decision.apply && source !== undefined && isHostMirroredWorktree(worktreeId)
+        )
+        .map(({ worktreeId }) => worktreeId)
+    : verdict.frames
+        .filter(
+          ({ decision, source, worktreeId }) =>
+            decision.apply &&
+            source !== undefined &&
+            isHostMirroredWorktree(worktreeId) &&
+            hostSnapshotAffirmsAgentSessions(source)
+        )
+        .map(({ worktreeId }) => worktreeId)
+  const nextTabs = patch.unifiedTabsByWorktree ?? state.unifiedTabsByWorktree
+  const tabsUnchanged =
+    fullInventory === undefined &&
+    workspaceIds.every(
+      (workspaceId) => nextTabs[workspaceId] === state.unifiedTabsByWorktree[workspaceId]
+    )
+  const copied = copyWebClientChatReadMarksForTabLists(
+    state,
+    tabsUnchanged ? undefined : () => nextTabs,
+    workspaceIds,
+    fullInventory
+      ? {
+          affirmedWorkspaceIds: fullInventory.affirmedAgentSessionWorkspaceIds ?? [],
+          pendingWorkspaceIds: fullInventory.pendingAgentSessionWorkspaceIds ?? []
+        }
+      : undefined
+  )
+  return copied ? { ...(patch === state ? {} : patch), ...copied } : patch
+}
 
 /** Commit a reconciliation patch and return a receipt for its host evidence. */
 export function applyWebSessionTabsStorePatch(
-  buildPatch: (
-    state: AppState,
-    changedAgentPaneKeys: Set<string>
-  ) => WebSessionTabsSyncState | Partial<WebSessionTabsSyncState>,
+  buildPatch: (state: AppState, changedAgentPaneKeys: Set<string>) => AppState | Partial<AppState>,
   hostMirrorVerdict: HostSessionMirrorPatchVerdict,
   agentStatusSnapshots?: RuntimeMobileSessionTabsResult | readonly RuntimeMobileSessionTabsResult[],
   allowCompletionNotification = false,
@@ -61,8 +101,12 @@ export function applyWebSessionTabsStorePatch(
   const runStorePatch = (
     state: AppState,
     changedAgentPaneKeys: Set<string>
-  ): WebSessionTabsSyncState | Partial<WebSessionTabsSyncState> => {
-    const patch = buildPatch(state, changedAgentPaneKeys)
+  ): AppState | Partial<AppState> => {
+    const shouldCopyChatReadMarks = isWebClientLocation() && !state.chatReadMarksCopiedHere
+    const builtPatch = buildPatch(state, changedAgentPaneKeys)
+    const patch = shouldCopyChatReadMarks
+      ? copyWebClientChatReadMarksForPatch(state, builtPatch, hostMirrorVerdict)
+      : builtPatch
     markHostMirrorPatchFullResync(state, patch)
     mirroredAgentStatusChanged = patch !== state && Object.hasOwn(patch, 'agentStatusByPaneKey')
     if (agentStatusSnapshots) {

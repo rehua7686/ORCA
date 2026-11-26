@@ -27,6 +27,7 @@ import { applyWebSessionTabsSnapshots } from '../snapshots/snapshot-api'
 import { applyWebSessionTabsStorePatch } from '../snapshots/store-patch'
 import { applyReceivedAgentSenderPublications } from '../tracking/received-agent-sender-publications'
 import { isHostMirroredWorktree } from '../identity/host-mirrored-worktree'
+import { hostSnapshotAffirmsAgentSessions } from '../../../../../shared/remote-runtime/session-graph/host-session-snapshot-authority'
 
 export type InitialSessionTabsLoadArgs = {
   environmentId: string
@@ -168,7 +169,24 @@ export function loadInitialWebSessionTabs({
                   // Workspaces the mirror never writes contribute no evidence to the environment-wide verdict.
                   publishedSnapshotCount: result.snapshots.filter((snapshot) =>
                     isHostMirroredWorktree(snapshot.worktree)
-                  ).length
+                  ).length,
+                  mirroredWorkspaceIds: result.snapshots
+                    .filter((snapshot) => isHostMirroredWorktree(snapshot.worktree))
+                    .map((snapshot) => snapshot.worktree),
+                  affirmedAgentSessionWorkspaceIds: result.snapshots
+                    .filter(
+                      (snapshot) =>
+                        isHostMirroredWorktree(snapshot.worktree) &&
+                        hostSnapshotAffirmsAgentSessions(snapshot)
+                    )
+                    .map((snapshot) => snapshot.worktree),
+                  pendingAgentSessionWorkspaceIds: result.snapshots
+                    .filter(
+                      (snapshot) =>
+                        isHostMirroredWorktree(snapshot.worktree) &&
+                        !hostSnapshotAffirmsAgentSessions(snapshot)
+                    )
+                    .map((snapshot) => snapshot.worktree)
                 }
               }
             : {})
