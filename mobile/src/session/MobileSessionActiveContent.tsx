@@ -130,6 +130,7 @@ export function MobileSessionActiveContent({
     [client, worktreeId]
   )
   const openNativeChatAccounts = useOpenHostAccounts(controller.router, hostId)
+  const nativeChatAccounts = executionHost === undefined ? openNativeChatAccounts : undefined
   const navigateToSender = useCallback(
     (senderWorktreeId: string, paneKey: string) => {
       const execution = executionHost ? `&executionHost=${encodeURIComponent(executionHost)}` : ''
@@ -374,9 +375,8 @@ export function MobileSessionActiveContent({
                     hostOutage={nativeChatHostOutage}
                     onRunInTerminal={nativeChatTerminalRunner(controller)}
                     // Accounts open on the paired host, so a chat another server runs offers none.
-                    onOpenAccounts={
-                      executionHost === undefined ? openNativeChatAccounts : undefined
-                    }
+                    onOpenAccounts={nativeChatAccounts}
+                    crew={{ client, tab: controller.activeSessionTab }}
                   />
                 </MobileSessionBotIdentity>
               </MobileBotCardHostProvider>
