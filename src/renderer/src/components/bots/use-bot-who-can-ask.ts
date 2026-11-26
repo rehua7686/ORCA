@@ -1,6 +1,6 @@
 // One connector's Who can ask, shared by its views: its people, the requests waiting on it, and
 // adding (always confirmed first), removing and reviewing them.
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { useTranslate } from '@/i18n/use-translate'
 import { formatUiRelativeTime } from '@/i18n/relative-time-format'
@@ -33,6 +33,14 @@ import { botErrorMessage } from './bot-presentation'
 import type { BotWhoCanAskService } from './BotWhoCanAskList'
 import { useOrcaCloudSignedOut } from './orca-cloud-signed-out'
 import { useBotHostLabel } from './use-bot-host-label'
+import type { WhoCanAskProposal } from './who-can-ask-picks'
+
+/** The same people under the same logins: anything else needs a fresh answer. */
+const sameProposal = (next: readonly BotMember[], asked: readonly BotMember[]): boolean =>
+  next.length === asked.length &&
+  next.every(
+    (member, index) => member.id === asked[index]?.id && member.name === asked[index]?.name
+  )
 
 // A request's row repeats no name: Slack's real name often equals the display name.
 export const requestLine = (request: HostAccessRequest): string => {
@@ -141,14 +149,28 @@ export function useBotWhoCanAsk(bot: Bot, service: BotWhoCanAskService) {
     attempt()
   }
 
-  // The picker closes first, so the confirmation is the only thing on screen.
-  const add = async (picked: BotMember[], request?: HostAccessRequest): Promise<void> => {
-    setPickerOpen(false)
-    const confirmed = await confirmAccess(
+  // The bot and service as they are now, for a grant whose confirmation was open meanwhile.
+  const latest = useRef({ bot, service })
+  useEffect(() => {
+    latest.current = { bot, service }
+  })
+  // Who among `people` may still be added: not since listed, nor since linked as the owner.
+  const stillEligible = (people: BotMember[]): BotMember[] => {
+    const now = latest.current
+    const listedNow = new Set(now.service.listed(now.bot.members).map((member) => member.id))
+    return people.filter(
+      (member) =>
+        !listedNow.has(member.id) &&
+        member.id !== now.service.ownerId &&
+        !(now.service.otherOwnerIds?.includes(member.id) ?? false)
+    )
+  }
+  const confirmPeople = (people: BotMember[], request?: HostAccessRequest) =>
+    confirmAccess(
       {
         botName: bot.name,
         details: { bot, connector: service.kind },
-        people: picked.map((member) => ({
+        people: people.map((member) => ({
           id: member.id,
           name: member.name || member.id,
           ...(request ? { identity: accessRequestIdentity(request) } : {})
@@ -159,18 +181,41 @@ export function useBotWhoCanAsk(bot: Bot, service: BotWhoCanAskService) {
       // A request's Reject declines it; Escape or a press outside leaves it waiting.
       request ? () => void decideAccessRequest(request, 'declined') : undefined
     )
-    if (!confirmed) {
+
+  // The picker closes first, so the confirmation is the only thing on screen. `proposal`: the
+  // picker's checks still settling, so who is written is who the checks finally say.
+  const add = async (
+    picked: BotMember[],
+    request?: HostAccessRequest,
+    proposal?: WhoCanAskProposal
+  ): Promise<void> => {
+    setPickerOpen(false)
+    if (request) {
+      // A request's person is added by the host once the cloud records the grant.
+      if (await confirmPeople(picked, request)) {
+        await decideAccessRequest(request, 'granted')
+      }
       return
     }
-    // A request's person is added by the host once the cloud records the grant.
-    if (request) {
-      await decideAccessRequest(request, 'granted')
-      return
+    // Only who was confirmed is saved: if someone stopped being eligible, or a check the picker
+    // had asked renamed or displaced someone, while the confirmation was open, the rest are asked
+    // about again, under their names now, rather than saved on the earlier answer.
+    const settled = (people: BotMember[]) => (proposal ? proposal.settle(people) : people)
+    let people = await settled(picked)
+    for (;;) {
+      if (people.length === 0 || !(await confirmPeople(people))) {
+        return
+      }
+      const now = await settled(stillEligible(people))
+      if (sameProposal(now, people)) {
+        break
+      }
+      people = now
     }
     saveMembers(
-      { addMembers: newBotMembers(bot.members, picked, service) },
+      { addMembers: newBotMembers(latest.current.bot.members, people, service) },
       t('bots.whoCanAsk.addFailed', 'Couldn’t add {{names}}.', {
-        names: picked.map((member) => member.name || member.id).join(', ')
+        names: people.map((member) => member.name || member.id).join(', ')
       }),
       () => setKeptOnlyMe(null)
     )
