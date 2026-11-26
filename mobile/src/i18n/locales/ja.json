@@ -219,7 +219,6 @@
       "addToMessage": "メッセージに追加",
       "attachImage": "画像を添付",
       "cancelEditing": "編集をキャンセル",
-      "placeholder": "何でも聞いてください。@ でファイルを参照、/ でコマンドを実行",
       "saveEditedMessage": "編集したメッセージを保存",
       "sendMessage": "メッセージを送信",
       "sendQueue": "キューに入れる",
@@ -229,10 +228,7 @@
       "sendSteerHint": "Agent が今行っている作業に加えます"
     },
     "contextUsage": {
-      "label": "コンテキスト {{used}} / {{window}} トークン、{{percent}}% 使用済み",
-      "title": "コンテキスト",
-      "estimated": "最後の応答から推定。",
-      "deferredNote": "必要時に読み込まれます。使用量には含まれません。"
+      "title": "コンテキスト"
     },
     "composerAttachments": {
       "attachedImage": "添付画像",
@@ -243,7 +239,6 @@
       "uploadingFile": "「{{name}}」をアップロード中"
     },
     "composerPlaceholder": {
-      "prompt": "何でも聞いてください。@ でファイルを参照、/ でコマンドを実行",
       "waitingForTerminal": "ターミナルを待っています…"
     },
     "diffCard": {
@@ -259,9 +254,7 @@
     },
     "message": {
       "copyMessage": "メッセージをコピーする",
-      "forkFromResponse": "この応答から分岐",
-      "scrollMessageToTop": "このメッセージを一番上までスクロールします",
-      "forkFromResponseHint": "このターンの終わりまでの応答全体を含む新しいチャット"
+      "forkFromResponse": "この応答から分岐"
     },
     "messageActionsSheet": {
       "clipboardRejected": "クリップボードがテキストを受け付けませんでした。",
@@ -291,10 +284,8 @@
     },
     "nativeChatToolLine": {
       "added": "追加",
-      "copyCommand": "コマンドをコピー",
       "deleted": "削除",
       "durationHours": "{{hours}}時間 {{minutes}}分 {{seconds}}秒",
-      "durationMilliseconds": "{{milliseconds}}ミリ秒",
       "durationMinutes": "{{minutes}}分 {{seconds}}秒",
       "durationSeconds": "{{seconds}}秒",
       "edited": "編集",
@@ -443,8 +434,6 @@
       "xhighShort": "最高"
     },
     "sessionOptionPickers": {
-      "agentWorking": "Agent が作業中",
-      "backToModels": "モデル一覧に戻る",
       "dispatchUnconfirmed": "Agent に送信済み — 未確認",
       "modelFullAccessLabel": "モデル、{{value}}、フルアクセス",
       "modelLabel": "モデル、{{value}}",
@@ -458,9 +447,6 @@
       "notReportedMarker": "未報告",
       "moreModels": "その他のモデル",
       "fewerModels": "表示を減らす"
-    },
-    "sessionOptionSegments": {
-      "dispatchUnconfirmed": "Agent に送信済み — 未確認"
     },
     "stopButton": {
       "stopAgent": "Agent を停止",
@@ -2356,9 +2342,7 @@
       "readOnly": "読み取り専用"
     },
     "nativeChatAttachActions": {
-      "availableSkills": "{{count}} 件が利用可能",
       "commands": "コマンド",
-      "fileTypes": "PDF、テキスト、コード…",
       "files": "ファイル",
       "photos": "写真",
       "skills": "スキル",
@@ -2383,11 +2367,8 @@
     },
     "nativeChatRenderData": {
       "defaultAgentLabel": "Agent",
-      "emptySubtitle": "{{agent}} にコードの確認や出力の説明、変更を依頼してください。",
       "emptyTitle": "{{agent}} とチャットを開始",
-      "errorSubtitle": "トランスクリプトを読み取ることができませんでした。作業を続けるには、ターミナルに切り替えてください。",
       "errorTitle": "会話を読み込めませんでした",
-      "notFoundSubtitle": "メッセージを送信して会話を始めるか、ターミナル表示を開いて {{agent}} の動作を確認してください。",
       "notFoundTitle": "この会話はまだ見つかりません"
     },
     "nativeChatToggleAction": {
