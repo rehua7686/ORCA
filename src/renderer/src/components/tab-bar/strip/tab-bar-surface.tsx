@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { ProjectedAgentMenuItems } from '../../agent/launch-menu/AgentMenuItems'
+import { requestNativeChatComposerFocus } from '@/components/native-chat/composer/focus/native-chat-composer-focus-intent'
 import { OpenAgentSettingsMenuItem } from '../../agent/launch-menu/OpenAgentSettingsMenuItem'
 import { TabBarAgentPickerEntry } from '../create-entry/TabBarAgentPickerEntry'
 import { TabStripScrollIndicator } from './TabStripScrollIndicator'
@@ -351,6 +352,12 @@ export function renderTabBarSurface(
                   onSelectPickerAgent={selectPickerAgent}
                   hidePickerSearch={!terminalOnly && Boolean(onOpenEntry)}
                   runLaunch={launchAgentRow}
+                  customLaunchTarget={{
+                    worktreeId,
+                    groupId: resolvedGroupId,
+                    onFocusChat: (tabId) =>
+                      queueFocusAfterNewTabMenuClose(() => requestNativeChatComposerFocus(tabId))
+                  }}
                 />
               )}
             </>
