@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Activity, Files, Plug } from 'lucide-react'
+import { Activity, Files, GitBranch, ListChecks, Lock, Plug, SquareStack } from 'lucide-react'
 import { SidebarToggleIcon } from '@/components/icons/SidebarToggleIcon'
 import { defineFixture } from '../../component-fixtures/component-fixture'
 import type { ActiveRightSidebarTab } from '../../../../shared/ui-chrome/ui-chrome-types'
@@ -241,4 +241,76 @@ export const oneCharacterTitleOpenFromMoreNarrowest = defineFixture({
     <BotPageBar width={220} activeTab="bot-activity" items={botPageItemsWithSevenPlugins('中')} />
   ),
   interact: openLastFromMore
+})
+
+// A repo bar (not a bot page) too narrow for every tab: checks overflows under More, which is
+// where the PR checks status dot lands.
+const REPO_OVERFLOW_ITEMS: ActivityBarItem[] = [
+  { id: 'explorer', icon: Files, title: 'Explorer', shortcut: '' },
+  { id: 'source-control', icon: GitBranch, title: 'Source Control', shortcut: '' },
+  { id: 'workspaces', icon: SquareStack, title: 'Workspaces', shortcut: '' },
+  { id: 'vault', icon: Lock, title: 'Vault', shortcut: '' },
+  { id: 'plugin:test:panel', pluginKey: 'test', title: 'Plugin', icon: Plug, shortcut: '' },
+  { id: 'checks', icon: ListChecks, title: 'Checks', shortcut: '' }
+]
+
+function RepoOverflowBar({
+  checksStatus
+}: {
+  checksStatus: 'success' | 'failure'
+}): React.JSX.Element {
+  const [activeTab, setActiveTab] = useState<ActiveRightSidebarTab>('explorer')
+  const [stripWidth, setStripWidth] = useState<number | null>(null)
+  const stripRef = useMeasuredWidth(setStripWidth)
+  return (
+    <div className="bg-sidebar text-foreground" style={{ width: 204 }}>
+      <RightSidebarTopActivityBar
+        hasDesktopWindowChrome={false}
+        topActivityStripRef={stripRef}
+        topActivityLayout={getTopActivityBarLayout(
+          REPO_OVERFLOW_ITEMS,
+          stripWidth,
+          activeTab,
+          RIGHT_SIDEBAR_TOP_ACTIVITY_STRIP_PADDING
+        )}
+        effectiveTab={activeTab}
+        onSelectTab={setActiveTab}
+        checksStatus={checksStatus}
+        closeButton={null}
+        activityBarPosition="top"
+        onChangeActivityBarPosition={() => {}}
+        arrangementItems={REPO_OVERFLOW_ITEMS}
+      />
+      <div className="h-6" />
+    </div>
+  )
+}
+
+async function openMoreMenu(frame: HTMLElement): Promise<void> {
+  frame
+    .querySelector('[data-activity-overflow-trigger]')
+    ?.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }))
+  for (let tries = 0; tries < 60; tries++) {
+    if (document.querySelector('[role="menuitem"]')) {
+      return
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50))
+  }
+}
+
+export const checksOverflowPassing = defineFixture({
+  width: 224,
+  render: () => <RepoOverflowBar checksStatus="success" />
+})
+
+export const checksOverflowPassingMenuOpen = defineFixture({
+  width: 224,
+  render: () => <RepoOverflowBar checksStatus="success" />,
+  interact: openMoreMenu
+})
+
+export const checksOverflowFailingMenuOpen = defineFixture({
+  width: 224,
+  render: () => <RepoOverflowBar checksStatus="failure" />,
+  interact: openMoreMenu
 })
