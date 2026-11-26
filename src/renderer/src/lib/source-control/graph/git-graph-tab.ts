@@ -139,7 +139,19 @@ export async function openGitGraph(
   const id = existing?.entityId ?? `${worktreeId}::git-graph`
   const label = translate('gitGraph.title', 'Git Graph')
   if (state.openFiles.some((file) => file.id === id)) {
-    openWorkspaceEditorItem(state, id, placementWorkspaceId, label, 'git-graph')
+    const placementHasTab =
+      state.unifiedTabsByWorktree?.[placementWorkspaceId]?.some(
+        (tab) => tab.contentType === 'git-graph' && tab.entityId === id
+      ) ?? false
+    openWorkspaceEditorItem(
+      state,
+      id,
+      placementWorkspaceId,
+      label,
+      'git-graph',
+      undefined,
+      placementHasTab ? undefined : resolveTargetGroupId?.()
+    )
     return
   }
   state.openFile(
