@@ -24,6 +24,18 @@ import {
 } from '../chat-assignee-admission'
 import { sendChatTask } from '../chat-task-delivery'
 import { dispatchTaskSource } from '../../../../orchestration/coordinator/dispatch/dispatch-task-source'
+import { startsInChatLineage } from '../worker/start/worker-chat-lineage'
+import { workerStartedByBot } from '../worker/start/worker-keep-open-default'
+import { botOfSession } from '../../../../../bots/bot-session-tabs'
+
+export function dispatchStartsChatWorkers(
+  runtime: Parameters<typeof startsInChatLineage>[0],
+  db: Parameters<typeof startsInChatLineage>[1],
+  from: string | undefined,
+  caller: Parameters<typeof startsInChatLineage>[3]
+): boolean {
+  return startsInChatLineage(runtime, db, { from }, caller)
+}
 
 export const ORCHESTRATION_DISPATCH_METHODS = [
   defineOrchestrationMethod({
@@ -42,6 +54,8 @@ export const ORCHESTRATION_DISPATCH_METHODS = [
       { task }
     ) => {
       const db = runtime.getOrchestrationDb()
+      const creator = resolveDispatchCreator(runtime, params.from, orchestrationCaller)
+      const chatLineage = dispatchStartsChatWorkers(runtime, db, params.from, orchestrationCaller)
       const assigneeParty = params.to ? resolveDispatchAssigneeParty(params.to, db) : undefined
       const assignee = assigneeParty?.address
       // A chat has no pane, process or agent to probe: it is reached as mail to it is.
@@ -53,10 +67,7 @@ export const ORCHESTRATION_DISPATCH_METHODS = [
       // Dry-run previews without state changes; skip readiness and use a placeholder Dispatch id.
       if (params.dryRun) {
         const maxDepth = runtime.getNestedWorkerMaxDepth()
-        const previewDepth = db.resolveChildDispatchDepth(
-          resolveDispatchCreator(runtime, params.from, orchestrationCaller),
-          maxDepth
-        )
+        const previewDepth = db.resolveChildDispatchDepth(creator, maxDepth)
         const preamble = buildDispatchPreamble({
           taskId: task.id,
           dispatchId: 'ctx_dryrun',
@@ -65,6 +76,7 @@ export const ORCHESTRATION_DISPATCH_METHODS = [
           coordinatorHandle: orcaSessionIdOrHandle(params.from ?? 'coordinator', db),
           workerHandle: assignee ? orcaSessionIdOrHandle(assignee, db) : 'worker',
           devMode: params.devMode,
+          preserveHumanCommitCredit: chatLineage,
           ...(assignee ? runtime.getTerminalOrchestrationCliTarget(assignee) : {})
         })
         return { dispatch: null, injected: false, dryRun: true, preamble }
@@ -144,7 +156,8 @@ export const ORCHESTRATION_DISPATCH_METHODS = [
         hostScope: dispatchAuthority?.hostScope
           ? JSON.stringify(dispatchAuthority.hostScope)
           : null,
-        creator: resolveDispatchCreator(runtime, params.from, orchestrationCaller),
+        creator,
+        chatLineage,
         maxDepth: runtime.getNestedWorkerMaxDepth()
       })
 
@@ -157,6 +170,11 @@ export const ORCHESTRATION_DISPATCH_METHODS = [
         coordinatorHandle: orcaSessionIdOrHandle(params.from ?? 'coordinator', db),
         workerHandle: orcaSessionIdOrHandle(to, db),
         devMode: params.devMode,
+        preserveHumanCommitCredit: workerStartedByBot(
+          db,
+          ctx.id,
+          (sessionId) => botOfSession(runtime.bots, sessionId) !== null
+        ),
         ...runtime.getTerminalOrchestrationCliTarget(to)
       })
 
@@ -240,6 +258,13 @@ export const ORCHESTRATION_DISPATCH_METHODS = [
           coordinatorHandle,
           workerHandle: orcaSessionIdOrHandle(workerHandle, db),
           devMode: params.devMode,
+          preserveHumanCommitCredit:
+            ctx !== undefined &&
+            workerStartedByBot(
+              db,
+              ctx.id,
+              (sessionId) => botOfSession(runtime.bots, sessionId) !== null
+            ),
           ...(ctx ? runtime.getTerminalOrchestrationCliTarget(workerHandle) : {})
         })
         return { dispatch: ctx ?? null, preamble }

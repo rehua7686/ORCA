@@ -9,6 +9,11 @@ import {
   DISPATCH_CONTEXT_COLUMN_LIST,
   REMOTE_DISPATCH_ATTACHMENT_COLUMN_LIST
 } from './row-column-lists'
+import {
+  isEquivalentPaneKey,
+  paneKeyMatchSuffix,
+  REMOTE_ATTACHMENT_PANE_KEY_MATCH_SUFFIX_SQL
+} from './pane-key-match'
 
 export type DispatchCreatorTurnSource = NonNullable<DispatchContextRow['creator_turn_source']>
 
@@ -91,20 +96,32 @@ function findPotentiallyLiveAttachmentsForCreator(
   const rows = this.db
     .prepare(
       `SELECT ${REMOTE_DISPATCH_ATTACHMENT_COLUMN_LIST} FROM remote_dispatch_attachments
-       WHERE process_incarnation = ?
+       WHERE ${REMOTE_ATTACHMENT_PANE_KEY_MATCH_SUFFIX_SQL} = ?
+         AND process_incarnation = ?
          AND pane_key IS NOT NULL
          AND ${potentiallyLiveRemoteAttachmentSql()}`
     )
-    .all(creator.processIncarnation) as RemoteDispatchAttachmentRow[]
+    .all(
+      paneKeyMatchSuffix(creator.paneKey),
+      creator.processIncarnation
+    ) as RemoteDispatchAttachmentRow[]
 
-  return rows
+  return rows.filter((row) => isEquivalentPaneKey(row.pane_key!, creator.paneKey!))
 }
 
 /** Whether the creator's own live Dispatch starts its workers as chats: the row depth reads, one indexed lookup. */
 export function creatorStartsChatWorkers(this: OrchestrationDb, creator: DispatchCreator): boolean {
   return (
     creator.kind !== 'system' &&
-    findActiveDispatchForCreator.call(this, creator)?.chat_lineage === 1
+    requireOrchestrationAdmission(liveDispatchCreatorEvaluation(this, creator).startsChatWorkers())
+  )
+}
+
+/** Remote bot lineage carries task guidance, but does not override this host's worker-surface setting. */
+export function creatorHasBotLineage(this: OrchestrationDb, creator: DispatchCreator): boolean {
+  return (
+    creator.kind !== 'system' &&
+    requireOrchestrationAdmission(liveDispatchCreatorEvaluation(this, creator).hasBotLineage())
   )
 }
 
@@ -141,6 +158,7 @@ export function liveDispatchCreatorEvaluation(db: OrchestrationDb, creator: Disp
 
 export type DispatchDepthMethods = {
   creatorStartsChatWorkers: typeof creatorStartsChatWorkers
+  creatorHasBotLineage: typeof creatorHasBotLineage
   resolveCreatorDepth: typeof resolveCreatorDepth
   resolveCreatorDispatchId: typeof resolveCreatorDispatchId
   resolveChildDispatchDepth: typeof resolveChildDispatchDepth
@@ -149,6 +167,7 @@ export type DispatchDepthMethods = {
 export function attachDispatchDepth(ctor: { prototype: object }): void {
   Object.assign(ctor.prototype, {
     creatorStartsChatWorkers,
+    creatorHasBotLineage,
     resolveCreatorDepth,
     resolveCreatorDispatchId,
     resolveChildDispatchDepth
