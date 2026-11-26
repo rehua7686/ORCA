@@ -27706,6 +27706,7 @@
       "waitingCount": "Waiting on {{count}} events",
       "settings": "Bot settings…",
       "disconnected": "Disconnected",
+      "connecting": "Connecting…",
       "runsOn": "Runs on {{host}}"
     },
     "new": {
@@ -29843,7 +29844,7 @@
       "allHidden": "All bots are paused and hidden."
     },
     "share": {
-      "shareCopy": "Share a copy…",
+      "shareCopy": "Send a copy…",
       "none": "None",
       "noPurpose": "No purpose yet",
       "updatedAt": "Updated {{date}}",
@@ -29860,7 +29861,6 @@
       "updating": "Updating…",
       "publishing": "Publishing…",
       "previewChanged": "The preview changed. Review it before publishing.",
-      "manageSharing": "Manage sharing…",
       "secretFoundTitle": "Secret found",
       "secretWhere": "{{flag}} in {{where}}, line {{line}}",
       "view": "View",
@@ -29901,10 +29901,8 @@
       "soul": "Soul",
       "add": "Add",
       "binaryFile": "Not text, so it isn’t shown.",
-      "isShared": "{{name}} is shared",
       "updatedJustNow": "Updated just now",
       "stopSharing": "Stop sharing",
-      "manageLinks": "Manage links",
       "done": "Done",
       "stopTitle": "Stop sharing {{name}}?",
       "stopDescription": "The link stops working.",
@@ -29970,9 +29968,9 @@
       },
       "notIncluded": "Not included",
       "copy": {
-        "sharedBy": "Shared by {{who}}",
         "viewOriginal": "View original",
-        "originalGone": "No longer available"
+        "originalGone": "No longer available",
+        "copiedFrom": "Copied from {{who}}"
       },
       "error": {
         "blocked": "A secret was found in what would be shared. Remove it, then try again.",
@@ -29988,7 +29986,24 @@
       "duplicateSkill": "Same name, in {{folder}} · not shared",
       "sharedBy": "Shared by {{name}}",
       "sharedWith": "Shared with {{names}}",
-      "ownersComputer": "{{name}}’s computer"
+      "ownersComputer": "{{name}}’s computer",
+      "requestFailed": "Couldn’t answer the request. Try again.",
+      "accept": "Accept",
+      "decline": "Decline",
+      "invite": {
+        "invitedYou": "{{owner}} invited you",
+        "view": "View invite",
+        "sharedWithYou": "{{owner}} shared it with you",
+        "runsOn": "{{owner}}’s agent. It runs on {{owner}}’s computer.",
+        "chatFrom": "You chat with it from your Orca and your phone.",
+        "ownChats": "You see only your own chats.",
+        "ownerSees": "{{owner}} can see your chats with it.",
+        "actsAs": "It can act on {{owner}}’s computer, with {{owner}}’s accounts.",
+        "pauses": "It pauses while {{owner}}’s computer is off.",
+        "messagesWait": "Messages wait until it’s back.",
+        "leave": "You can leave anytime.",
+        "uses": "Uses"
+      }
     },
     "apps": {
       "close": "Close",
@@ -30366,7 +30381,6 @@
       "cantReachHost": "Can't reach {{host}}",
       "statusUnknown": "Status unknown",
       "onHost": "on {{host}}",
-      "new": "New chat",
       "title": "Chats",
       "search": "Search chats and workers",
       "empty": "Side chats, Slack and Linear threads and automation runs show up here, each with the workers it starts.",
@@ -30392,7 +30406,18 @@
       "open": "Open",
       "actions": "Chat actions",
       "needsYouCount": "{{count}} needs you",
-      "hideOlder": "Hide older"
+      "personHome": "{{name}}’s Home",
+      "hideOlder": "Hide older",
+      "noMessages": "No messages yet",
+      "searchPerson": "Search {{name}}'s chats",
+      "searchOwn": "Search your chats",
+      "noneFromPerson": "No chats from {{name}}.",
+      "noneFromYou": "No chats from you.",
+      "filter": {
+        "label": "Filter by person",
+        "you": "You",
+        "everyone": "Everyone"
+      }
     },
     "cloudSignIn": {
       "automationScheduledOnly": "Runs on its schedule only: its events are paused while signed out of Orca",
@@ -30418,6 +30443,8 @@
     "tabs": {
       "homeDetail": "Home: the bot's main chat. Its memory, automations and requests from others land here.",
       "sideDetail": "Side chat: a separate topic with this bot.",
+      "teammateHomeDetail": "Home: your main chat with this agent. Your requests and its replies to you land here.",
+      "personHomeDetail": "{{name}}’s Home: their main chat with this agent.",
       "homeBanner": "Open {{name}}'s page",
       "homeTitle": "Home"
     },
@@ -30569,7 +30596,8 @@
         "filtered": "No items match.",
         "needsYou": "Nothing needs you.",
         "title": "No items yet",
-        "short": "No items yet. When {{bot}} takes something on, it shows up here."
+        "short": "No items yet. When {{bot}} takes something on, it shows up here.",
+        "person": "No items from {{name}}."
       },
       "field": {
         "chat": "Chat",
@@ -30582,7 +30610,8 @@
         "clearAll": "Clear filters",
         "label": "Filter items",
         "needsYou": "Needs you only",
-        "remove": "Remove filter {{name}}"
+        "remove": "Remove filter {{name}}",
+        "owner": "Owner"
       },
       "group": {
         "closed": "Closed",
@@ -30922,7 +30951,6 @@
       }
     },
     "teamShare": {
-      "add": "Add",
       "addLabel": "Add people",
       "addPlaceholder": "Email, Slack @name or GitHub login",
       "done": "Done",
@@ -30940,7 +30968,6 @@
       "remove": "Remove",
       "removePerson": "Remove {{name}}",
       "resendInvite": "Resend invite",
-      "share": "Share…",
       "slackLine": "{{handle}} on Slack · {{workspace}}",
       "slackOnly": "Slack only",
       "slackPlace": "Slack · {{workspace}}",
@@ -30948,7 +30975,32 @@
       "thisComputer": "this computer",
       "title": "Share {{name}}",
       "warning": "Anyone you share with can do anything {{name}} can on {{host}}, including using your accounts, files and chats.",
-      "you": "{{name}} (you)"
+      "you": "{{name}} (you)",
+      "declined": "Declined",
+      "personActions": "Actions for {{name}}",
+      "shareAgain": "Share again",
+      "cancel": "Cancel",
+      "shareStaged": "Share",
+      "discardOne": "{{name}} won’t get access.",
+      "discardMany": "These people won’t get access.",
+      "discard": "Discard",
+      "keepEditing": "Keep editing",
+      "discardTitleOne": "Discard invite?",
+      "discardTitleMany": "Discard {{count}} invites?",
+      "shareWithTeammates": "Share with teammates…"
+    },
+    "sharingPage": {
+      "teammates": "Teammates",
+      "teammatesFoot": "Runs on {{host}} with your accounts. You can see their chats with it, and each teammate sees only their own.",
+      "add": "Add",
+      "copyLink": "Copy link",
+      "createCopyLink": "Create copy link",
+      "anyoneCanCopy": "Anyone with the link can make a copy",
+      "linkActions": "Link actions",
+      "changeIncluded": "Change what’s included…",
+      "stopSharing": "Stop sharing…",
+      "allYourLinks": "All your links",
+      "alreadyUpToDate": "The link is already up to date"
     }
   },
   "plugins": {

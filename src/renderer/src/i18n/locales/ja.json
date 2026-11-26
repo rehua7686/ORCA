@@ -26328,6 +26328,7 @@
     "row": {
       "runsOn": "{{host}} で実行中",
       "disconnected": "切断済み",
+      "connecting": "接続中…",
       "idle": "アイドル",
       "paused": "一時停止中",
       "reading": "メッセージを読んでいます",
@@ -26390,7 +26391,13 @@
         "heldImagesLimit": "回答は1件のコメントとして送信され、画像は{{max}}枚までです。保留中の回答を先に送信するか、いくつか削除してください。",
         "heldSkillsLimit": "回答は1件のコメントとして送信され、スキルは{{max}}個までです。保留中の回答を先に送信するか、いくつか削除してください。"
       },
-      "readMoreClosedFailed": "クローズ済みの項目をさらに読み込めませんでした"
+      "readMoreClosedFailed": "クローズ済みの項目をさらに読み込めませんでした",
+      "empty": {
+        "person": "{{name}} の項目はありません。"
+      },
+      "filter": {
+        "owner": "オーナー"
+      }
     },
     "hover": {
       "asksQuestion": "回答を待っています",
@@ -26412,8 +26419,19 @@
       "searchRetry": "再試行",
       "loading": "チャットを読み込み中…",
       "readFailed": "このボットのチャットを読み取れませんでした。",
+      "personHome": "{{name}} の Home",
       "older": "古い{{count}}件を表示",
-      "hideOlder": "古い項目を隠す"
+      "hideOlder": "古い項目を隠す",
+      "noMessages": "まだメッセージはありません",
+      "searchPerson": "{{name}} のチャットを検索",
+      "searchOwn": "自分のチャットを検索",
+      "noneFromPerson": "{{name}} のチャットはありません。",
+      "noneFromYou": "自分のチャットはありません。",
+      "filter": {
+        "label": "人で絞り込む",
+        "you": "自分",
+        "everyone": "全員"
+      }
     },
     "needs": {
       "chat": "{{name}} とのチャット",
@@ -26537,7 +26555,24 @@
       "receive": {
         "fromLinkMenu": "リンクから…"
       },
-      "duplicateSkill": "同名のスキルが {{folder}} にあります · 共有されません"
+      "duplicateSkill": "同名のスキルが {{folder}} にあります · 共有されません",
+      "invite": {
+        "invitedYou": "{{owner}} さんから招待されました",
+        "view": "招待を表示",
+        "sharedWithYou": "{{owner}} さんがあなたと共有しました",
+        "runsOn": "{{owner}} さんの Agent です。{{owner}} さんのコンピュータで動作します。",
+        "chatFrom": "あなたの Orca とスマートフォンからチャットできます。",
+        "ownChats": "表示されるのは自分のチャットだけです。",
+        "ownerSees": "{{owner}} さんはあなたのこの Agent とのチャットを見られます。",
+        "actsAs": "{{owner}} さんのコンピュータ上で、{{owner}} さんのアカウントを使って操作できます。",
+        "pauses": "{{owner}} さんのコンピュータがオフの間は一時停止します。",
+        "messagesWait": "メッセージは再開まで待機します。",
+        "leave": "いつでも退出できます。",
+        "uses": "使用サービス"
+      },
+      "copy": {
+        "copiedFrom": "{{who}} からコピー"
+      }
     },
     "host": {
       "botWorkspaceUnavailable": "この Agent のワークスペースは現在ここで利用できないため、そこでページを開けません。",
@@ -26713,6 +26748,22 @@
         "expired": "サインインの有効期限が切れました。もう一度お試しください。",
         "couldNotSignIn": "サインインできませんでした。もう一度お試しください。"
       }
+    },
+    "teamShare": {
+      "shareWithTeammates": "チームメイトと共有…"
+    },
+    "sharingPage": {
+      "teammates": "チームメイト",
+      "teammatesFoot": "{{host}} 上で、あなたのアカウントを使って動作します。チームメイトのチャットはあなたも見られますが、各チームメイトが見られるのは自分のチャットだけです。",
+      "add": "追加",
+      "copyLink": "コピー用リンク",
+      "createCopyLink": "コピー用リンクを作成",
+      "anyoneCanCopy": "リンクを知っている人は誰でもコピーを作成できます",
+      "linkActions": "リンクの操作",
+      "changeIncluded": "含める内容を変更…",
+      "stopSharing": "共有を停止…",
+      "allYourLinks": "すべてのリンク",
+      "alreadyUpToDate": "リンクはすでに最新です"
     }
   },
   "speechModelUpdate": {

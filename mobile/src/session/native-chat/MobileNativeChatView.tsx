@@ -334,7 +334,7 @@ export function MobileNativeChatView({
         {...{ permission, onRespondPermission, question, onAnswerQuestion, onCollapsePrompt }}
         {...{ onAnswerInTerminal, collapsedPrompt, notice }}
       />
-      <View style={promptOwnsInput ? styles.hidden : undefined}>
+      <View style={promptOwnsInput || offlineQueue.composerHidden ? styles.hidden : undefined}>
         <MobileNativeChatDraftComposer
           draftScopeKey={composerScopeKey}
           structured={structuredActivityUi ? structured : null}

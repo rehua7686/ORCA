@@ -1,6 +1,7 @@
 // The person-side messages each of a chat's turns took, from Orca's own journal: the one that opened
 // it and those steered into it. Who a turn acts for and whether it may leave its thread both read this.
 import type {
+  AgentJournalItemBody,
   AgentJournalRenderItem,
   AgentJournalSubmission
 } from '../../shared/agent-session/journal/agent-session-journal-types'
@@ -73,4 +74,18 @@ export function turnMessages(
     }
   }
   return turns.map((turn) => byTurn.get(turn.itemId) ?? [])
+}
+
+const MAX_REQUEST_TEXT = 500
+
+/** A message's text as a request names it, cut to its first few hundred characters. */
+export function textOf(body: AgentJournalItemBody): string | null {
+  if (body.kind !== 'message') {
+    return null
+  }
+  const text = body.blocks
+    .flatMap((block) => (block.type === 'text' ? [block.text] : []))
+    .join('\n')
+    .trim()
+  return text ? text.slice(0, MAX_REQUEST_TEXT) : null
 }

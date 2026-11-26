@@ -35,6 +35,7 @@ import {
 import { useFileExplorerManualRefresh } from './useFileExplorerManualRefresh'
 import { useFileExplorerTree } from '../tree/useFileExplorerTree'
 import { getFileExplorerOperationOwnerFromState } from '../navigation/file-explorer-operation-owner'
+import { fileExplorerOwnerReadOnly } from '../tree/file-explorer-types'
 import { useFileExplorerSelection } from '../selection/useFileExplorerSelection'
 import { useFileExplorerVisibleRowProjection } from '../tree/useFileExplorerVisibleRowProjection'
 import { useFileExplorerBackgroundMenu } from './use-file-explorer-background-menu'
@@ -53,6 +54,10 @@ function FileExplorerFiles(): React.JSX.Element {
   const setRightSidebarExplorerView = useAppStore((s) => s.setRightSidebarExplorerView)
   const searchPanel = useFileSearchPanel(explorerView)
   const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
+  // An agent's folder shared with this account: browsed and opened here, never changed.
+  const readOnly = useAppStore((s) =>
+    fileExplorerOwnerReadOnly(getFileExplorerOperationOwnerFromState(s, activeWorktreeId))
+  )
   const runtimeEnvironmentId = useAppStore((s) =>
     runtimeEnvironmentIdOrLocalUnlessTwin(s, activeWorktreeId)
   )
@@ -213,7 +218,7 @@ function FileExplorerFiles(): React.JSX.Element {
     handleExplorerBackgroundContextMenuCapture,
     handleExplorerBackgroundDoubleClick
   } = useFileExplorerBackgroundMenu({
-    worktreePath: displayRootPath,
+    worktreePath: readOnly ? null : displayRootPath,
     displayDepth,
     inlineInput: inlineInputState.inlineInput,
     startNew: inlineInputState.startNew
@@ -255,6 +260,7 @@ function FileExplorerFiles(): React.JSX.Element {
           worktreePath={worktreePath}
           {...getRouteForLocalPathOpenOwner(openInOwner)}
           workspaceId={activeWorktreeId}
+          hostOnly={readOnly}
           refresh={manualRefresh}
           canRefresh={isFilesViewActive}
           canCollapseAll={canCollapseAll}
@@ -352,14 +358,16 @@ function FileExplorerFiles(): React.JSX.Element {
         </div>
       </div>
 
-      <FileExplorerBackgroundMenu
-        open={bgMenuOpen}
-        onOpenChange={setBgMenuOpen}
-        point={bgMenuPoint}
-        worktreePath={displayRootPath ?? worktreePath}
-        displayDepth={displayDepth}
-        onStartNew={inlineInputState.startNew}
-      />
+      {readOnly ? null : (
+        <FileExplorerBackgroundMenu
+          open={bgMenuOpen}
+          onOpenChange={setBgMenuOpen}
+          point={bgMenuPoint}
+          worktreePath={displayRootPath ?? worktreePath}
+          displayDepth={displayDepth}
+          onStartNew={inlineInputState.startNew}
+        />
+      )}
     </>
   )
 }

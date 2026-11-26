@@ -1,5 +1,6 @@
 // One authenticated device's call, once its message is parsed and routed: shared by full pairings and
 // teammates' share devices, which get only what `dispatchForDevice` gives every device.
+import { parseRuntimeClientCapabilities } from '../callers/runtime-client-capabilities'
 import { randomUUID } from 'node:crypto'
 import type { WebSocket } from 'ws'
 import type {
@@ -34,6 +35,11 @@ import { RuntimeRpcMobileDevices } from './runtime-rpc-mobile-devices'
 import { exchangeSocketPairingTicket } from './runtime-rpc-pairing-ticket-exchange'
 import { limitRuntimeRpcReplySize } from './runtime-rpc-reply-size-limit'
 import { RuntimeRpcStagedReplies } from './runtime-rpc-staged-replies'
+import type { OpenedBinaryChannel } from './runtime-binary-channels'
+import {
+  isBinaryChannelNumber,
+  RUNTIME_BINARY_CHANNELS_CAPABILITY
+} from '../../../../shared/remote-runtime/protocol/runtime-binary-channel'
 
 type PairedDeviceContext = Pick<
   RpcDispatchStreamingOptions,
@@ -154,7 +160,25 @@ export class RuntimeRpcDeviceDispatch extends RuntimeRpcMobileDevices {
         ? (response: string): void => boundedReply(injectDeviceScope(response, device.scope))
         : boundedReply
 
-    const connectionId = ws ? this.mobileSocketWiring?.getConnectionId(ws) : undefined
+    const socketConnectionId = ws ? this.mobileSocketWiring?.getConnectionId(ws) : undefined
+    const channel = this.openRequestBinaryChannel(
+      request,
+      socketConnectionId,
+      authenticatedSocket,
+      sendBinary
+    )
+    if (channel && 'error' in channel) {
+      abortRegistration?.dispose()
+      this.releaseLongPoll(longPoll, device.deviceId)
+      reply(JSON.stringify(this.buildError(request.id, 'bad_request', channel.error)))
+      return
+    }
+    // A stream on a binary channel is its own connection, as if it had a socket of its own.
+    const connectionId = channel?.connectionId ?? socketConnectionId
+    const signal =
+      channel && abortRegistration
+        ? AbortSignal.any([abortRegistration.signal, channel.signal])
+        : (channel?.signal ?? abortRegistration?.signal)
     const pairingProvider = this.mobileRelayPairingProvider
     const pairingContext =
       pairingProvider && authenticatedSocket
@@ -190,21 +214,55 @@ export class RuntimeRpcDeviceDispatch extends RuntimeRpcMobileDevices {
         // Diet only mobile payloads; retain full web/desktop replies.
         clientKind: device.scope,
         callerScope,
-        clientCapabilities: authenticatedSocket?.clientCapabilities,
-        capabilitySource: authenticatedSocket?.capabilitySource,
+        // A stream on a channel reads by what its own socket would have declared.
+        clientCapabilities:
+          channel?.capabilities.current ?? authenticatedSocket?.clientCapabilities,
+        capabilitySource: channel?.capabilities ?? authenticatedSocket?.capabilitySource,
         pairing: pairingContext,
         ...paired,
-        signal: abortRegistration?.signal,
-        sendBinary,
+        signal,
+        sendBinary: channel?.sendBinary ?? sendBinary,
         registerBinaryStreamHandler: (streamId, handler) =>
           this.registerBinaryStreamHandler(connectionId, streamId, handler),
         registerBinaryMessageHandler: (handler) =>
           this.registerBinaryMessageHandler(connectionId, handler)
       })
     } finally {
+      // The stream is over (ended, failed or refused): its channel goes with it.
+      channel?.release()
       abortRegistration?.dispose()
       this.releaseLongPoll(longPoll, device.deviceId)
     }
+  }
+
+  private openRequestBinaryChannel(
+    request: RpcRequest,
+    socketConnectionId: string | undefined,
+    authenticatedSocket: AuthenticatedMobileSocket | undefined,
+    sendBinary: RpcBinarySender
+  ): OpenedBinaryChannel | { error: string } | null {
+    if (request.binaryChannel === undefined) {
+      return null
+    }
+    if (
+      !socketConnectionId ||
+      !authenticatedSocket?.clientCapabilities.includes(RUNTIME_BINARY_CHANNELS_CAPABILITY)
+    ) {
+      return { error: 'Binary channels are not available on this connection.' }
+    }
+    if (!isBinaryChannelNumber(request.binaryChannel)) {
+      return { error: 'Binary channel must be an integer from 1 to 2^32-1.' }
+    }
+    // Its own socket declared the stream's capabilities; without them it reads by this socket's.
+    const capabilities = Array.isArray(request.binaryChannelCapabilities)
+      ? parseRuntimeClientCapabilities(request.binaryChannelCapabilities)
+      : authenticatedSocket.clientCapabilities
+    return this.binaryChannels.open(
+      socketConnectionId,
+      request.binaryChannel,
+      sendBinary,
+      capabilities
+    )
   }
 
   /** A teammate's message held while this host was away: see `deliverBotShareHeldMessage`. */
@@ -237,6 +295,9 @@ export class RuntimeRpcDeviceDispatch extends RuntimeRpcMobileDevices {
     params: unknown
   ): Promise<unknown> {
     const principal = botSharePrincipalOf(device)
+    const clientCapabilities = remoteRuntimeClientCapabilities(
+      ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
+    )
     const response = await this.dispatcher.dispatch(
       { id: randomUUID(), authToken: '', method, params },
       {
@@ -247,10 +308,8 @@ export class RuntimeRpcDeviceDispatch extends RuntimeRpcMobileDevices {
         // As the teammate's desktop would send it live: its handshake's capabilities, which take a
         // send's answer at acceptance.
         clientKind: 'runtime',
-        callerScope: botShareCallerScopeOf(device),
-        clientCapabilities: remoteRuntimeClientCapabilities(
-          ELECTRON_REMOTE_RUNTIME_CLIENT_CAPABILITIES
-        )
+        callerScope: botShareCallerScopeOf(device, clientCapabilities),
+        clientCapabilities
       }
     )
     if (!response.ok) {

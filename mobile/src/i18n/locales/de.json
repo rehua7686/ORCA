@@ -286,7 +286,6 @@
     },
     "nativeChatProse": {
       "attachedImage": "Angehängtes Bild",
-      "image": "Bild",
       "openImageHint": "Öffnet das Bild in voller Größe"
     },
     "nativeChatToolLine": {
@@ -5007,7 +5006,8 @@
     },
     "saveFailed": "Speichern fehlgeschlagen",
     "chats": {
-      "readFailedTitle": "Chats konnten nicht geladen werden"
+      "readFailedTitle": "Chats konnten nicht geladen werden",
+      "noMessages": "Noch keine Nachrichten"
     },
     "panel": {
       "backTo": "Zurück zu {{name}}"
@@ -5170,7 +5170,24 @@
       }
     },
     "share": {
-      "signInOtherSite": "Der Computer hat einen Anmeldelink für eine andere Website gesendet, daher wurde er nicht geöffnet."
+      "signInOtherSite": "Der Computer hat einen Anmeldelink für eine andere Website gesendet, daher wurde er nicht geöffnet.",
+      "invite": {
+        "invitedYou": "{{owner}} hat dich eingeladen",
+        "view": "Einladung ansehen",
+        "sharedWithYou": "{{owner}} hat ihn mit dir geteilt",
+        "runsOn": "Agent von {{owner}}. Er läuft auf dem Computer von {{owner}}.",
+        "chatFrom": "Du chattest mit ihm in deinem Orca und auf deinem Telefon.",
+        "ownChats": "Du siehst nur deine eigenen Chats.",
+        "ownerSees": "{{owner}} kann deine Chats mit ihm sehen.",
+        "actsAs": "Er kann auf dem Computer von {{owner}} handeln, mit den Konten von {{owner}}.",
+        "pauses": "Er pausiert, solange der Computer von {{owner}} aus ist.",
+        "messagesWait": "Nachrichten warten, bis er zurück ist.",
+        "leave": "Du kannst jederzeit austreten.",
+        "uses": "Nutzt"
+      },
+      "original": {
+        "copiedFrom": "Kopiert von {{who}}"
+      }
     },
     "settingsPage": {
       "off": "Aus",

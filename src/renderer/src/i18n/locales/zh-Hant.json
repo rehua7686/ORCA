@@ -27144,6 +27144,7 @@
     "row": {
       "runsOn": "在 {{host}} 上執行",
       "disconnected": "已中斷連線",
+      "connecting": "正在連線…",
       "idle": "閒置",
       "paused": "已暫停",
       "reading": "正在閱讀你的訊息",
@@ -27235,6 +27236,12 @@
         "placeholder": "等待的事項",
         "keep": "取消",
         "confirm": "設為等待中"
+      },
+      "empty": {
+        "person": "沒有來自 {{name}} 的事項。"
+      },
+      "filter": {
+        "owner": "擁有者"
       }
     },
     "hover": {
@@ -27268,12 +27275,23 @@
       "searchRetry": "重試",
       "loading": "正在載入聊天…",
       "readFailed": "無法讀取此機器人的聊天。",
+      "personHome": "{{name}} 的 Home",
       "delete": "刪除聊天",
       "open": "開啟",
       "actions": "聊天操作",
       "needsYouCount": "{{count}} 個需要你處理",
       "older": "顯示 {{count}} 個較早的",
-      "hideOlder": "隱藏較早的"
+      "hideOlder": "隱藏較早的",
+      "noMessages": "尚無訊息",
+      "searchPerson": "搜尋 {{name}} 的聊天",
+      "searchOwn": "搜尋你的聊天",
+      "noneFromPerson": "沒有 {{name}} 的聊天。",
+      "noneFromYou": "沒有你的聊天。",
+      "filter": {
+        "label": "依人員篩選",
+        "you": "你",
+        "everyone": "所有人"
+      }
     },
     "needs": {
       "chat": "你與 {{name}} 的對話",
@@ -27498,7 +27516,24 @@
       "receive": {
         "fromLinkMenu": "來自連結…"
       },
-      "duplicateSkill": "名稱相同，位於 {{folder}} · 未分享"
+      "duplicateSkill": "名稱相同，位於 {{folder}} · 未分享",
+      "invite": {
+        "invitedYou": "{{owner}} 邀請了你",
+        "view": "查看邀請",
+        "sharedWithYou": "{{owner}} 與你分享了它",
+        "runsOn": "{{owner}} 的代理程式，在 {{owner}} 的電腦上執行。",
+        "chatFrom": "你可以在自己的 Orca 和手機上與它聊天。",
+        "ownChats": "你只能看到自己的聊天。",
+        "ownerSees": "{{owner}} 可以看到你與它的聊天。",
+        "actsAs": "它可以在 {{owner}} 的電腦上使用 {{owner}} 的帳號執行操作。",
+        "pauses": "{{owner}} 的電腦關機時它會暫停。",
+        "messagesWait": "訊息會等它恢復後再處理。",
+        "leave": "你可以隨時離開。",
+        "uses": "使用"
+      },
+      "copy": {
+        "copiedFrom": "複製自 {{who}}"
+      }
     },
     "host": {
       "botWorkspaceUnavailable": "此代理程式的工作區目前無法在這裡使用，因此無法在該工作區開啟此頁面。",
@@ -27725,6 +27760,22 @@
         "expired": "登入已逾期。請再試一次。",
         "couldNotSignIn": "無法登入。請再試一次。"
       }
+    },
+    "teamShare": {
+      "shareWithTeammates": "與隊友分享…"
+    },
+    "sharingPage": {
+      "teammates": "隊友",
+      "teammatesFoot": "在 {{host}} 上使用你的帳號執行。你能看到隊友與它的聊天，每位隊友只能看到自己的聊天。",
+      "add": "新增",
+      "copyLink": "副本連結",
+      "createCopyLink": "建立副本連結",
+      "anyoneCanCopy": "任何擁有連結的人都可以建立副本",
+      "linkActions": "連結操作",
+      "changeIncluded": "變更包含的內容…",
+      "stopSharing": "停止分享…",
+      "allYourLinks": "你的所有連結",
+      "alreadyUpToDate": "連結已是最新"
     }
   },
   "plugins": {

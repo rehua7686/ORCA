@@ -425,7 +425,6 @@
     },
     "nativeChatProse": {
       "attachedImage": "Ekli görsel",
-      "image": "görsel",
       "openImageHint": "Görseli tam boyutta açar"
     },
     "nativeChatToolLine": {
@@ -7982,7 +7981,9 @@
       "runningCount": "{{count}} çalışıyor",
       "needsYouCount": "{{count}} sizi bekliyor",
       "open": "Aç",
-      "delete": "Sohbeti sil"
+      "delete": "Sohbeti sil",
+      "noMessages": "Henüz mesaj yok",
+      "personHome": "Home ({{name}})"
     },
     "panel": {
       "backTo": "{{name}} ekranına dön",
@@ -8203,10 +8204,24 @@
     },
     "share": {
       "signInOtherSite": "Bilgisayar başka bir site için oturum açma bağlantısı gönderdi, bu yüzden açılmadı.",
+      "invite": {
+        "invitedYou": "{{owner}} sizi davet etti",
+        "view": "Daveti gör",
+        "sharedWithYou": "{{owner}} sizinle paylaştı",
+        "runsOn": "{{owner}} adlı kişinin ajanı. {{owner}} adlı kişinin bilgisayarında çalışır.",
+        "chatFrom": "Onunla Orca’nızdan ve telefonunuzdan sohbet edersiniz.",
+        "ownChats": "Yalnızca kendi sohbetlerinizi görürsünüz.",
+        "ownerSees": "{{owner}}, onunla yaptığınız sohbetleri görebilir.",
+        "actsAs": "{{owner}} adlı kişinin bilgisayarında, {{owner}} adlı kişinin hesaplarıyla işlem yapabilir.",
+        "pauses": "{{owner}} adlı kişinin bilgisayarı kapalıyken duraklar.",
+        "messagesWait": "Mesajlar o dönene kadar bekler.",
+        "leave": "İstediğiniz zaman ayrılabilirsiniz.",
+        "uses": "Kullanır"
+      },
       "original": {
-        "sharedBy": "Paylaşan: {{who}}",
         "viewOriginal": "Orijinali görüntüle",
-        "originalGone": "Artık kullanılamıyor"
+        "originalGone": "Artık kullanılamıyor",
+        "copiedFrom": "Kopyalandığı kişi: {{who}}"
       },
       "sameLinkShort": "Daha önce oluşturulan kopyalar olduğu gibi kalır.",
       "receive": {
@@ -8248,7 +8263,6 @@
       "updatedAt": "Güncelleme: {{date}}",
       "upToDate": "Güncel",
       "changedSince": "Bot o zamandan beri değişti",
-      "copy": "Kopyala",
       "copyLink": "Bağlantıyı kopyala",
       "secretFoundTitle": "Gizli bilgi bulundu",
       "secretWhere": "{{where}}, satır {{line}}: {{flag}}",

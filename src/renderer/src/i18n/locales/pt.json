@@ -26243,6 +26243,7 @@
     "row": {
       "runsOn": "Em execução em {{host}}",
       "disconnected": "Desconectado",
+      "connecting": "Conectando…",
       "idle": "Inativo",
       "paused": "Pausado",
       "reading": "Lendo sua mensagem",
@@ -26305,7 +26306,13 @@
         "cancelAll": "Cancelar todos"
       },
       "tab": "Início",
-      "readMoreClosedFailed": "Não foi possível ler mais itens fechados"
+      "readMoreClosedFailed": "Não foi possível ler mais itens fechados",
+      "empty": {
+        "person": "Nenhum item de {{name}}."
+      },
+      "filter": {
+        "owner": "Proprietário"
+      }
     },
     "hover": {
       "asksQuestion": "Aguardando sua resposta",
@@ -26330,8 +26337,19 @@
       "loading": "Carregando chats…",
       "readFailed": "Não foi possível ler os chats deste bot.",
       "searchRetry": "Tentar novamente",
+      "personHome": "Home de {{name}}",
       "older": "Mostrar {{count}} mais antigos",
-      "hideOlder": "Ocultar mais antigos"
+      "hideOlder": "Ocultar mais antigos",
+      "noMessages": "Ainda não há mensagens",
+      "searchPerson": "Pesquisar nos chats de {{name}}",
+      "searchOwn": "Pesquisar nos seus chats",
+      "noneFromPerson": "Nenhum chat de {{name}}.",
+      "noneFromYou": "Nenhum chat seu.",
+      "filter": {
+        "label": "Filtrar por pessoa",
+        "you": "Você",
+        "everyone": "Todos"
+      }
     },
     "needs": {
       "chat": "Seu chat com {{name}}",
@@ -26483,7 +26501,24 @@
         "fromLinkMenu": "De um link…"
       },
       "signInToPublish": "Entrar para publicar",
-      "stopSharing": "Parar de compartilhar"
+      "stopSharing": "Parar de compartilhar",
+      "invite": {
+        "invitedYou": "{{owner}} convidou você",
+        "view": "Ver convite",
+        "sharedWithYou": "{{owner}} compartilhou com você",
+        "runsOn": "Agente de {{owner}}. Ele roda no computador de {{owner}}.",
+        "chatFrom": "Você conversa com ele pelo seu Orca e pelo seu celular.",
+        "ownChats": "Você vê apenas suas próprias conversas.",
+        "ownerSees": "{{owner}} pode ver suas conversas com ele.",
+        "actsAs": "Ele pode agir no computador de {{owner}}, com as contas de {{owner}}.",
+        "pauses": "Ele pausa enquanto o computador de {{owner}} está desligado.",
+        "messagesWait": "As mensagens esperam até ele voltar.",
+        "leave": "Você pode sair quando quiser.",
+        "uses": "Usa"
+      },
+      "copy": {
+        "copiedFrom": "Copiado de {{who}}"
+      }
     },
     "upNext": {
       "lookNow": "Dar uma olhada agora",
@@ -26635,6 +26670,22 @@
         "expired": "O login expirou. Tente novamente.",
         "couldNotSignIn": "Não foi possível fazer login. Tente novamente."
       }
+    },
+    "teamShare": {
+      "shareWithTeammates": "Compartilhar com colegas…"
+    },
+    "sharingPage": {
+      "teammates": "Colegas",
+      "teammatesFoot": "Roda em {{host}} com suas contas. Você vê as conversas deles com ele, e cada colega vê só as próprias.",
+      "add": "Adicionar",
+      "copyLink": "Link de cópia",
+      "createCopyLink": "Criar link de cópia",
+      "anyoneCanCopy": "Qualquer pessoa com o link pode fazer uma cópia",
+      "linkActions": "Ações do link",
+      "changeIncluded": "Alterar o que está incluído…",
+      "stopSharing": "Parar de compartilhar…",
+      "allYourLinks": "Todos os seus links",
+      "alreadyUpToDate": "O link já está atualizado"
     }
   },
   "speechModelUpdate": {

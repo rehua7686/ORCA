@@ -28168,6 +28168,7 @@
     "row": {
       "runsOn": "{{host}} üzerinde çalışıyor",
       "disconnected": "Bağlantı kesildi",
+      "connecting": "Bağlanıyor…",
       "idle": "Boşta",
       "paused": "Duraklatıldı",
       "reading": "Mesajınızı okuyor",
@@ -28356,7 +28357,8 @@
         "filtered": "Eşleşen öğe yok.",
         "needsYou": "İlginizi bekleyen bir şey yok.",
         "title": "Henüz öğe yok",
-        "short": "Henüz öğe yok. {{bot}} bir iş üstlendiğinde burada görünür."
+        "short": "Henüz öğe yok. {{bot}} bir iş üstlendiğinde burada görünür.",
+        "person": "{{name}} kişisinden öğe yok."
       },
       "field": {
         "chat": "Sohbet",
@@ -28369,7 +28371,8 @@
         "clearAll": "Filtreleri temizle",
         "label": "Öğeleri filtrele",
         "needsYou": "Yalnızca sizi bekleyenler",
-        "remove": "{{name}} filtresini kaldır"
+        "remove": "{{name}} filtresini kaldır",
+        "owner": "Sahip"
       },
       "homeChat": "Ana sohbet",
       "link": {
@@ -28435,6 +28438,7 @@
       "loading": "Sohbetler yükleniyor…",
       "readFailed": "Bu botun sohbetleri okunamadı.",
       "searchRetry": "Tekrar dene",
+      "personHome": "Home ({{name}})",
       "replying": "Yanıtlanıyor…",
       "replyingState": "Yanıtlıyor",
       "kindSlack": "Slack konuşma dizisi",
@@ -28459,7 +28463,6 @@
       "cantReachHost": "{{host}} sunucusuna ulaşılamıyor",
       "statusUnknown": "Durum bilinmiyor",
       "onHost": "{{host}} üzerinde",
-      "new": "Yeni sohbet",
       "title": "Sohbetler",
       "search": "Sohbetlerde ve çalışanlarda ara",
       "empty": "Yan sohbetler, Slack ve Linear yazışmaları ve otomasyon çalıştırmaları burada listelenir. Her birinin altında başlattığı çalışanları görebilirsiniz.",
@@ -28481,7 +28484,17 @@
       "open": "Aç",
       "actions": "Sohbet işlemleri",
       "needsYouCount": "{{count}} sizi bekliyor",
-      "hideOlder": "Eski kayıtları gizle"
+      "hideOlder": "Eski kayıtları gizle",
+      "noMessages": "Henüz mesaj yok",
+      "searchPerson": "{{name}} adlı kişinin sohbetlerinde ara",
+      "searchOwn": "Sohbetlerinde ara",
+      "noneFromPerson": "{{name}} adlı kişiden sohbet yok.",
+      "noneFromYou": "Senden sohbet yok.",
+      "filter": {
+        "label": "Kişiye göre filtrele",
+        "you": "Sen",
+        "everyone": "Herkes"
+      }
     },
     "needs": {
       "chat": "{{name}} ile sohbetiniz",
@@ -29083,6 +29096,20 @@
       },
       "signInToPublish": "Yayımlamak için oturum aç",
       "stopSharing": "Paylaşımı durdur",
+      "invite": {
+        "invitedYou": "{{owner}} sizi davet etti",
+        "view": "Daveti gör",
+        "sharedWithYou": "{{owner}} sizinle paylaştı",
+        "runsOn": "{{owner}} adlı kişinin ajanı. {{owner}} adlı kişinin bilgisayarında çalışır.",
+        "chatFrom": "Onunla Orca’nızdan ve telefonunuzdan sohbet edersiniz.",
+        "ownChats": "Yalnızca kendi sohbetlerinizi görürsünüz.",
+        "ownerSees": "{{owner}}, onunla yaptığınız sohbetleri görebilir.",
+        "actsAs": "{{owner}} adlı kişinin bilgisayarında, {{owner}} adlı kişinin hesaplarıyla işlem yapabilir.",
+        "pauses": "{{owner}} adlı kişinin bilgisayarı kapalıyken duraklar.",
+        "messagesWait": "Mesajlar o dönene kadar bekler.",
+        "leave": "İstediğiniz zaman ayrılabilirsiniz.",
+        "uses": "Kullanır"
+      },
       "none": "Yok",
       "noPurpose": "Henüz amaç belirtilmedi",
       "updatedAt": "Güncelleme: {{date}}",
@@ -29096,7 +29123,6 @@
       "movedHere": "Bu bağlantı başka bir yerde güncellendi.",
       "updating": "Güncelleniyor…",
       "publishing": "Yayınlanıyor…",
-      "manageSharing": "Paylaşımı yönet…",
       "secretFoundTitle": "Gizli bilgi bulundu",
       "secretWhere": "{{where}}, satır {{line}}: {{flag}}",
       "view": "Görüntüle",
@@ -29134,9 +29160,7 @@
       "soul": "Kişilik",
       "add": "Ekle",
       "binaryFile": "İçerik metin olmadığı için gösterilmiyor.",
-      "isShared": "{{name}} paylaşılıyor",
       "updatedJustNow": "Az önce güncellendi",
-      "manageLinks": "Bağlantıları yönet",
       "done": "Tamam",
       "stopTitle": "{{name}} için paylaşım durdurulsun mu?",
       "stopDescription": "Bağlantı artık çalışmaz.",
@@ -29184,9 +29208,9 @@
       },
       "notIncluded": "Dahil değil",
       "copy": {
-        "sharedBy": "Paylaşan: {{who}}",
         "viewOriginal": "Özgün sürümü görüntüle",
-        "originalGone": "Artık kullanılamıyor"
+        "originalGone": "Artık kullanılamıyor",
+        "copiedFrom": "Kopyalandığı kişi: {{who}}"
       },
       "error": {
         "blocked": "Paylaşılacak içerikte gizli bilgi bulundu. Bu bilgiyi kaldırıp yeniden deneyin.",
@@ -30512,6 +30536,8 @@
     "tabs": {
       "homeDetail": "Ana sohbet: Botun temel sohbetidir. Belleği, otomasyonları ve başkalarından gelen istekler burada yer alır.",
       "sideDetail": "Yan sohbet: Bu botla ayrı bir konuyu konuşabileceğiniz sohbet.",
+      "teammateHomeDetail": "Ana sohbet: Bu ajanla temel sohbetiniz. İstekleriniz ve ajanın size verdiği yanıtlar burada yer alır.",
+      "personHomeDetail": "Home ({{name}}): Bu ajanla kişinin temel sohbeti.",
       "homeBanner": "{{name}} sayfasını aç",
       "homeTitle": "Ana sayfa"
     },
@@ -30579,6 +30605,22 @@
         "incident-timeline": "Gelişmeleri saatleriyle kaydedin, ardından kişileri suçlamadan süreci açıklayan bir rapor taslağı hazırlayın.",
         "workspace-hygiene": "Bir çalışma alanının tamamlandığı veya terk edildiği nasıl anlaşılır ve kaldırılmadan önce neler kontrol edilir?"
       }
+    },
+    "teamShare": {
+      "shareWithTeammates": "Ekip arkadaşlarıyla paylaş…"
+    },
+    "sharingPage": {
+      "teammates": "Ekip arkadaşları",
+      "teammatesFoot": "{{host}} üzerinde senin hesaplarınla çalışır. Onların sohbetlerini görebilirsin; her ekip arkadaşı yalnızca kendi sohbetlerini görür.",
+      "add": "Ekle",
+      "copyLink": "Kopya bağlantısı",
+      "createCopyLink": "Kopya bağlantısı oluştur",
+      "anyoneCanCopy": "Bağlantıya sahip herkes bir kopya oluşturabilir",
+      "linkActions": "Bağlantı işlemleri",
+      "changeIncluded": "Nelerin dahil olduğunu değiştir…",
+      "stopSharing": "Paylaşımı durdur…",
+      "allYourLinks": "Tüm bağlantıların",
+      "alreadyUpToDate": "Bağlantı zaten güncel"
     }
   },
   "plugins": {

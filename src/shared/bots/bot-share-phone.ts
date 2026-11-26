@@ -5,6 +5,7 @@
 import * as z from 'zod'
 import { isDevicePublicKeyB64 } from '../remote-runtime/pairing/device-key-proof'
 import { BotShareIdSchema } from './bot-team-shares'
+import { AgentCardSchema } from './agent-card-contract'
 
 const Id = z.string().min(1).max(128)
 const Name = z.string().min(1).max(200)
@@ -45,12 +46,39 @@ export const SharedBotPhoneShare = z.object({
   botName: Name,
   ownerName: Name,
   // The computer's id for the agent's host: its pages name the host by it (executionHost runtime:<id>).
-  environmentId: Id
+  environmentId: Id,
+  // The account it is shared with, the computer's own: whose the phone's messages are. Absent from
+  // an older computer.
+  accountId: Id.optional()
 })
 export type SharedBotPhoneShare = z.infer<typeof SharedBotPhoneShare>
 
-export const SharedBotsPhoneList = z.object({ shares: z.array(SharedBotPhoneShare) })
+/** A share offered to the computer's account that waits for Accept or Decline; nothing of it is
+ *  paired, so the phone gets no key to it until it is accepted. */
+export const SharedBotPhoneRequest = z.object({
+  shareId: BotShareIdSchema,
+  botId: Id,
+  botName: Name,
+  ownerName: Name,
+  botPurpose: z.string().min(1).max(1000).optional(),
+  // Its mascot and services; absent from a computer from before cards.
+  agentCard: AgentCardSchema
+})
+export type SharedBotPhoneRequest = z.infer<typeof SharedBotPhoneRequest>
+
+export const SharedBotsPhoneList = z.object({
+  shares: z.array(SharedBotPhoneShare),
+  // Absent from a computer from before Accept.
+  requests: z.array(SharedBotPhoneRequest).max(50).optional()
+})
 export type SharedBotsPhoneList = z.infer<typeof SharedBotsPhoneList>
+
+/** The phone's Accept or Decline of a share offered to its computer's account, which that computer
+ *  answers as its own. */
+export const SHARED_BOTS_PHONE_ACCEPT_METHOD = 'sharedBots.phone.accept'
+export const SHARED_BOTS_PHONE_DECLINE_METHOD = 'sharedBots.phone.decline'
+export const SharedBotsPhoneAnswerParams = z.object({ shareId: BotShareIdSchema })
+export const SharedBotsPhoneAnswer = z.object({ answered: z.boolean() })
 
 export const SharedBotsPhoneProvisionParams = BotShareProvisionPhoneParams.extend({
   shareId: BotShareIdSchema

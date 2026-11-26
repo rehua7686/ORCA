@@ -37,6 +37,8 @@ import { getHostKeyedBotSidebarEntries } from './bot-sidebar-entry-keys'
 import { readBotHostState } from '@/lib/bot-catalog-snapshot'
 import { BotSidebarDragFrame, BotSidebarEntry, type BotSidebarEntryDrag } from './BotSidebarEntry'
 import { BotGroupRow } from './BotGroupRow'
+import { SharedBotRequestRows } from './sharing/SharedBotRequestRows'
+import { useSharedBotRequests } from '@/runtime/hosts/shared-bot-hosts/shared-bot-host-catalog'
 import { BotGroupMembersDialog } from './BotGroupMembersDialog'
 import { useBotGroupDelete } from './use-bot-group-delete'
 import { findBotGroupRoom, type BotGroup } from '../../../../shared/bots/bot-group'
@@ -70,6 +72,7 @@ export function SidebarBotsSection({
   reorderable?: boolean
 }): React.JSX.Element {
   const t = useTranslate()
+  const hasRequests = useSharedBotRequests().length > 0
   const bots = useBots()
   const savedCollapsed = useAppStore((s) => s.collapsedGroups.has(BOTS_GROUP_KEY))
   const toggleCollapsedGroup = useAppStore((s) => s.toggleCollapsedGroup)
@@ -324,10 +327,12 @@ export function SidebarBotsSection({
             data-bot-sidebar-list=""
             className={cn(
               'bot-sidebar-scrollbar relative flex min-h-0 flex-col overflow-y-auto overscroll-y-contain [overflow-anchor:none]',
-              entries.length > 0 && 'pb-1 px-1',
+              (entries.length > 0 || hasRequests) && 'pb-1 px-1',
               collapsed && 'hidden'
             )}
           >
+            {/* Shares offered to this account sit first, where each agent will join the list. */}
+            {collapsed ? null : <SharedBotRequestRows />}
             {/* A room kept after its last bot went still lists, so it can be opened or deleted. */}
             {savedEntries.length > 0 && entries.length === 0 ? (
               collapsed ? null : (
@@ -336,7 +341,7 @@ export function SidebarBotsSection({
                 </div>
               )
             ) : entries.length === 0 ? (
-              collapsed ? null : (
+              collapsed || hasRequests ? null : (
                 <SidebarBotsEmptyState onNewBot={openNewBot} />
               )
             ) : collapsed ? null : (

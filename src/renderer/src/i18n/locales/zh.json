@@ -28271,6 +28271,7 @@
       "waitingForUntil": "正在等待 {{label}} · 直到 {{time}}",
       "waitingCount": "正在等待 {{count}} 个事件",
       "disconnected": "已断开连接",
+      "connecting": "正在连接…",
       "runsOn": "在 {{host}} 上运行",
       "deleteTitle": "要删除 {{name}} 吗？",
       "deleteDescription": "它的文件夹会保留在 {{path}}，其中包含它的灵魂与记忆",
@@ -28350,7 +28351,6 @@
       "cantReachHost": "无法连接到 {{host}}",
       "statusUnknown": "状态未知",
       "onHost": "在 {{host}} 上",
-      "new": "新建聊天",
       "title": "聊天",
       "search": "搜索聊天和工作者",
       "empty": "支线聊天、Slack 和 Linear 话题以及自动化运行都会显示在这里，并附带各自启动的工作者",
@@ -28374,8 +28374,19 @@
       "delete": "删除聊天",
       "open": "打开",
       "actions": "聊天操作",
+      "personHome": "{{name}} 的 Home",
       "hideOlder": "隐藏更早的",
-      "needsYouCount": "{{count}} 项需要你处理"
+      "needsYouCount": "{{count}} 项需要你处理",
+      "noMessages": "暂无消息",
+      "searchPerson": "搜索 {{name}} 的聊天",
+      "searchOwn": "搜索你的聊天",
+      "noneFromPerson": "没有 {{name}} 的聊天。",
+      "noneFromYou": "没有你的聊天。",
+      "filter": {
+        "label": "按人员筛选",
+        "you": "你",
+        "everyone": "所有人"
+      }
     },
     "items": {
       "view": {
@@ -28492,7 +28503,8 @@
         "filtered": "没有匹配的事项",
         "needsYou": "没有需要你处理的事项",
         "title": "还没有事项",
-        "short": "还没有事项。当 {{bot}} 接手任务时，会显示在这里"
+        "short": "还没有事项。当 {{bot}} 接手任务时，会显示在这里",
+        "person": "没有来自 {{name}} 的事项。"
       },
       "field": {
         "chat": "聊天",
@@ -28505,7 +28517,8 @@
         "clearAll": "清除筛选",
         "label": "筛选事项",
         "needsYou": "仅显示需要你处理的",
-        "remove": "移除筛选条件 {{name}}"
+        "remove": "移除筛选条件 {{name}}",
+        "owner": "所有者"
       },
       "group": {
         "closed": "已关闭",
@@ -28754,6 +28767,8 @@
     "tabs": {
       "homeDetail": "主聊天：bot 的主要对话。它的记忆、自动化以及他人的请求都会汇集到这里",
       "sideDetail": "支线聊天：与此 bot 讨论另一个话题",
+      "teammateHomeDetail": "主聊天：你与此智能体的主要对话。你的请求和它给你的回复都会汇集到这里",
+      "personHomeDetail": "{{name}} 的 Home：他们与此智能体的主要对话",
       "homeBanner": "打开 {{name}} 的主页",
       "homeTitle": "主聊天"
     },
@@ -29024,7 +29039,6 @@
       "updating": "正在更新…",
       "publishing": "正在发布…",
       "previewChanged": "预览已更改。请先查看再发布",
-      "manageSharing": "管理分享…",
       "secretFoundTitle": "发现密钥",
       "secretWhere": "{{flag}}，位于 {{where}} 第 {{line}} 行",
       "view": "查看",
@@ -29065,10 +29079,8 @@
       "soul": "灵魂",
       "add": "添加",
       "binaryFile": "不是文本文件，因此不显示",
-      "isShared": "{{name}} 已分享",
       "updatedJustNow": "刚刚更新",
       "stopSharing": "停止分享",
-      "manageLinks": "管理链接",
       "done": "完成",
       "stopTitle": "要停止分享 {{name}} 吗？",
       "stopDescription": "链接将失效",
@@ -29134,9 +29146,9 @@
       },
       "notIncluded": "未包含",
       "copy": {
-        "sharedBy": "由 {{who}} 分享",
         "viewOriginal": "查看原始版本",
-        "originalGone": "已不可用"
+        "originalGone": "已不可用",
+        "copiedFrom": "复制自 {{who}}"
       },
       "error": {
         "blocked": "要分享的内容中发现了密钥。请移除后重试",
@@ -29149,7 +29161,21 @@
         "avatarRefused": "Orca Cloud 拒绝了 bot 的头像。请换一个头像后重试",
         "tooLarge": "此 bot 太大，无法分享。请去掉部分记忆或技能后重试"
       },
-      "duplicateSkill": "同名，位于 {{folder}} · 不会分享"
+      "duplicateSkill": "同名，位于 {{folder}} · 不会分享",
+      "invite": {
+        "invitedYou": "{{owner}} 邀请了你",
+        "view": "查看邀请",
+        "sharedWithYou": "{{owner}} 与你共享了它",
+        "runsOn": "{{owner}} 的智能体，运行在 {{owner}} 的电脑上。",
+        "chatFrom": "你可以在自己的 Orca 和手机上与它聊天。",
+        "ownChats": "你只能看到自己的聊天。",
+        "ownerSees": "{{owner}} 可以看到你与它的聊天。",
+        "actsAs": "它可以在 {{owner}} 的电脑上使用 {{owner}} 的账号执行操作。",
+        "pauses": "{{owner}} 的电脑关机时它会暂停。",
+        "messagesWait": "消息会等它恢复后再处理。",
+        "leave": "你可以随时退出。",
+        "uses": "使用"
+      }
     },
     "automations": {
       "paused": "已暂停",
@@ -30562,6 +30588,22 @@
       "removeServer": "移除 {{server}}",
       "search": "搜索已配对的服务器",
       "tooltip": "这些服务器上的 bot 和智能体可以向 {{name}} 提问，无需每次征得你的同意。"
+    },
+    "teamShare": {
+      "shareWithTeammates": "与队友分享…"
+    },
+    "sharingPage": {
+      "teammates": "队友",
+      "teammatesFoot": "在 {{host}} 上使用你的账户运行。你能看到队友与它的聊天，每位队友只能看到自己的聊天。",
+      "add": "添加",
+      "copyLink": "副本链接",
+      "createCopyLink": "创建副本链接",
+      "anyoneCanCopy": "任何拥有链接的人都可以创建副本",
+      "linkActions": "链接操作",
+      "changeIncluded": "更改包含的内容…",
+      "stopSharing": "停止分享…",
+      "allYourLinks": "你的所有链接",
+      "alreadyUpToDate": "链接已是最新"
     }
   },
   "speechModelUpdate": {

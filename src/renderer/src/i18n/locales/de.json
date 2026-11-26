@@ -25174,6 +25174,7 @@
     "row": {
       "runsOn": "Läuft auf {{host}}",
       "disconnected": "Getrennt",
+      "connecting": "Verbindung wird hergestellt…",
       "idle": "Inaktiv",
       "paused": "Pausiert",
       "reading": "Liest deine Nachricht",
@@ -25236,7 +25237,13 @@
         "heldImagesLimit": "Deine Antworten gehen als ein Kommentar, der höchstens {{max}} Bilder aufnimmt. Sende zuerst die bisher gehaltenen Antworten oder entferne einige.",
         "heldSkillsLimit": "Deine Antworten gehen als ein Kommentar, der höchstens {{max}} Skills aufnimmt. Sende zuerst die bisher gehaltenen Antworten oder entferne einige."
       },
-      "readMoreClosedFailed": "Weitere geschlossene Einträge konnten nicht gelesen werden"
+      "readMoreClosedFailed": "Weitere geschlossene Einträge konnten nicht gelesen werden",
+      "empty": {
+        "person": "Keine Einträge von {{name}}."
+      },
+      "filter": {
+        "owner": "Inhaber"
+      }
     },
     "hover": {
       "asksQuestion": "Wartet auf Antwort",
@@ -25258,8 +25265,19 @@
       "searchRetry": "Erneut versuchen",
       "loading": "Chats werden geladen…",
       "readFailed": "Die Chats dieses Bots konnten nicht gelesen werden.",
+      "personHome": "Home von {{name}}",
       "older": "{{count}} ältere anzeigen",
-      "hideOlder": "Ältere ausblenden"
+      "hideOlder": "Ältere ausblenden",
+      "noMessages": "Noch keine Nachrichten",
+      "searchPerson": "Chats von {{name}} durchsuchen",
+      "searchOwn": "Deine Chats durchsuchen",
+      "noneFromPerson": "Keine Chats von {{name}}.",
+      "noneFromYou": "Keine Chats von dir.",
+      "filter": {
+        "label": "Nach Person filtern",
+        "you": "Du",
+        "everyone": "Alle"
+      }
     },
     "needs": {
       "chat": "Dein Chat mit {{name}}",
@@ -25387,7 +25405,24 @@
       "receive": {
         "fromLinkMenu": "Aus einem Link…"
       },
-      "duplicateSkill": "Gleicher Name, in {{folder}} · nicht geteilt"
+      "duplicateSkill": "Gleicher Name, in {{folder}} · nicht geteilt",
+      "invite": {
+        "invitedYou": "{{owner}} hat dich eingeladen",
+        "view": "Einladung ansehen",
+        "sharedWithYou": "{{owner}} hat ihn mit dir geteilt",
+        "runsOn": "Agent von {{owner}}. Er läuft auf dem Computer von {{owner}}.",
+        "chatFrom": "Du chattest mit ihm in deinem Orca und auf deinem Telefon.",
+        "ownChats": "Du siehst nur deine eigenen Chats.",
+        "ownerSees": "{{owner}} kann deine Chats mit ihm sehen.",
+        "actsAs": "Er kann auf dem Computer von {{owner}} handeln, mit den Konten von {{owner}}.",
+        "pauses": "Er pausiert, solange der Computer von {{owner}} aus ist.",
+        "messagesWait": "Nachrichten warten, bis er zurück ist.",
+        "leave": "Du kannst jederzeit austreten.",
+        "uses": "Nutzt"
+      },
+      "copy": {
+        "copiedFrom": "Kopiert von {{who}}"
+      }
     },
     "host": {
       "botWorkspaceUnavailable": "Der Arbeitsbereich dieses Agenten ist hier gerade nicht verfügbar. Deshalb kann die Seite darin nicht geöffnet werden.",
@@ -25563,6 +25598,22 @@
         "expired": "Die Anmeldung ist abgelaufen. Versuche es erneut.",
         "couldNotSignIn": "Anmeldung nicht möglich. Versuche es erneut."
       }
+    },
+    "teamShare": {
+      "shareWithTeammates": "Mit Teammitgliedern teilen…"
+    },
+    "sharingPage": {
+      "teammates": "Teammitglieder",
+      "teammatesFoot": "Läuft auf {{host}} mit deinen Konten. Du siehst ihre Chats damit, und jedes Teammitglied sieht nur seine eigenen.",
+      "add": "Hinzufügen",
+      "copyLink": "Kopierlink",
+      "createCopyLink": "Kopierlink erstellen",
+      "anyoneCanCopy": "Jeder mit dem Link kann eine Kopie erstellen",
+      "linkActions": "Link-Aktionen",
+      "changeIncluded": "Inhalt ändern…",
+      "stopSharing": "Teilen beenden…",
+      "allYourLinks": "Alle deine Links",
+      "alreadyUpToDate": "Der Link ist bereits aktuell"
     }
   },
   "plugins": {

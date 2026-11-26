@@ -6,6 +6,7 @@ import type { DeviceEntry, DeviceOrcaAccount, PairedDeviceTypist } from './pairi
 import type { BotShareDevice, BotShareDeviceStore } from './pairing/bot-share-device-store'
 import type { DeviceSelfRpcContext } from '../core'
 import { pairedDeviceTypistOf } from './pairing/paired-device-typist'
+import { callerScopeOf } from './pairing/device-principal'
 import type {
   DelegatedPhone,
   DelegatedMobileDeviceSyncResult
@@ -117,16 +118,17 @@ export class RuntimeRpcMobileDevices extends RuntimeRpcRequestAdmission {
     for (const device of plan) {
       const { deviceId } = device
       // Keep ancestors until child cleanup is durable so retry can rediscover them.
+      // Any device Relay admits (a phone, or a computer paired over Relay) loses its credential there.
+      if (device.relayBinding && !this.queueRelayDeviceRevoke(device.relayBinding)) {
+        return false
+      }
       if (device.scope === 'mobile') {
-        if (device.relayBinding && !this.queueRelayDeviceRevoke(device.relayBinding)) {
-          return false
-        }
         this.queuePushUnregister(deviceId, device.pushRegistration?.registrationId)
         // Its keys to agents shared with this computer's account end on their hosts too.
         void sharedHostPhoneGrants().then((phones) => phones?.forgetPhone(deviceId))
       }
       registry.removeDevice(deviceId)
-      if (device.scope === 'mobile') {
+      if (device.scope === 'mobile' || device.relayBinding) {
         this.mobileRelayPairingProvider?.onDemandStateChanged?.()
       }
       this.runtime.forgetClientNavigationState(deviceId)
@@ -139,7 +141,12 @@ export class RuntimeRpcMobileDevices extends RuntimeRpcRequestAdmission {
     return true
   }
 
-  /** Make the runtime device `parentDeviceId`'s phones exactly `phones`; dropped ones are fully revoked. */
+  /** See `BotShareDevices.isOwnerDevice`. Share devices live in their own store, never this registry. */
+  isOwnerDevice(deviceId: string): boolean {
+    const device = this.deviceRegistry?.getDevice(deviceId)
+    return device ? callerScopeOf(device).kind !== 'bot-share' : false
+  }
+
   /** Who typed a paired device's message; see `pairedDeviceTypistOf`. */
   pairedDeviceTypist(
     deviceId: string,
@@ -182,7 +189,8 @@ export class RuntimeRpcMobileDevices extends RuntimeRpcRequestAdmission {
     }
   }
 
-  /** The syncing socket's installation owns its phones: several desktops can share one row. */
+  /** Make the runtime device `parentDeviceId`'s phones exactly `phones`; dropped ones are fully revoked.
+   *  The syncing socket's installation owns its phones: several desktops can share one row. */
   protected syncDelegatedMobileDevices(
     parentDeviceId: string,
     phones: readonly DelegatedPhone[],

@@ -25764,6 +25764,7 @@
     "row": {
       "runsOn": "S’exécute sur {{host}}",
       "disconnected": "Déconnecté",
+      "connecting": "Connexion…",
       "idle": "Inactif",
       "paused": "En pause",
       "reading": "Lit votre message",
@@ -25826,7 +25827,13 @@
         "heldImagesLimit": "Vos réponses partent en un seul commentaire, qui accepte au plus {{max}} images. Envoyez d’abord les réponses gardées jusqu’ici, ou retirez-en quelques-unes.",
         "heldSkillsLimit": "Vos réponses partent en un seul commentaire, qui accepte au plus {{max}} skills. Envoyez d’abord les réponses gardées jusqu’ici, ou retirez-en quelques-uns."
       },
-      "readMoreClosedFailed": "Impossible de lire plus d’éléments fermés"
+      "readMoreClosedFailed": "Impossible de lire plus d’éléments fermés",
+      "empty": {
+        "person": "Aucun élément de {{name}}."
+      },
+      "filter": {
+        "owner": "Propriétaire"
+      }
     },
     "hover": {
       "asksQuestion": "Attend votre réponse",
@@ -25851,8 +25858,19 @@
       "searchRetry": "Réessayer",
       "loading": "Chargement des chats…",
       "readFailed": "Impossible de lire les chats de ce bot.",
+      "personHome": "Home de {{name}}",
       "older": "Afficher {{count}} plus anciens",
-      "hideOlder": "Masquer les plus anciens"
+      "hideOlder": "Masquer les plus anciens",
+      "noMessages": "Aucun message pour l’instant",
+      "searchPerson": "Rechercher dans les chats de {{name}}",
+      "searchOwn": "Rechercher dans vos chats",
+      "noneFromPerson": "Aucun chat de {{name}}.",
+      "noneFromYou": "Aucun chat de votre part.",
+      "filter": {
+        "label": "Filtrer par personne",
+        "you": "Vous",
+        "everyone": "Tout le monde"
+      }
     },
     "needs": {
       "chat": "Votre chat avec {{name}}",
@@ -25978,7 +25996,24 @@
       "receive": {
         "fromLinkMenu": "Depuis un lien…"
       },
-      "duplicateSkill": "Même nom, dans {{folder}} · non partagée"
+      "duplicateSkill": "Même nom, dans {{folder}} · non partagée",
+      "invite": {
+        "invitedYou": "{{owner}} vous a invité",
+        "view": "Voir l’invitation",
+        "sharedWithYou": "{{owner}} l’a partagé avec vous",
+        "runsOn": "Agent de {{owner}}. Il s’exécute sur l’ordinateur de {{owner}}.",
+        "chatFrom": "Vous discutez avec lui depuis votre Orca et votre téléphone.",
+        "ownChats": "Vous ne voyez que vos propres discussions.",
+        "ownerSees": "{{owner}} peut voir vos discussions avec lui.",
+        "actsAs": "Il peut agir sur l’ordinateur de {{owner}}, avec les comptes de {{owner}}.",
+        "pauses": "Il se met en pause quand l’ordinateur de {{owner}} est éteint.",
+        "messagesWait": "Les messages attendent son retour.",
+        "leave": "Vous pouvez partir à tout moment.",
+        "uses": "Utilise"
+      },
+      "copy": {
+        "copiedFrom": "Copié depuis {{who}}"
+      }
     },
     "host": {
       "botWorkspaceUnavailable": "L’espace de travail de cet agent n’est pas disponible ici pour le moment, la page ne peut donc pas s’y ouvrir.",
@@ -26156,6 +26191,22 @@
         "expired": "La connexion a expiré. Réessayez.",
         "couldNotSignIn": "Connexion impossible. Réessayez."
       }
+    },
+    "teamShare": {
+      "shareWithTeammates": "Partager avec des coéquipiers…"
+    },
+    "sharingPage": {
+      "teammates": "Coéquipiers",
+      "teammatesFoot": "S’exécute sur {{host}} avec vos comptes. Vous voyez leurs discussions avec lui, et chaque coéquipier ne voit que les siennes.",
+      "add": "Ajouter",
+      "copyLink": "Lien de copie",
+      "createCopyLink": "Créer un lien de copie",
+      "anyoneCanCopy": "Toute personne disposant du lien peut en faire une copie",
+      "linkActions": "Actions du lien",
+      "changeIncluded": "Modifier le contenu inclus…",
+      "stopSharing": "Arrêter le partage…",
+      "allYourLinks": "Tous vos liens",
+      "alreadyUpToDate": "Le lien est déjà à jour"
     }
   },
   "plugins": {

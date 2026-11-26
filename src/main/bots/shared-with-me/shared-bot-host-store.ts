@@ -6,7 +6,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { BotTeamShareOffer } from '../../../shared/bots/bot-team-share-seal'
-import { BotShareIdSchema } from '../../../shared/bots/bot-team-shares'
+import { BotShareIdSchema, type BotShareAnswered } from '../../../shared/bots/bot-team-shares'
 import { writeSecureFileAsync } from '../../../shared/secure-storage/secure-file-async-write'
 import { NODE_PAIRED_E2EE_PRIMITIVES } from '../../../shared/remote-runtime/e2ee/node/paired-e2ee-node-primitives'
 import nacl from 'tweetnacl'
@@ -64,7 +64,6 @@ const SharedBotHostEntry = z.object({
   botId: Text,
   botName: Text,
   ownerName: Text,
-  avatarUrl: z.string().optional(),
   // The host's E2EE key held messages are sealed to; absent, nothing is held for it.
   hostKey: Text.optional(),
   // Ed25519: signs the relay auth and held messages. Curve25519: the host seals its offer to it.
@@ -78,7 +77,7 @@ const SharedBotHostEntry = z.object({
   pendingResume: z.object({ token: Text, hash: Text, reqId: Text }).optional(),
   resume: ResumeCredential.optional(),
   acceptedAt: z.number().int().nonnegative().optional(),
-  // This computer's folder workspace its chats open in; absent until made (and in a store from before).
+  // The home an older build kept on this computer; removed at startup (shared-bot-home-cleanup.ts).
   homeWorkspaceId: Text.optional(),
   status: KeptStatus.optional(),
   held: z.array(SharedBotHeldMessage),
@@ -118,21 +117,41 @@ export function sharedBotHostKey(
   return entry.offer?.hostPublicKeyB64 ?? entry.hostKey
 }
 
-const SharedBotHostsFile = z.object({ v: z.literal(1), shares: z.array(z.unknown()) })
+const SharedBotHostsFile = z.object({
+  v: z.literal(1),
+  shares: z.array(z.unknown()),
+  // Shares this account declined, and when: never offered again. Absent in a file from before.
+  declined: z
+    .array(z.object({ shareId: BotShareIdSchema, declinedAt: z.number().int().nonnegative() }))
+    .max(1000)
+    .catch([])
+    .default([])
+})
 
 /** Entry by entry, so one this build can't read is dropped, never the whole file. */
-function parseFile(text: string): SharedBotHostEntry[] {
+function parseFile(text: string): {
+  entries: SharedBotHostEntry[]
+  declined: Map<string, number>
+} {
   const file = SharedBotHostsFile.safeParse(JSON.parse(text))
   return file.success
-    ? file.data.shares.flatMap((entry) => SharedBotHostEntry.safeParse(entry).data ?? [])
-    : []
+    ? {
+        entries: file.data.shares.flatMap(
+          (entry) => SharedBotHostEntry.safeParse(entry).data ?? []
+        ),
+        declined: new Map(file.data.declined.map((entry) => [entry.shareId, entry.declinedAt]))
+      }
+    : { entries: [], declined: new Map() }
 }
 
 /** Read once at start; every change is kept in memory at once and written behind, in order. */
 export class SharedBotHostStore {
   private readonly path: string
   private entries: SharedBotHostEntry[] = []
+  private declinedAt = new Map<string, number>()
   private writes: Promise<void> = Promise.resolve()
+  // Hosts whose share ended this launch: their calls still answer, as no longer shared.
+  private readonly removed = new Set<string>()
 
   constructor(userDataPath: string) {
     this.path = join(userDataPath, SHARED_BOT_HOSTS_FILENAME)
@@ -140,7 +159,9 @@ export class SharedBotHostStore {
 
   async load(): Promise<void> {
     try {
-      this.entries = parseFile(await readFile(this.path, 'utf8'))
+      const file = parseFile(await readFile(this.path, 'utf8'))
+      this.entries = file.entries
+      this.declinedAt = file.declined
     } catch {
       this.entries = []
     }
@@ -168,9 +189,31 @@ export class SharedBotHostStore {
   }
 
   remove(shareIds: ReadonlySet<string>): void {
+    for (const entry of this.entries.filter((candidate) => shareIds.has(candidate.shareId))) {
+      this.removed.add(entry.environmentId)
+    }
     if (this.entries.some((entry) => shareIds.has(entry.shareId))) {
       this.write(this.entries.filter((entry) => !shareIds.has(entry.shareId)))
     }
+  }
+
+  /** Keeps that this account declined the share at `at`, so it is never offered again. */
+  decline(shareId: string, at: number): void {
+    if (!this.declinedAt.has(shareId)) {
+      this.declinedAt.set(shareId, at)
+      this.write(this.entries)
+    }
+  }
+
+  /** This account's answer to the share, for `botShareUsable`. */
+  answer(shareId: string): BotShareAnswered {
+    const declinedAt = this.declinedAt.get(shareId)
+    return declinedAt === undefined ? {} : { declinedAt }
+  }
+
+  /** Whether `environmentId` named a share this launch removed. */
+  wasRemoved(environmentId: string): boolean {
+    return this.removed.has(environmentId)
   }
 
   /** Every write so far is on disk. */
@@ -180,7 +223,8 @@ export class SharedBotHostStore {
 
   private write(entries: SharedBotHostEntry[]): void {
     this.entries = entries
-    const contents = JSON.stringify({ v: 1, shares: entries }, null, 2)
+    const declined = [...this.declinedAt].map(([shareId, declinedAt]) => ({ shareId, declinedAt }))
+    const contents = JSON.stringify({ v: 1, shares: entries, declined }, null, 2)
     this.writes = this.writes
       .then(() => writeSecureFileAsync(this.path, contents))
       .then(
