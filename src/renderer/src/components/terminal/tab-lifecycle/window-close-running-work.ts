@@ -67,8 +67,8 @@ export async function assessWindowCloseRunningWork(params: {
     ? await probePtyRunningWork(candidatePtyIds, { timeoutMs: WINDOW_CLOSE_PROBE_TIMEOUT_MS })
     : []
   if (
-    probes.some((probe) => probe.verdict === 'live') ||
-    (!params.isQuitting && hasRunningChat())
+    state.settings?.skipCloseTerminalWithRunningProcessConfirm !== true &&
+    (probes.some((probe) => probe.verdict === 'live') || (!params.isQuitting && hasRunningChat()))
   ) {
     return { kind: 'running' }
   }
