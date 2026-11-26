@@ -5,7 +5,7 @@ import { NATIVE_CHAT_APPEARANCE_ROOT_CLASS } from './appearance/native-chat-appe
 import { NativeChatFindBar } from './viewport/find/NativeChatFindBar'
 import { NativeChatFindQueryContext } from './viewport/find/native-chat-find-query'
 import { NativeChatSessionHistoryScopeContext } from './native-chat-session-history-scope'
-import { NativeChatLinkClickContext } from './links/actions/native-chat-link-click-context'
+import { NativeChatLinkProviders } from './links/actions/NativeChatLinkProviders'
 import type { NativeChatSurfaceState } from './use-native-chat-surface'
 
 /** Every chat screen's root: the surface's handlers, appearance, context menu, link popover, and
@@ -39,13 +39,13 @@ export function NativeChatSurface({
       style={surface.appearance}
       data-native-chat-scheme={surface.appearance.colorScheme}
     >
-      <NativeChatLinkClickContext value={surface.onLinkClick}>
+      <NativeChatLinkProviders links={surface}>
         <NativeChatSessionHistoryScopeContext.Provider value={surface.sessionHistory}>
           <NativeChatFindQueryContext value={surface.find.isOpen ? surface.find.query : ''}>
             {children}
           </NativeChatFindQueryContext>
         </NativeChatSessionHistoryScopeContext.Provider>
-      </NativeChatLinkClickContext>
+      </NativeChatLinkProviders>
 
       {surface.menu}
       <LinkActionPopover request={surface.linkActionRequest} onClose={surface.closeLinkActions} />
