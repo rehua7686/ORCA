@@ -17,6 +17,7 @@ import type {
   ProjectGroupUpdate
 } from '../../../shared/project/groups/project-group-types'
 import type { Repo } from '../../../shared/repository/repo-types'
+import { getRepoExecutionHostId } from '../../../shared/execution-host/execution-host'
 import type {
   FolderWorkspacePathStatus,
   FolderWorkspacePathStatusRequest
@@ -41,6 +42,7 @@ import {
   type FolderWorkspaceDeleteOptions
 } from './folder-workspace-deletion'
 import { createFolderWorkspaceWithPluginHooks } from '../../plugins/hooks/workspace-create-plugin-hook'
+import { resolveWorktreeStartupDraftAgent } from '../workspaces/startup/runtime-worktree-agent-startup'
 import {
   assertWslMoveRepoWritable,
   isLocalWslMoveRow,
@@ -185,10 +187,11 @@ export class RuntimeProjectGroupController {
       // An explicit folder on a WSL host must not be a Windows drive; refused before any store write.
       await refuseWslHostWindowsDrivePath(folderPath)
     }
+    const connectionId = input.connectionId ?? group.connectionId ?? null
     const status = await getFolderWorkspacePathStatusForPath({
       folderPath,
       projectGroupId: group.id,
-      connectionId: input.connectionId ?? group.connectionId ?? null,
+      connectionId,
       projectGroups,
       repos: store.getRepos()
     })
@@ -196,6 +199,26 @@ export class RuntimeProjectGroupController {
     if (pathRefusal) {
       throw new FolderWorkspaceCreateRefusedError(pathRefusal)
     }
+    // An inventory timeout must leave the draft retryable before registration or setup.
+    const draftAgent =
+      this.deps.finishFolderCreation &&
+      (!input.rendererOwnsSetup || input.agentLaunchMode === 'structured') &&
+      !input.startupCommand &&
+      input.startupDraft?.trim()
+        ? await resolveWorktreeStartupDraftAgent({
+            repo: projectGroupHookOwner(group) ?? {
+              path: folderPath,
+              connectionId,
+              executionHostId: getRepoExecutionHostId({
+                executionHostId: group.executionHostId,
+                connectionId
+              })
+            },
+            settings: store.getSettings(),
+            requestedAgent: input.startupAgent ?? input.createdWithAgent,
+            afterPublication: input.afterPublication
+          })
+        : undefined
     const { terminalImageViewerSupported: _viewer, ...createInput } = input
     const workspace = await createFolderWorkspaceWithPluginHooks(createInput, (request) =>
       createFolder({
@@ -207,7 +230,7 @@ export class RuntimeProjectGroupController {
     this.deps.notifyReposChanged()
     try {
       return (
-        (await this.deps.finishFolderCreation?.(input, group, workspace)) ?? {
+        (await this.deps.finishFolderCreation?.(input, group, workspace, draftAgent)) ?? {
           folderWorkspace: workspace
         }
       )

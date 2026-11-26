@@ -1,3 +1,5 @@
+import type { QueuedAgentLaunch } from '../../../../shared/agent-launch/startup/queued-agent-launch'
+import type { NativeChatSignInRequest } from '../../../../shared/agent-session/lifecycle/launch/agent-session-setup-commands'
 import type { OrcaRuntimeWithScheduleMobileSessionTabsChanged as SessionTabsPublication } from '../../session-tabs/publication/session-tabs-change-publication'
 import { OrcaRuntimeWithFailedStartPanes } from './failed-start-pane'
 import type { WorktreeStartupLaunch } from '../../../../shared/worktree/creation/launch-types'
@@ -11,6 +13,7 @@ import type { RuntimeMobileSessionCreateTerminalResult } from '../../../../share
 import type { RuntimeTerminalPresentation } from '../../../../shared/terminal/runtime/runtime-terminal-contracts'
 import type { SpawnIntent } from '../../../../shared/terminal/pty/admission/spawn-admission-contract'
 import type { AgentLaunchRuntime } from '../../../../shared/agent-launch/startup/agent-launch-runtime'
+import type { PreselectedAgentProgram } from '../../../managed-agent-cli/managed-agent-spawn-program'
 import {
   type RuntimeNavigationTarget,
   navigationTargetsHost
@@ -31,10 +34,12 @@ export type MobileTerminalCreateOptions = {
   cwd?: string
   env?: Record<string, string>
   envToDelete?: string[]
+  nativeChatSignIn?: NativeChatSignInRequest
   startupCommandDelivery?: WorktreeStartupLaunch['startupCommandDelivery']
   agent?: TuiAgent
   agentPrompt?: string
   launchConfig?: SleepingAgentLaunchConfig
+  resumeProviderSession?: AgentProviderSessionMetadata
   launchAgent?: TuiAgent
   trustWorktreeId?: string
   viewMode?: 'terminal' | 'chat'
@@ -45,6 +50,15 @@ export type MobileTerminalCreateOptions = {
   signal?: AbortSignal
 }
 
+export type PendingMobileTerminalCreate = {
+  activate: boolean
+  paired: boolean
+  selectIfNoActiveTab: boolean
+  viewMode?: 'terminal' | 'chat'
+  /** A renderer may mount a bare shell while its create is pending (STA-3214). */
+  startup?: Omit<QueuedAgentLaunch, 'terminal' | 'shell' | 'images'>
+}
+
 export type OwnedMobileTerminalCreateOptions = {
   /** A paired client's own create or tab open; without it a stopped WSL distro holds the start. */
   wslUserAct?: true
@@ -53,6 +67,7 @@ export type OwnedMobileTerminalCreateOptions = {
   cwd?: string
   env?: Record<string, string>
   envToDelete?: string[]
+  nativeChatSignIn?: NativeChatSignInRequest
   startupCommandDelivery?: WorktreeStartupLaunch['startupCommandDelivery']
   identity?: { tabId: string; leafId: string; sessionId?: string }
   createMutation?: { clientIdentity: string; id: string }
@@ -68,6 +83,7 @@ export type OwnedMobileTerminalCreateOptions = {
   resumeOrigin?: 'saved'
   spawnIntent?: SpawnIntent
   launchRuntime?: AgentLaunchRuntime
+  preselectedAgentProgram?: PreselectedAgentProgram
   signal?: AbortSignal
   refuseSleptWorktree?: boolean
   resumesSleepingRecord?: true
@@ -105,6 +121,7 @@ export abstract class OrcaRuntimeWithCreateMobileSessionTerminal extends OrcaRun
       cwd?: string
       env?: Record<string, string>
       envToDelete?: string[]
+      nativeChatSignIn?: NativeChatSignInRequest
       startupCommandDelivery?: WorktreeStartupLaunch['startupCommandDelivery']
       agent?: TuiAgent
       agentPrompt?: string

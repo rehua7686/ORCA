@@ -11,13 +11,13 @@ export type WslPreflightTarget = {
   distro?: string
 }
 
-export async function detectWslCommandsOnPath(
+export async function probeWslCommandsOnPath(
   wslTarget: WslPreflightTarget,
   commands: readonly string[]
-): Promise<Set<string>> {
+): Promise<{ found: Set<string>; environmentResolved: boolean } | null> {
   const uniqueCommands = [...new Set(commands.filter(Boolean))]
   if (uniqueCommands.length === 0) {
-    return new Set()
+    return { found: new Set(), environmentResolved: true }
   }
 
   const commandList = uniqueCommands.map(quotePosixShell).join(' ')
@@ -48,13 +48,15 @@ export async function detectWslCommandsOnPath(
       shell: 'sh',
       timeoutMs: WSL_AGENT_DETECTION_TIMEOUT_MS
     })
-    // Timeout/nonzero results may contain partial stdout, not a complete inventory.
-    if (result.timedOut || result.code !== 0) {
-      return new Set()
+    if (result.timedOut || result.code !== 0 || result.outputTruncated) {
+      return null
     }
-    return parseWslDetectedCommands(result.stdout)
+    return {
+      found: parseWslDetectedCommands(result.stdout),
+      environmentResolved: result.environmentResolved
+    }
   } catch {
-    return new Set()
+    return null
   }
 }
 

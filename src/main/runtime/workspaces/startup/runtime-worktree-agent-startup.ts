@@ -17,6 +17,7 @@ import { resolveAgentStartupPlanInputs } from '../../../../shared/agent-launch/s
 import type { AgentLaunchRuntime } from '../../../../shared/agent-launch/startup/agent-launch-runtime'
 import type { resolveStartupAgentLaunchRuntime } from '../../terminal/launch/agent-launch-scope-runtime'
 import {
+  agentLaunchUnbuildableMessage,
   buildAgentDraftLaunchPlan,
   buildAgentStartupPlan
 } from '../../../../shared/agent-launch/startup/tui-agent-startup'
@@ -26,6 +27,7 @@ import {
   nameLocalTypedLineShell
 } from '../../terminal/launch/agent-launch-typed-line-shell'
 import { detectAgentsOnHost } from '../../../preflight/workspace-agent-detection'
+import { AgentInventoryDeadlineError } from '../../../preflight/agent-command-detection'
 import { agentCommandOverrideDetectionOptions } from '../../../preflight/installed-agent-detection'
 import type { RuntimeStore } from '../../construction/runtime-store-contract'
 import type { RuntimeManagedWorktreeCreateArgs } from '../creation/runtime-managed-worktree-create-types'
@@ -56,7 +58,10 @@ type StartupEnvironment = {
 
 /** Choose requested, default or execution-host-detected agent; null means no agent. */
 export async function resolveWorktreeStartupDraftAgent(
-  environment: Pick<StartupEnvironment, 'repo' | 'settings'> & { requestedAgent?: TuiAgent }
+  environment: Pick<StartupEnvironment, 'repo' | 'settings'> & {
+    requestedAgent?: TuiAgent
+    afterPublication?: number
+  }
 ): Promise<TuiAgent | null> {
   const { repo, settings } = environment
   const preferredAgent = environment.requestedAgent ?? settings.defaultTuiAgent
@@ -77,11 +82,15 @@ export async function resolveWorktreeStartupDraftAgent(
       sshConnectionId ? { kind: 'ssh', connectionId: sshConnectionId } : { kind: 'local' },
       {
         disabledTuiAgents: settings.disabledTuiAgents,
+        afterPublication: environment.afterPublication,
+        waitForCompletion: false,
         ...agentCommandOverrideDetectionOptions(settings.agentCmdOverrides)
       }
     )
-  } catch {
-    detected = []
+  } catch (error) {
+    if (error instanceof AgentInventoryDeadlineError) {
+      throw error
+    }
   }
   return pickTuiAgent(null, detected.filter(isTuiAgent), settings.disabledTuiAgents)
 }
@@ -91,6 +100,8 @@ export async function buildWorktreeStartupForDraft(
     draft: string
     requestedAgent?: TuiAgent
     originalAgent?: TuiAgent
+    resolvedAgent?: TuiAgent | null
+    afterPublication?: number
   }
 ): Promise<{
   agent: TuiAgent
@@ -103,8 +114,11 @@ export async function buildWorktreeStartupForDraft(
     return null
   }
   const { repo, settings } = environment
-  const agent = await resolveWorktreeStartupDraftAgent(environment)
-  if (!agent) {
+  const agent =
+    environment.resolvedAgent === undefined
+      ? await resolveWorktreeStartupDraftAgent(environment)
+      : environment.resolvedAgent
+  if (!agent || !isTuiAgentEnabled(agent, settings.disabledTuiAgents)) {
     return null
   }
 
@@ -234,7 +248,7 @@ export async function buildWorktreeStartupForAgent(
     startupPlan = buildAgentStartupPlan({ ...planInputs, prompt, allowEmptyPromptLaunch: true })
   }
   if (!startupPlan) {
-    throw new Error(`Could not build launch command for ${agent}.`)
+    throw new Error(agentLaunchUnbuildableMessage(agent))
   }
   return {
     agent,

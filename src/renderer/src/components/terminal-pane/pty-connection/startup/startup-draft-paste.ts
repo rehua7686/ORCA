@@ -1,5 +1,6 @@
 import { inspectRuntimeTerminalProcess } from '@/runtime/hosted-terminals/inspection/runtime-terminal-process-inspection'
 import { isAgentForegroundProcess } from '../../../../../../shared/agent-status/process/agent-process-recognition'
+import type { AgentProgramBlockReason } from '../../../../../../shared/agent-session/lifecycle/agent-session-resume'
 import { resolveDraftPasteReadyTimeoutMs } from '../../../../../../shared/agent-launch/startup/readiness/draft-paste-ready-timeout'
 import { createDraftPasteReadyScanner } from '../../../../../../shared/agent-launch/startup/readiness/draft-paste-ready-scanner'
 import {
@@ -9,6 +10,7 @@ import {
 import { sendAgentDraftPasteContent } from '@/lib/agent-session/messaging/paste/agent-draft-paste-content'
 import { writeTerminalPastePtyInput } from '../../input/paste/terminal-pty-paste-writer'
 import { createPasteReadinessTimeoutNotice } from '@/lib/agent-session/launch/prompt/launch-agent-paste-timeout-notice'
+import { notifyBlockedAgentStartup } from '@/lib/agent-session/launch/prompt/blocked-agent-startup-notice'
 import type { ConnectPanePtySession } from '../connect-pane-pty-session'
 
 const STARTUP_DRAFT_PASTE_QUIET_MS = 1500
@@ -17,7 +19,16 @@ export function bindStartupDraftPaste(session: ConnectPanePtySession): void {
   // Providers own startup delivery across renderer replacement; only explicit terminal paste stays renderer-owned.
   session.pendingStartupCommand = session.shouldDeliverStartupViaTerminalPaste
     ? session.paneStartup?.command
-      ? { command: session.paneStartup.command, resumeSource: session.paneStartup.resumeSource }
+      ? {
+          command: session.paneStartup.command,
+          resumeSource: session.paneStartup.resumeSource,
+          launchConfig: session.paneStartup.launchConfig,
+          launchAgent: session.paneStartup.launchAgent,
+          restoring: Boolean(
+            session.paneStartup.resumeProviderSession || session.paneStartup.resumeSource
+          ),
+          nativeChatSignIn: session.paneStartup.nativeChatSignIn
+        }
       : null
     : null
   const startupSource = session.paneStartup?.resumeSource
@@ -47,6 +58,14 @@ export function bindStartupDraftPaste(session: ConnectPanePtySession): void {
     }
   }
   session.cleanupStartupDraftPasteTimers = clearStartupDraftPasteTimers
+  session.withholdStartupDraftPaste = (): void => {
+    startupDraftPasteSettled = true
+    session.startupDraftPasteAttempted = true
+    clearStartupDraftPasteTimers()
+  }
+  session.notifyBlockedStartup = (reason: AgentProgramBlockReason): void => {
+    notifyBlockedAgentStartup(reason, session.startupDraftPrompt ?? session.paneStartup?.command)
+  }
   const getStartupDraftPtyId = (): string | null => {
     const ptyId = session.transport.getPtyId()
     if (

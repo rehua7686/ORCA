@@ -5,6 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect } from 'expo-router'
+import type { TuiAgent } from '../../../src/shared/agent-launch/catalog/tui-agent'
 import type { BotToolProblem } from '../../../src/shared/bot-tools'
 import {
   getRepoExecutionHostId,
@@ -62,16 +63,33 @@ const discoveredQuery = defineHostQuery({
   signal: { events: ['mcpServersChanged'] }
 })
 
-// Installs rarely change; the new-tab picker reads them as rarely.
-const agentsQuery = defineHostQuery({
+type McpAgentInventory = { agents: TuiAgent[]; incomplete?: boolean; afterPublication?: number }
+
+const agentsQuery = defineHostQuery<typeof NO_HOST_LIST_INPUT, McpAgentInventory>({
   family: 'mcpServers.agents',
-  fetch: async (client) => {
-    const detected = new Set(
-      preflightDetectAgentsRead.interpret(await preflightDetectAgentsRead.request(client))
+  fetch: async (client, _target, _input, previous) => {
+    const retryAfter = previous?.incomplete ? previous.afterPublication : undefined
+    const { agents, incomplete, afterPublication } = preflightDetectAgentsRead.interpret(
+      await preflightDetectAgentsRead.request(client, {
+        withManagedAgentCommands: true,
+        ...(retryAfter === undefined ? {} : { afterPublication: retryAfter })
+      })
     )
-    return MOBILE_AGENT_CATALOG.filter((agent) => detected.has(agent.id)).map((agent) => agent.id)
+    const detected = new Set(agents)
+    if (incomplete) {
+      for (const agent of previous?.agents ?? []) {
+        detected.add(agent)
+      }
+    }
+    return {
+      agents: MOBILE_AGENT_CATALOG.filter((agent) => detected.has(agent.id)).map(
+        (agent) => agent.id
+      ),
+      incomplete,
+      afterPublication
+    }
   },
-  staleTime: 10 * 60_000,
+  staleTime: ({ state: { data } }) => (data?.incomplete ? 0 : 10 * 60_000),
   gcTime: 30 * 60_000
 })
 
@@ -113,6 +131,15 @@ export function useMcpServersData(hostId: string, client: RpcClient | null, enab
 
   const { refetch: refetchList } = list
   const { refetch: refetchDiscovered } = discovered
+  const { refetch: refetchAgents } = agents
+  const canReadAgents = enabled && client !== null
+  const retryIncompleteAgents = useCallback(() => {
+    const key = hostQueryKey(hostId, agentsQuery.family, HOST_LIST_TARGET, NO_HOST_LIST_INPUT)
+    if (canReadAgents && queryClient.getQueryData<McpAgentInventory>(key)?.incomplete) {
+      void refetchAgents({ cancelRefetch: false })
+    }
+  }, [canReadAgents, hostId, queryClient, refetchAgents])
+
   // A host without the capability is never asked, even on focus.
   const reread = useCallback(() => {
     if (enabled) {
@@ -121,7 +148,12 @@ export function useMcpServersData(hostId: string, client: RpcClient | null, enab
       void refetchDiscovered({ cancelRefetch: false })
     }
   }, [enabled, refetchList, refetchDiscovered])
-  useFocusEffect(reread)
+  useFocusEffect(
+    useCallback(() => {
+      reread()
+      retryIncompleteAgents()
+    }, [reread, retryIncompleteAgents])
+  )
 
   /** A change's answer shows at once; the re-read after it catches what else changed. */
   const applyServer = useCallback(
@@ -177,11 +209,12 @@ export function useMcpServersData(hostId: string, client: RpcClient | null, enab
     listError: list.error,
     loading: list.isPending,
     discovered: discovered.data ?? null,
-    agents: agents.data ?? null,
+    agents: agents.data?.agents ?? null,
     agentsFailed: agents.isError,
     workspaces,
     problems,
     reread,
+    retryIncompleteAgents,
     applyServer
   }
 }

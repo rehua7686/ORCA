@@ -208,7 +208,9 @@ export async function withTerminalMcpServers(
   }
   // Codex also takes servers from `-c mcp_servers.*` on the user's own command line.
   const parsed =
-    adapter.agent === 'codex' ? tokenizeStartupCommand(input.command!, input.shell) : null
+    adapter.agent === 'codex'
+      ? tokenizeStartupCommand(input.command!, input.shell, input.shell === 'powershell')
+      : null
   const { tools, skipped } = offered.tools.beside([
     ...(input.cwd && !wsl ? await agentOwnMcpServerNames(adapter.agent, ownEnv, input.cwd) : []),
     ...(parsed?.ok ? codexArgsMcpServerNames(parsed.tokens) : [])

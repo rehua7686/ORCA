@@ -266,7 +266,7 @@ export function terminalMcpExecutable(
   adapter: TerminalMcpAdapter,
   launch: TerminalMcpLaunch
 ): string | null {
-  const parsed = tokenizeStartupCommand(launch.command, launch.shell)
+  const parsed = tokenizeStartupCommand(launch.command, launch.shell, launch.shell === 'powershell')
   if (!parsed.ok) {
     return null
   }

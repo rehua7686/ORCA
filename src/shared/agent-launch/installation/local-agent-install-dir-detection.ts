@@ -1,25 +1,50 @@
+import { homedir } from 'node:os'
 import path from 'node:path'
-import { resolveCliCommands } from '../../shell/command-resolution/node-cli-command-resolution'
+import {
+  runCliFsReadsAsync,
+  type CliFsProbeOptions
+} from '../../shell/command-resolution/cli-fs-reads'
+import type { InventoryFsProbes } from '../../shell/command-resolution/inventory-fs-probes'
+import {
+  cliInstallDirectories,
+  firstRunnable,
+  getExecutableNames
+} from '../../shell/command-resolution/node-cli-command-resolution'
 
-// Why: detection may precede shell-PATH hydration, but the fallback stays bounded.
-export function detectCommandsInInstallDirs(
+export async function detectCommandsInInstallDirs(
   commands: readonly string[],
-  /** The PATH detection searched; defaults to this process's own. */
-  pathEnv?: string,
-  options?: { skipPathSearch?: boolean }
-): Set<string> {
-  if (commands.length === 0) {
-    return new Set()
+  {
+    probes,
+    readDirectories,
+    complete
+  }: {
+    probes: InventoryFsProbes
+    readDirectories: NonNullable<CliFsProbeOptions['readDirectories']>
+    complete: (command: string, user: string | null, uncertain: boolean) => void
   }
-  try {
-    const resolvedCommands = resolveCliCommands(commands, {
-      ...(pathEnv === undefined ? {} : { pathEnv }),
-      ...(options?.skipPathSearch ? { skipPathSearch: true } : {})
+): Promise<void> {
+  const platform = process.platform
+  let unverifiedDirectories = false
+  const dirs = await runCliFsReadsAsync(cliInstallDirectories(platform, homedir()), {
+    probes,
+    readDirectories,
+    onUnverified: () => {
+      unverifiedDirectories = true
+    }
+  })
+  await Promise.all(
+    commands.map(async (command) => {
+      let uncertain = unverifiedDirectories
+      const user = await runCliFsReadsAsync(
+        firstRunnable(platform, dirs, getExecutableNames(platform, command)),
+        {
+          probes,
+          onUnverified: () => {
+            uncertain = true
+          }
+        }
+      )
+      complete(command, user && path.isAbsolute(user) ? user : null, uncertain)
     })
-    return new Set(
-      commands.filter((command) => path.isAbsolute(resolvedCommands.get(command) ?? command))
-    )
-  } catch {
-    return new Set()
-  }
+  )
 }

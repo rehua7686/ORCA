@@ -15,7 +15,7 @@ export type ResolveCommandOptions = {
 }
 
 export function getExecutableNames(platform: NodeJS.Platform, commandName: string): string[] {
-  if (platform === 'win32') {
+  if (platform === 'win32' && !isSpawnableCommand(platform, commandName)) {
     return [`${commandName}.cmd`, `${commandName}.exe`, `${commandName}.bat`, commandName]
   }
 
@@ -24,6 +24,14 @@ export function getExecutableNames(platform: NodeJS.Platform, commandName: strin
 
 // Windows installers often quote PATH entries; cmd strips only double quotes, so match the terminal.
 export const stripWindowsPathQuotes = (entry: string): string => entry.replace(/^"(.*)"$/, '$1')
+
+export function isQuotedWindowsPathEntry(entry: string): boolean {
+  if (process.platform !== 'win32') {
+    return false
+  }
+  const trimmed = entry.trim()
+  return stripWindowsPathQuotes(trimmed) !== trimmed
+}
 
 /** Trims and unquotes a Windows PATH entry; POSIX entries are returned unchanged. */
 export function normalizePathEntry(platform: NodeJS.Platform, entry: string): string {
@@ -98,7 +106,7 @@ export function envWithPathRelativeTo<T extends Record<string, string | undefine
   return key ? { ...env, [key]: pathEnvRelativeTo(env[key], cwd) } : env
 }
 
-function* firstRunnable(
+export function* firstRunnable(
   platform: NodeJS.Platform,
   directories: string[],
   executableNames: string[]
@@ -175,7 +183,10 @@ function getVersionManagerDirectories(
 }
 
 // Share native/WSL ordering: version-manager bins must precede system Homebrew/npm/snap installs.
-function* cliInstallDirectories(platform: NodeJS.Platform, homePath: string): CliFsReads<string[]> {
+export function* cliInstallDirectories(
+  platform: NodeJS.Platform,
+  homePath: string
+): CliFsReads<string[]> {
   return [
     ...(yield* nvmVersionDirectories(homePath)),
     ...getBaseVersionManagerDirectories(platform, homePath),
@@ -183,8 +194,12 @@ function* cliInstallDirectories(platform: NodeJS.Platform, homePath: string): Cl
   ]
 }
 
-function getCliInstallDirectories(platform: NodeJS.Platform, homePath: string): string[] {
-  return runCliFsReadsSync(cliInstallDirectories(platform, homePath))
+export function cliPathLookup(
+  platform: NodeJS.Platform,
+  pathEnv: string | null,
+  executableNames: string[]
+): CliFsReads<string | null> {
+  return firstRunnable(platform, splitPath(pathEnv, platform), executableNames)
 }
 
 /** PATH entries first; install dirs are listed only once PATH misses. Run with cli-fs-reads. */
@@ -196,7 +211,7 @@ export function* cliCommandLookup(
   const names = getExecutableNames(platform, commandName)
   const pathEnv = options.pathEnv ?? process.env.PATH ?? process.env.Path ?? null
   return (
-    (yield* firstRunnable(platform, splitPath(pathEnv, platform), names)) ??
+    (options.skipPathSearch ? null : yield* cliPathLookup(platform, pathEnv, names)) ??
     (yield* firstRunnable(
       platform,
       yield* cliInstallDirectories(platform, options.homePath ?? homedir()),
@@ -252,30 +267,6 @@ export function expandHomeArgs(args: readonly string[], homePath?: string): stri
 // Extensionless commands cannot spawn on Windows; .cmd/.bat use Orca's shim handling.
 export function isSpawnableCommand(platform: NodeJS.Platform, command: string): boolean {
   return platform !== 'win32' || /\.(exe|com|cmd|bat)$/i.test(command)
-}
-
-export function resolveCliCommands(
-  commandNames: readonly string[],
-  options: ResolveCommandOptions = {}
-): Map<string, string> {
-  const platform = options.platform ?? process.platform
-  const pathEnv = options.pathEnv ?? process.env.PATH ?? process.env.Path ?? null
-  const pathDirectories = splitPath(pathEnv, platform)
-  const homePath = options.homePath ?? homedir()
-  const installDirectories = getCliInstallDirectories(platform, homePath)
-  const resolved = new Map<string, string>()
-
-  for (const commandName of new Set(commandNames)) {
-    const executableNames = getExecutableNames(platform, commandName)
-    const pathCandidate = options.skipPathSearch
-      ? undefined
-      : findFirstExecutable(platform, pathDirectories, executableNames)
-    const installCandidate =
-      pathCandidate ?? findFirstExecutable(platform, installDirectories, executableNames)
-    resolved.set(commandName, installCandidate ?? commandName)
-  }
-
-  return resolved
 }
 
 export function resolveCodexCommand(options: ResolveCommandOptions = {}): string {
