@@ -23090,7 +23090,8 @@
       "count_other": "{{count}} laufende Terminals"
     },
     "restartedInputNotSent": "Das Terminal wurde während der Eingabe neu gestartet. Daher hat es möglicherweise einen Teil der Eingabe nicht erhalten. Die neue Shell prüfen, bevor die Eingabe wiederholt wird.",
-    "typingBeforeStartNotSent": "Einige Tasteneingaben während des Terminalstarts wurden nicht gesendet."
+    "typingBeforeStartNotSent": "Einige Tasteneingaben während des Terminalstarts wurden nicht gesendet.",
+    "shellOverrideRequired": "Dieser Orca-Server kann keinen Befehl in der gewünschten Shell ausführen. Aktualisiere den Server und versuche es erneut."
   },
   "fileExplorer": {
     "root": {
@@ -23111,7 +23112,8 @@
       "titleRecycleBin": "„{{name}}“ konnte nicht in den Papierkorb verschoben werden. Endgültig löschen?",
       "titleTrash": "„{{name}}“ konnte nicht in den Papierkorb verschoben werden. Endgültig löschen?",
       "description": "Dies kann nicht rückgängig gemacht werden."
-    }
+    },
+    "runInTerminal": "Im Terminal ausführen"
   },
   "sparsePreset": {
     "name": "Name",
