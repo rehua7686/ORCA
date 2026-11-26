@@ -63,6 +63,9 @@ export type JournalSqlPointRead = {
     | { kind: 'history-source-items'; clientMessageIds: readonly string[] }
     | { kind: 'provider-turn-in-namespace'; namespace: string; sinceFence?: number }
     | { kind: 'saved-item-ids'; itemIds: readonly string[] }
+    /** The newest visible item id starting with `prefix`, for a family whose ids from `prefix + timedFrom` on
+     *  lead with a time (the greatest is the newest) and whose earlier ids don't (newest by order). */
+    | { kind: 'newest-item-id'; prefix: string; timedFrom: string }
     | JournalAcpHistoryRead
     | JournalAcpHistoryItemsRead
     | JournalAcpHistoryRowsRead
@@ -111,6 +114,7 @@ export type JournalSqlPointReadResult =
   | { kind: 'history-source-items'; items: AgentJournalRenderItem[] }
   | { kind: 'provider-turn-in-namespace'; present: boolean }
   | { kind: 'saved-item-ids'; itemIds: string[] }
+  | { kind: 'newest-item-id'; itemId: string | null; greatestTimedId: string | null }
   | { kind: 'acp-history'; history: JournalAcpHistory }
   | ({ kind: 'acp-history-items' } & JournalAcpHistoryItems)
   | { kind: 'acp-history-rows'; rows: JournalAcpHistoryRow[] }

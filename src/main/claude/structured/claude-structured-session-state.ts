@@ -169,10 +169,9 @@ export type ClaudeSession = {
   bypassAccepted?: boolean
   /** Why Claude refused a bypass switch, where one told; a settings read or start says settings. */
   bypassRefusal?: ClaudeBypassRefusal
-  /** The Full access refusal warning this process last wrote; a change gets a new row. */
+  /** The permission notice this process last wrote, or an earlier process's unanswered warning. */
   fullAccessRefusalNoticeId?: string
-  /** This process's warning rows: a random id and a count, so each is a new row at the bottom. */
-  fullAccessRefusalNotices?: { process: string; count: number }
+  fullAccessRefusalNotices?: { process: string; count: number; after?: number }
   /** Counts permission mode requests, so a fallback written after Claude answers never lands
    *  over a newer request. */
   permissionModeRequests?: number
@@ -180,6 +179,7 @@ export type ClaudeSession = {
   startupSettings?: Promise<void>
   /** Claude's settings turn auto mode off for this process (startup `get_settings`, or a refusal). */
   autoDisabled?: boolean
+  autoAccepted?: boolean
   /** Claude last refused auto for a reason that can pass (availability, model, Fast mode), or
    *  left the switch unanswered; says when asking again can get a different answer. */
   autoUnsettled?: ClaudeAutoUnsettled

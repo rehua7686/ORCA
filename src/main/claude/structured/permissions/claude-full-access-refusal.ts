@@ -16,6 +16,7 @@ export type ClaudeBypassFacts = Partial<
     | 'bypassAccepted'
     | 'bypassRefusal'
     | 'autoDisabled'
+    | 'autoAccepted'
     | 'autoUnsettled'
     | 'appliedInputOptions'
     | 'permissionModeRequests'
@@ -65,6 +66,27 @@ export function claudeBypassRefused(session: ClaudeBypassFacts): boolean {
   )
 }
 
+export function claudeAutoFallbackReason(
+  session: ClaudeBypassFacts
+): 'settings' | 'for-now' | 'started-outside' | null {
+  if (session.launchIntent?.permissionMode !== 'auto') {
+    return null
+  }
+  if (session.autoDisabled === true) {
+    return 'settings'
+  }
+  if (session.autoUnsettled !== undefined) {
+    return 'for-now'
+  }
+  const opened = session.firstRootInit?.permissionMode
+  return session.autoAccepted !== true &&
+    typeof opened === 'string' &&
+    opened !== 'auto' &&
+    opened !== 'plan'
+    ? 'started-outside'
+    : null
+}
+
 /** Claude's own refusal, else its settings read, else only that it started outside Full access. */
 export function claudeFullAccessRefusalReason(
   session: ClaudeBypassFacts
@@ -83,12 +105,16 @@ export function claudeBypassUnknown(session: ClaudeBypassFacts): boolean {
   )
 }
 
-/** Where Claude refuses Full access, Approve for me, or Ask where its settings turn that off too.
- *  Any other mode is asked for as chosen, so Claude's refusal of it fails the send. */
 export function claudeAllowedPermissionMode(
   session: ClaudeBypassFacts,
   mode: PermissionMode
 ): PermissionMode {
+  if (mode === 'auto') {
+    const reason = claudeAutoFallbackReason(session)
+    return reason === null || (reason === 'for-now' && claudeAutoRetryDue(session))
+      ? 'auto'
+      : 'default'
+  }
   if (mode !== 'bypassPermissions' || !claudeBypassRefused(session)) {
     return mode
   }
@@ -129,16 +155,21 @@ function claudeRunsAsk(session: ClaudeModeFacts): boolean {
   return running === 'default' || running === 'ask'
 }
 
-/** A Full access chat outside Plan whose mode the next input should settle: nothing has said
- *  whether Claude allows bypass, or Claude refuses it and no fallback is applied, Claude has
- *  left the Approve for me it applied, or a refusal of auto may have passed. */
-export function claudeOwesFullAccessFallback(
+export function claudeOwesPermissionFallback(
   session: ClaudeBypassFacts & ClaudeModeFacts
 ): boolean {
-  if (session.launchIntent?.permissionMode !== 'bypassPermissions' || claudeInPlan(session)) {
+  const intent = session.launchIntent?.permissionMode
+  if ((intent !== 'bypassPermissions' && intent !== 'auto') || claudeInPlan(session)) {
     return false
   }
   const build = session.appliedInputOptions.get('buildPermissionMode')
+  if (intent === 'auto') {
+    const reason = claudeAutoFallbackReason(session)
+    return (
+      reason !== null &&
+      (build !== 'default' || (reason === 'for-now' && claudeAutoRetryDue(session)))
+    )
+  }
   if (!claudeBypassRefused(session)) {
     return claudeBypassUnknown(session) && build === undefined
   }

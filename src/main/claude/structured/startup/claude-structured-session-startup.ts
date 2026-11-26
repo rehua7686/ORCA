@@ -38,9 +38,12 @@ import {
 } from './claude-structured-session-startup-exit'
 import type { ClaudeSession } from '../claude-structured-session-state'
 import {
+  claudeAutoFallbackReason,
   readClaudeSettingsAutoDisabled,
   readClaudeSettingsBypassDisabled
 } from '../permissions/claude-full-access-refusal'
+import { journalClaudeSessionPermissionNotice } from '../permissions/claude-full-access-refusal-notice'
+import { adoptClaudeLaunchRootInit } from '../permissions/claude-permission-mode-ladder'
 import type {
   ClaudeAuthDiagnostic,
   ClaudeStructuredSessionEvent
@@ -139,8 +142,9 @@ function applyClaudeInitializeFacts(session: ClaudeSession, facts: ClaudeInitial
   }
   const { init, initialization } = facts
   const opened = readClaudeOpenedPermissionMode(initialization)
-  if (opened) {
-    session.firstRootInit ??= { permissionMode: opened }
+  if (opened && !session.firstRootInit) {
+    const observeOpenedMode = adoptClaudeLaunchRootInit(session, { permissionMode: opened })
+    observeOpenedMode()
   }
   // Preserve a running model already reported by a turn's init frame.
   if (init?.model && session.reportedOptions.model === undefined) {
@@ -273,10 +277,22 @@ async function settleClaudeStartupSettings(
       session.bypassDisabled,
       readClaudeSettingsBypassDisabled(settings)
     )
-    session.autoDisabled = settledClaudeRefusalFact(
+    const autoDisabled = settledClaudeRefusalFact(
       session.autoDisabled,
       readClaudeSettingsAutoDisabled(settings)
     )
+    const autoNewlyDisabled = autoDisabled === true && session.autoDisabled !== true
+    session.autoDisabled = autoDisabled
+    if (session.launchIntent?.permissionMode === 'auto') {
+      const pending = session.startupSettings
+      session.startupSettings = undefined
+      if (
+        autoNewlyDisabled ||
+        (pending && claudeAutoFallbackReason(session) === 'started-outside')
+      ) {
+        journalClaudeSessionPermissionNotice(session)
+      }
+    }
   }
   if (!input.isCurrent() || token.pending || session.settingsObservation !== token) {
     return

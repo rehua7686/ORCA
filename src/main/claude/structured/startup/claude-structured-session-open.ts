@@ -9,6 +9,10 @@ import { readClaudeStructuredSessionSettings } from '../launch/claude-structured
 import { openClaudeSession, readClaudeStartupFacts } from './claude-structured-session-startup'
 import { catchUpClaudeTranscript } from '../../transcripts/claude-transcript-catch-up'
 import { readyClaudePromptSuggestionPause } from '../claude-prompt-suggestion-pause'
+import {
+  journalClaudeSessionPermissionNotice,
+  readClaudeEarlierRefusalNotice
+} from '../permissions/claude-full-access-refusal-notice'
 import type {
   ClaudeSession,
   ClaudeStructuredSessionAdapterDeps
@@ -96,6 +100,13 @@ async function openStartingClaudeSession(
   const history = session.initialization.history
   const leafUuid = history.leafUuid
   const events = session.events
+  await waitForPromiseWithSignal(
+    startup.race(
+      readClaudeEarlierRefusalNotice(session, events?.journalHistory?.()?.reads, current),
+      request.signal
+    ),
+    request.signal
+  )
   const origin = usableJournalHistoryOrigin(
     (await events?.journalHistory?.()?.reads.historyOrigin()) ?? null
   )
@@ -136,6 +147,8 @@ async function openStartingClaudeSession(
     )
     current()
   }
+  current()
   startup.open()
+  journalClaudeSessionPermissionNotice(session, { kind: 'thread' })
   return { ...result, link: session.link, newConversation: !resumesTranscript }
 }
