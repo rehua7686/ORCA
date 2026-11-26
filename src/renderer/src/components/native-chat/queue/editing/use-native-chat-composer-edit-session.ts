@@ -1,3 +1,6 @@
+import { readNativeChatComposerDraft } from '../../drafts/native-chat-composer-draft-store'
+import { nativeChatDraftHasEditingImage } from '../../media/notes/native-chat-chip-notes'
+import type { NativeChatSendClassification } from '../../../../../../shared/native-chat/input/commands/native-chat-slash-commands'
 import { captureNativeChatEditDraftDestination } from '../../drafts/native-chat-composer-draft-memory'
 import { useNativeChatPickerCommandDispatch } from '../../composer/pickers/use-native-chat-picker-command-dispatch'
 import {
@@ -37,7 +40,8 @@ export function useNativeChatComposerEditSession({
   setNotice,
   disabled,
   sendHeld,
-  sendMessage,
+  submission,
+  peekSendClassification,
   completeItem
 }: {
   editSession: NativeChatComposerProps['editSession']
@@ -53,7 +57,14 @@ export function useNativeChatComposerEditSession({
   setNotice: (text: string) => void
   disabled: boolean
   sendHeld: boolean
-  sendMessage: (intent?: NativeChatComposerSendIntent) => void
+  /** Enter's send, and whether Enter would deliver the draft to the agent as a message rather than run it as a command. */
+  submission: {
+    send: (intent?: NativeChatComposerSendIntent) => void
+    messageDelivery: boolean
+    /** A goal is being set: it takes no images, so no notes either. */
+    goalActive?: boolean
+  }
+  peekSendClassification: (draft: string) => NativeChatSendClassification
   completeItem: (item: NativeChatPickerItem) => void
 }) {
   const sessionCommands = structuredTransport?.sessionCommands
@@ -116,10 +127,20 @@ export function useNativeChatComposerEditSession({
     },
     [editSession, setNotice, acceptsText]
   )
-  const sendOrQueue = useSendAfterDictation(root, sendMessage)
+  const sendOrQueue = useSendAfterDictation(root, submission.send)
   const send = useCallback(
     (intent?: NativeChatComposerSendIntent) => {
       if (!editSession) {
+        // A marked image reopened in its viewer sits out Send until that viewer is done with it.
+        if (nativeChatDraftHasEditingImage(draftScopeKey)) {
+          setNotice(
+            translate(
+              'components.native-chat.notes.sendWhileEditing',
+              'Close the image you’re editing notes on, then send.'
+            )
+          )
+          return
+        }
         sendOrQueue(intent)
         return
       }
@@ -127,11 +148,25 @@ export function useNativeChatComposerEditSession({
         editSession.save()
       }
     },
-    [disabled, editSession, sendHeld, sendOrQueue]
+    [disabled, draftScopeKey, editSession, sendHeld, sendOrQueue, setNotice]
   )
   const submit = useLatestHandler(() => send())
+  // Notes may send with the draft only when Enter would deliver it as a message, never run it as a command.
+  const notesBlocked = useLatestHandler((): 'editing' | 'goal' | 'command' | null => {
+    if (isEditing) {
+      return 'editing'
+    }
+    if (submission.goalActive) {
+      return 'goal'
+    }
+    const text = readNativeChatComposerDraft(draftScopeKey).text
+    return submission.messageDelivery &&
+      (Boolean(structuredTransport) || peekSendClassification(text) !== 'command')
+      ? null
+      : 'command'
+  })
   // The pane's own handle object, so its identity changes only when that handle does.
-  useImperativeHandle(ref, () => Object.assign(handle.current!, { submit }))
+  useImperativeHandle(ref, () => Object.assign(handle.current!, { submit, notesBlocked }))
   const chooseEditItem = useCallback(
     (item: Parameters<typeof completeItem>[0]) => {
       if (item.kind === 'command' && refuseEditCommand(`/${item.name}`)) {

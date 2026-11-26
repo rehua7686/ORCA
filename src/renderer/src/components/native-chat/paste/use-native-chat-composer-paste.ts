@@ -68,13 +68,14 @@ export function useNativeChatComposerPaste({
       setNotice
     )
 
-  /** Settle the operation started at paste time, or attach directly if chips are unavailable. */
+  /** Settle the operation started at paste time, or attach directly if chips are unavailable.
+   *  False when the chat's owner changed meanwhile and the image was dropped. */
   const settleImagePaste = useCallback(
-    (pendingId: string | null, path: string, originalOwner: NativeChatAttachmentOwner) => {
+    (pendingId: string | null, path: string, originalOwner: NativeChatAttachmentOwner): boolean => {
       if (!nativeChatAttachmentOwnerUnchanged(originalOwner, resolveAttachmentOwner())) {
         dropImagePaste(pendingId)
         setNotice(nativeChatWorktreeNotReadyNotice())
-        return
+        return false
       }
       if (pendingId) {
         lifetime.pending.delete(pendingId)
@@ -82,6 +83,7 @@ export function useNativeChatComposerPaste({
       } else {
         attachResolvedPaths([path], null)
       }
+      return true
     },
     [
       attachResolvedPaths,
@@ -100,7 +102,8 @@ export function useNativeChatComposerPaste({
       pendingId: string | null,
       besideText: boolean,
       ready?: () => void,
-      eventImage?: Blob
+      eventImage?: Blob,
+      png?: Uint8Array
     ): Promise<boolean> => {
       const saved = await saveNativeChatPastedClipboardImage(owner, {
         pendingId,
@@ -108,17 +111,19 @@ export function useNativeChatComposerPaste({
         ready,
         eventImage,
         canNotify: canComplete,
-        setNotice
+        setNotice,
+        ...(png ? { png } : {})
       })
-      if (keepStoreUploadAfterUnmount(pendingId, saved)) {
+      // A drawn notes image is one piece with its notes: if its message box is gone, the image is
+      // dropped rather than kept without them, and the notes stay in their viewer.
+      if (keepStoreUploadAfterUnmount(pendingId, png ? { status: 'dropped' } : saved)) {
         return false
       }
       if (!canComplete() || saved.status !== 'saved') {
         dropImagePaste(pendingId)
         return false
       }
-      settleImagePaste(pendingId, saved.tempPath, owner)
-      return true
+      return settleImagePaste(pendingId, saved.tempPath, owner)
     },
     [canComplete, dropImagePaste, keepStoreUploadAfterUnmount, setNotice, settleImagePaste]
   )
@@ -311,5 +316,5 @@ export function useNativeChatComposerPaste({
     setNotice
   ])
 
-  return { handlePaste, pasteFromClipboard }
+  return { handlePaste, pasteFromClipboard, startImageChip, saveClipboardImage, canPaste }
 }

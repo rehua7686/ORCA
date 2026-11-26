@@ -1,0 +1,353 @@
+// Hands finished notes to the chat's message box: one marked image per media item (or video frame),
+// attached like a pasted picture, with its notes kept on that attachment.
+
+import { nativeChatComposerDestinationIn } from '../../composer/focus/native-chat-composer-destination'
+import {
+  readNativeChatComposerDraft,
+  subscribeToNativeChatComposerDraft
+} from '../../drafts/native-chat-composer-draft-store'
+import { removeImageWithReferences } from '../../composer/editor/native-chat-composer-image-references'
+import { records } from '../../drafts/native-chat-composer-draft-memory'
+import { imageReferenceToken } from '../../../../../../shared/native-chat/attachments/native-chat-image-reference'
+
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+import type { NativeChatComposerHandle } from '../../composer/native-chat-composer-types'
+import {
+  clearNativeChatAttachmentNotes,
+  setNativeChatAttachmentNotes,
+  type NativeChatNotesSource
+} from './native-chat-attachment-notes'
+import { drawNativeChatNotesImage } from './native-chat-media-notes-draw'
+import {
+  NativeChatNotesAlreadyAddedError,
+  NativeChatNotesEditedElsewhereError,
+  NativeChatNotesSupersededError,
+  NativeChatNotesTooLargeError,
+  NativeChatNotesUnsavedError
+} from './native-chat-notes-handoff-errors'
+
+export {
+  NativeChatNotesAlreadyAddedError,
+  NativeChatNotesEditedElsewhereError,
+  NativeChatNotesSupersededError,
+  NativeChatNotesTooLargeError,
+  NativeChatNotesUnsavedError
+}
+export { nativeChatNotesHandOffErrorText } from './native-chat-notes-handoff-errors'
+import { nativeChatNotedImageEditedByOthers } from './native-chat-chip-notes'
+import { NATIVE_CHAT_NOTES_MAX_SOURCE_PIXELS } from './native-chat-notes-reasons'
+import {
+  handOffHeldNativeChatNotes,
+  heldNativeChatNotesAlreadyHanded,
+  type NativeChatHeldNotesClaim
+} from './native-chat-held-notes'
+import { showNativeChatNotesNotice } from './native-chat-notes-notice'
+import { translate } from '@/i18n/i18n'
+import { groupNativeChatNotesByFrame, type NativeChatMediaNote } from './native-chat-media-notes'
+
+/** `element`: the message box's mounted element. Its handle object is replaced as the box
+ *  re-renders (attaching the marked image does), so the element is what tells one mounted box from
+ *  another. */
+export type NativeChatNotesComposer = {
+  scopeKey: string
+  handle: NativeChatComposerHandle
+  element?: HTMLElement
+}
+
+/** The chat's message box, found from inside its chat; null outside a chat or with no box. */
+export function nativeChatNotesComposer(from: Element | null): NativeChatNotesComposer | null {
+  const root = from?.closest<HTMLElement>('[data-native-chat-root]') ?? null
+  // The draft the image goes into and the draft its notes are kept with are the same message box's.
+  const destination = root ? nativeChatComposerDestinationIn(root) : null
+  const scopeKey = destination?.element.dataset.nativeChatComposerScope
+  return destination && scopeKey
+    ? { scopeKey, handle: destination.handle, element: destination.element }
+    : null
+}
+
+/** The chat's draft scope, even while its message box is hidden behind a question card. */
+export function nativeChatNotesScopeKey(from: Element | null): string | undefined {
+  const root = from?.closest<HTMLElement>('[data-native-chat-root]')
+  const composers = root?.querySelectorAll<HTMLElement>('[data-native-chat-composer-scope]')
+  return composers ? [...composers].at(-1)?.dataset.nativeChatComposerScope : undefined
+}
+
+/** Whether the notes are exactly these: same marks, words, numbers and times, in the same order. */
+export function sameNativeChatNotes(
+  notes: readonly NativeChatMediaNote[],
+  other: readonly NativeChatMediaNote[]
+): boolean {
+  return JSON.stringify(notes) === JSON.stringify(other)
+}
+
+/** Whether no other viewer, here or in another window, has the chip these notes replace open. */
+export function nativeChatNotesSoleEditor(
+  scopeKey: string,
+  replacedId: string | undefined
+): boolean {
+  return !replacedId || !nativeChatNotedImageEditedByOthers(scopeKey, replacedId)
+}
+
+/** Replacing a reopened chip while another viewer edits it would end that edit under it: refused,
+ *  with the words kept here. */
+export function assertNativeChatNotesSoleEditor(
+  scopeKey: string,
+  replacedId: string | undefined
+): void {
+  if (!nativeChatNotesSoleEditor(scopeKey, replacedId)) {
+    throw new NativeChatNotesEditedElsewhereError()
+  }
+}
+
+/** Held notes brought back by this viewer went into these marked images. When another viewer already
+ *  added the same hold, this copy comes back out (one marked copy per hold); otherwise the hold ends
+ *  once the draft holding them is saved. */
+export function settleNativeChatHeldHandOff(
+  scopeKey: string,
+  ids: readonly string[],
+  claim: NativeChatHeldNotesClaim | null
+): void {
+  if (!claim) {
+    return
+  }
+  if (heldNativeChatNotesAlreadyHanded(claim)) {
+    detachNativeChatNotes(scopeKey, ids)
+    throw new NativeChatNotesAlreadyAddedError()
+  }
+  void handOffHeldNativeChatNotes(claim, ids)
+}
+
+/** What a hand-off's `onAttached` returned, settled: false means the image these notes replace left
+ *  the draft meanwhile (sent, or replaced from another viewer), so the marked copy is taken back out
+ *  rather than bring back what is already gone. */
+export function settleNativeChatNotesReplacement(
+  scopeKey: string,
+  ids: readonly string[],
+  restore: (() => boolean | void) | void | false
+): (() => boolean | void) | undefined {
+  if (restore === false) {
+    detachNativeChatNotes(scopeKey, ids)
+    throw new NativeChatNotesSupersededError()
+  }
+  return restore ?? undefined
+}
+
+/** What Send was pressed against: the chat (its root outlives a chip that the marked copy replaces),
+ *  the message box instance, and the draft as it was. */
+export type NativeChatNotesSendApproval = {
+  root: Element | null
+  composer: NativeChatNotesComposer
+  /** The message box's mounted element at the press: a remount is another box. */
+  element: HTMLElement | undefined
+  text: string
+  imageIds: readonly string[]
+}
+
+export function captureNativeChatNotesSend(
+  opener: { readonly current: Element | null },
+  composer: NativeChatNotesComposer
+): NativeChatNotesSendApproval {
+  const draft = readNativeChatComposerDraft(composer.scopeKey)
+  const root = opener.current?.closest('[data-native-chat-root]') ?? null
+  return {
+    root,
+    composer,
+    element: (root ? nativeChatNotesComposer(root)?.element : undefined) ?? composer.element,
+    text: draft.text,
+    imageIds: draft.images.map(({ id }) => id)
+  }
+}
+
+/** Sends the message the notes went into, only if it is still the one Send was pressed for: the same
+ *  message box instance, still taking notes as a message, with the draft changed only by these
+ *  marked images (and the chip they replace). Otherwise the images stay in the message box. */
+export function submitNativeChatNotesIfApproved(
+  approved: NativeChatNotesSendApproval,
+  ids: readonly string[],
+  replacedId: string | undefined
+): boolean {
+  const now = approved.root ? nativeChatNotesComposer(approved.root) : null
+  const { scopeKey } = approved.composer
+  const draft = readNativeChatComposerDraft(scopeKey)
+  const kept = approved.imageIds.filter((id) => id !== replacedId)
+  const expected = new Set([...kept, ...ids])
+  // The editor writes a chip token for each image it adds or removes, with a space on either side;
+  // those are this hand-off's own changes. Everything else, line breaks and indents included, must
+  // be exactly as it was.
+  const words = (text: string, tokens: readonly (string | undefined)[]): string =>
+    tokens.reduce<string>(
+      (rest, id) =>
+        id ? rest.split(new RegExp(` ?${escapeRegExp(imageReferenceToken(id))} ?`)).join('') : rest,
+      text
+    )
+  if (
+    now?.scopeKey !== scopeKey ||
+    // The same mounted message box; its current handle is the one that sends.
+    now.element !== approved.element ||
+    now.handle.notesBlocked?.() !== null ||
+    words(draft.text, [...ids, replacedId]) !== words(approved.text, [replacedId]) ||
+    draft.images.length !== expected.size ||
+    draft.images.some(({ id }) => !expected.has(id)) ||
+    // The images that were already there keep their order.
+    draft.images.filter(({ id }) => kept.includes(id)).some(({ id }, index) => id !== kept[index])
+  ) {
+    return false
+  }
+  now.handle.submit?.()
+  return true
+}
+
+/** A drawable frame of the media and its natural size. */
+export type NativeChatNotesFrameSource = (
+  time: number | undefined
+) => Promise<{ image: CanvasImageSource; width: number; height: number; release?: () => void }>
+
+// One media-work queue for the whole window: drawing and saving marked images never overlap, across
+// viewers and chats, so at most one full-size canvas and one encoded image are alive at a time.
+let mediaWork: Promise<unknown> = Promise.resolve()
+
+/** Runs `work` after every earlier marked-image job has finished. */
+export function queueNativeChatMediaWork<T>(work: () => Promise<T>): Promise<T> {
+  const run = mediaWork.then(work)
+  mediaWork = run.catch(() => undefined)
+  return run
+}
+
+/** Draws, saves and attaches one marked image per frame; resolves the new attachment ids in order. */
+export async function attachNativeChatNotes(args: {
+  composer: NativeChatNotesComposer
+  mediaName: string
+  kind: 'image' | 'video'
+  source: NativeChatNotesSource
+  notes: readonly NativeChatMediaNote[]
+  offset: number
+  frame: NativeChatNotesFrameSource
+}): Promise<string[]> {
+  const { composer } = args
+  const attach = composer.handle.attachGeneratedImage
+  if (!attach) {
+    throw new Error('This message box cannot take images.')
+  }
+  const ids: string[] = []
+  try {
+    // One at a time, so only one full-size canvas exists at once.
+    for (const group of groupNativeChatNotesByFrame(args.notes)) {
+      const id = await queueNativeChatMediaWork(async () => {
+        const drawable = await args.frame(group[0]?.time)
+        let blob: Blob
+        try {
+          // Checked again here: held notes can come back to a source that has since grown.
+          if (drawable.width * drawable.height > NATIVE_CHAT_NOTES_MAX_SOURCE_PIXELS) {
+            throw new NativeChatNotesTooLargeError()
+          }
+          blob = await drawNativeChatNotesImage(drawable.image, drawable, group)
+        } finally {
+          drawable.release?.()
+        }
+        return attach(blob)
+      })
+      // A chat that can't take images keeps no image: no notes either. A draft that moved to its
+      // session meanwhile is read (and its notes are keyed) where it is now. One the image settled
+      // in elsewhere (its draft moved to another chat) gives it back, so a retry adds one copy.
+      if (!id || !nativeChatNotesStillInDraft(composer.scopeKey, [id])) {
+        if (id) {
+          takeBackStrayNativeChatImage(id)
+        }
+        throw new Error('The marked image could not be attached.')
+      }
+      ids.push(id)
+      const saved = setNativeChatAttachmentNotes(composer.scopeKey, id, {
+        mediaName: args.mediaName,
+        source: args.source,
+        kind: args.kind,
+        notes: group,
+        offset: args.offset
+      })
+      // The image is saved with the draft; notes only in memory would leave it without them after a
+      // reload, so the pair goes back and the words stay in the viewer.
+      if (!saved) {
+        throw new NativeChatNotesUnsavedError()
+      }
+    }
+  } catch (error) {
+    // Nothing half-attached: a failed batch takes back what it already added.
+    detachNativeChatNotes(composer.scopeKey, ids)
+    throw error
+  }
+  return ids
+}
+
+/** Takes an image out of whichever draft holds it. */
+function takeBackStrayNativeChatImage(id: string): void {
+  for (const [scopeKey, record] of records) {
+    if (record.images.some((image) => image.id === id)) {
+      removeImageWithReferences(scopeKey, null, id)
+    }
+  }
+}
+
+/** Removes marked images (and their notes) that are still in the draft. */
+export function detachNativeChatNotes(scopeKey: string, ids: readonly string[]): void {
+  for (const id of ids) {
+    removeImageWithReferences(scopeKey, null, id)
+  }
+  clearNativeChatAttachmentNotes(scopeKey, ids)
+}
+
+/** Whether every one of these marked images is still in the draft, unsent and not removed. */
+export function nativeChatNotesStillInDraft(scopeKey: string, ids: readonly string[]): boolean {
+  const held = new Set(readNativeChatComposerDraft(scopeKey).images.map(({ id }) => id))
+  return ids.every((id) => held.has(id))
+}
+
+/** Calls `onLeft` once, as soon as any of these images leaves the draft (sent, removed or reopened). */
+export function watchNativeChatNotesLeaveDraft(
+  scopeKey: string,
+  ids: readonly string[],
+  onLeft: () => void
+): () => void {
+  let done = false
+  const stop = subscribeToNativeChatComposerDraft(scopeKey, () => {
+    if (!done && !nativeChatNotesStillInDraft(scopeKey, ids)) {
+      done = true
+      stop()
+      onLeft()
+    }
+  })
+  return () => {
+    done = true
+    stop()
+  }
+}
+
+/** Lets the message box render the new chips before its send reads them. */
+export function afterComposerRender(): Promise<void> {
+  return new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  )
+}
+
+/** "N notes added to your message" with Undo in the message box, live only while those images are
+ *  still in the draft and not reopened. */
+export function announceNativeChatNotesHandOff(
+  scopeKey: string,
+  ids: string[],
+  /** Puts back what these notes replaced; false when that couldn't be saved, so they stay. */
+  undo: () => boolean,
+  count: number
+): void {
+  const dismiss = showNativeChatNotesNotice(scopeKey, {
+    text: translate(
+      'components.native-chat.notes.addedToMessage',
+      '{{count}} notes added to your message',
+      { defaultValue_one: '{{count}} note added to your message', count }
+    ),
+    ids,
+    undo: () => {
+      if (nativeChatNotesStillInDraft(scopeKey, ids) && undo()) {
+        detachNativeChatNotes(scopeKey, ids)
+      }
+    }
+  })
+  watchNativeChatNotesLeaveDraft(scopeKey, ids, dismiss)
+}

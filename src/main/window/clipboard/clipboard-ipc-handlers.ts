@@ -7,6 +7,7 @@ import {
 import { app, clipboard, ipcMain, nativeImage } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { open, stat } from 'node:fs/promises'
+import { saveGeneratedNoteImage } from './generated-note-image-admission'
 import { runProcess } from '@orca/process-host'
 import { PATH_ACCESS_DENIED_MESSAGE } from '../../ipc/filesystem/access/filesystem-auth'
 import { isENOENT } from '../../filesystem/local-file-io/filesystem-path-containment'
@@ -186,6 +187,11 @@ export function registerClipboardHandlers(
     'clipboard:saveImageAsTempFile',
     async (event, args?: SaveClipboardImageAsTempFileArgs) => {
       assertTrustedClipboardSender(event)
+      const save = (b: Buffer) => saveClipboardImageBufferForTarget(b, args, handlerOptions)
+      // Notes images arrive as bytes, so the user's clipboard is never read or overwritten.
+      if (args?.png !== undefined) {
+        return saveGeneratedNoteImage(args.png, save)
+      }
       const source = await readClipboardImageSource(clipboardFormatReader)
       if (!source) {
         return null
@@ -200,7 +206,7 @@ export function registerClipboardHandlers(
           openFile: (filePath) => open(filePath, 'r')
         })
       }
-      return png ? saveClipboardImageBufferForTarget(png, args, handlerOptions) : null
+      return png ? save(png) : null
     }
   )
   ipcMain.handle('clipboard:savePastedTextAsFile', (event, args: SavePastedTextAsFileArgs) => {

@@ -1,10 +1,22 @@
-import { useContext, useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Image as ImageIcon } from 'lucide-react'
 import { cn } from '../../../../lib/class-names'
 import { useTranslate } from '../../../../i18n/use-translate'
 import { basename } from '../../../../lib/path'
 import type { NativeChatBlock } from '../../../../../../shared/native-chat/native-chat-types'
-import { PanZoomImageDialog } from '../../../editor/document-images/PanZoomImageDialog'
+import {
+  nativeChatCapturedImageIndex,
+  useNativeChatFollowedImage
+} from './native-chat-captured-image'
+import { NativeChatMediaViewer } from '../notes/NativeChatMediaViewer'
+import { nominateNativeChatMediaViewerTile } from '../notes/use-native-chat-media-viewer-focus'
+import { nativeChatSentNotesNumberMax } from '../notes/native-chat-media-notes'
+import {
+  nativeChatNotesMediaKey,
+  useNativeChatHeldNotesCount
+} from '../notes/native-chat-held-notes'
+import type { NativeChatNotesSource } from '../notes/native-chat-attachment-notes'
+import { nativeChatNotesScopeKey } from '../notes/native-chat-notes-handoff'
 import {
   getLocalImageCacheKey,
   useLocalImageSrc
@@ -101,6 +113,14 @@ export function NativeChatImageTile({
   const { source, displaySrc, external } = useTranscriptImageSrc(block, runtimeContext, near)
   const label = nativeChatImageLabel(block)
   const viewImageLabel = t('components.native-chat.composer.viewAttachment', 'View image')
+  // Notes kept for this image in this chat (the message box held a command) show on the tile.
+  const [scopeKey, setScopeKey] = useState<string | undefined>()
+  useLayoutEffect(() => setScopeKey(nativeChatNotesScopeKey(ref.current)), [])
+  const keptCount = useNativeChatHeldNotesCount(
+    scopeKey,
+    nativeChatNotesMediaKey(notesSource(block, runtimeContext)) || undefined
+  )
+  const keptLabel = keptCount > 0 ? t('components.native-chat.notes.kept', 'Notes kept') : null
 
   useEffect(() => {
     const element = ref.current
@@ -140,7 +160,7 @@ export function NativeChatImageTile({
     <div ref={ref} className={cn('relative shrink-0', className)}>
       <button
         type="button"
-        aria-label={`${viewImageLabel}: ${label}`}
+        aria-label={`${viewImageLabel}: ${label}${keptLabel ? `, ${keptLabel}` : ''}`}
         title={label}
         data-native-chat-copy-image-src={copyableNativeChatImageSrc(displaySrc)}
         onClick={onOpen}
@@ -154,8 +174,27 @@ export function NativeChatImageTile({
           className={imageClassName}
         />
       </button>
+      {keptLabel ? (
+        <span className="pointer-events-none absolute inset-x-0.5 bottom-0.5 truncate rounded bg-background/90 px-1 text-center text-2xs font-medium text-foreground">
+          {keptLabel}
+        </span>
+      ) : null}
     </div>
   )
+}
+
+const NO_OPENER: React.RefObject<Element | null> = { current: null }
+
+/** The media notes are drawn on, read through the same connection as its tile. */
+function notesSource(
+  block: ImageRef | undefined,
+  runtimeContext: RuntimeFileOperationArgs | null | undefined
+): NativeChatNotesSource {
+  const connectionId = runtimeContext?.connectionId
+  return {
+    ...(block?.path ? { path: block.path, ...(connectionId ? { connectionId } : {}) } : {}),
+    ...(block?.url ? { url: block.url } : {})
+  }
 }
 
 /** The pan-and-zoom viewer over a message's images: previous and next step through them. */
@@ -163,13 +202,22 @@ export function NativeChatImageViewer({
   blocks,
   index,
   onIndexChange,
-  runtimeContext
+  runtimeContext,
+  opener,
+  notesOffset = 0,
+  startAnnotating = false
 }: {
   blocks: readonly ImageRef[]
   /** The image shown; null when closed. */
   index: number | null
   onIndexChange: (index: number | null) => void
   runtimeContext: RuntimeFileOperationArgs | null | undefined
+  /** An element inside the chat, used to find its message box for notes; without one, view only. */
+  opener?: React.RefObject<Element | null>
+  /** Marks already drawn into these images when they are sent marked copies; new ones follow. */
+  notesOffset?: number
+  /** Opens ready to place notes, as Annotate in the chat's image set asks. */
+  startAnnotating?: boolean
 }): React.JSX.Element {
   const block = index === null ? undefined : blocks[index]
   const read = useTranscriptImageSrc(block, runtimeContext, block !== undefined)
@@ -191,16 +239,22 @@ export function NativeChatImageViewer({
         }
   }
   return (
-    <PanZoomImageDialog
+    <NativeChatMediaViewer
       open={block !== undefined}
       onOpenChange={(open) => !open && onIndexChange(null)}
-      src={displaySrc}
+      src={displaySrc ?? null}
       title={label}
-      showTitle
+      source={notesSource(block, runtimeContext)}
+      opener={opener ?? NO_OPENER}
+      // Web images would need a cross-origin read to draw, so they are view-only.
+      annotatable={opener !== undefined && !read.external}
+      offset={notesOffset}
+      startAnnotating={startAnnotating}
       onPrevious={step(-1)}
       onNext={step(1)}
+      position={index === null ? undefined : { index, count: blocks.length }}
       onInteractOutside={keepPreviewOpenForChatMenu}
-      data-native-chat-copy-image-src={copyableNativeChatImageSrc(displaySrc)}
+      copySrc={copyableNativeChatImageSrc(displaySrc)}
       fallback={<ImageLabelChip label={label} />}
     />
   )
@@ -248,8 +302,24 @@ export function NativeChatImageAttachments({
   className?: string
 }): React.JSX.Element | null {
   const t = useTranslate()
-  const [viewing, setViewing] = useState<number | null>(null)
+  // Opened from the chat's image set by Annotate: the viewer starts ready to place notes.
+  const [annotateOnOpen, setAnnotateOnOpen] = useState(false)
+  // The image set can outlive this row (scrolled out of range): only a mounted row takes Annotate.
+  const mounted = useRef(false)
+  useLayoutEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
   const images = blocks.filter((block) => block.type === 'image-ref')
+  // The image open in this message's viewer, followed by identity as the message's images change.
+  const [viewing, setViewing] = useNativeChatFollowedImage(images)
+  // Annotate from the image set acts on the row's images as they are when it is pressed.
+  const latestImages = useRef(images)
+  useLayoutEffect(() => {
+    latestImages.current = images
+  })
   const group = useRef<HTMLDivElement>(null)
   const galleryMessageId = useContext(NativeChatGalleryMessageContext)
   // Only images a tile can show join, so a label chip never becomes a step.
@@ -266,7 +336,18 @@ export function NativeChatImageAttachments({
           kind: 'group',
           messageId: galleryMessageId,
           blocks: shown.map(({ block }) => block),
-          images: shown.map(({ image }) => image)
+          images: shown.map(({ image }) => image),
+          annotate: (block) => {
+            const at = nativeChatCapturedImageIndex(latestImages.current, block)
+            if (!mounted.current || at === -1) {
+              return false
+            }
+            setAnnotateOnOpen(true)
+            // Esc in the viewer returns to this image's tile.
+            nominateNativeChatMediaViewerTile(group.current, at)
+            setViewing(at, latestImages.current)
+            return true
+          }
         }
       : null
   )
@@ -338,8 +419,18 @@ export function NativeChatImageAttachments({
       <NativeChatImageViewer
         blocks={images}
         index={viewing}
-        onIndexChange={setViewing}
+        onIndexChange={(index) => {
+          setViewing(index)
+          if (index === null) {
+            setAnnotateOnOpen(false)
+          }
+        }}
         runtimeContext={runtimeContext}
+        opener={group}
+        startAnnotating={annotateOnOpen}
+        notesOffset={nativeChatSentNotesNumberMax(
+          blocks.flatMap((block) => (block.type === 'text' ? [block.text] : [])).join('\n')
+        )}
       />
     </div>
   )

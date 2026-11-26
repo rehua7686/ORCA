@@ -243,6 +243,7 @@ export function NativeChatComposerField({
                     key={attachment.id}
                     attachment={attachment}
                     hostEnvironmentId={attachmentEnvironmentId}
+                    notesScopeKey={draftScopeKey}
                     number={numberImages ? index + 1 : undefined}
                     onRemove={onRemoveImageAttachment}
                   />
