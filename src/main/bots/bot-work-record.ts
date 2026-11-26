@@ -2,6 +2,7 @@
 // orchestration on every use. A row closes only on proof; anything unknown keeps it.
 import type { AgentJournalMessageItem } from '../../shared/agent-session/journal/agent-session-journal-types'
 import type { BotWorkerSummary } from '../../shared/bots/bot-work-list'
+import { ORCHESTRATION_PROGRESS_NOTE_MAX } from '../../shared/rpc-contract/orchestration/orchestration-params'
 import { withTimeout } from '../../shared/concurrency/promise-timeout-fallback'
 import { ownPullRequest } from './bot-work-pr-match'
 import type { BotWorkPullRequest } from '../../shared/bots/bot-work-pull-request'
@@ -129,6 +130,9 @@ export class BotWorkRecord {
         agent: worker?.agent ?? null,
         state: worker?.state ?? null,
         ...(worker?.idle ? { idle: true } : {}),
+        ...(worker?.state === 'working' && worker.progressNote
+          ? { progressNote: cleanBotWorkText(worker.progressNote, ORCHESTRATION_PROGRESS_NOTE_MAX) }
+          : {}),
         dispatchId: worker?.dispatchId ?? row.dispatchId,
         workspace: workspace ? cleanBotWorkText(workspace.name) : null,
         server: worker?.hostName ? cleanBotWorkText(worker.hostName) : null,
