@@ -60,6 +60,7 @@ import { registerPetHandlers } from '../pets/pet'
 import { registerPluginHandlers } from '../plugins/plugins'
 import { registerUIHandlers, setTrustedUIRendererWebContentsId } from '../ui'
 import { registerEmulatorFrameStreamHandlers } from '../emulator/emulator-frame-stream'
+import { pairedForwardAvccUrl } from '../../emulator/paired-emulator-video-url'
 import { registerEmulatorVideoStreamHandlers } from '../emulator/emulator-video-stream'
 import { registerEmulatorScrcpyTouchHandler } from '../emulator/emulator-scrcpy-touch'
 import { registerEmulatorScrcpyKeyboardHandler } from '../emulator/emulator-scrcpy-keyboard'
@@ -213,8 +214,9 @@ export async function registerCoreHandlers(
     registerSessionHandlers(store, runtime)
     registerUIHandlers(store, { isDashboardPopoutRenderer })
     registerEmulatorFrameStreamHandlers()
-    registerEmulatorVideoStreamHandlers((id) =>
-      runtime.getEmulatorBridge()?.getIosVideoStreamUrl(id)
+    registerEmulatorVideoStreamHandlers(
+      (id, streamUrl) =>
+        pairedForwardAvccUrl(streamUrl) ?? runtime.getEmulatorBridge()?.getIosVideoStreamUrl(id)
     )
     registerEmulatorScrcpyTouchHandler()
     registerEmulatorScrcpyKeyboardHandler()

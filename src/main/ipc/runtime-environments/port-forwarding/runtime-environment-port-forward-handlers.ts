@@ -22,6 +22,11 @@ import {
   updatePairedPortForward
 } from '../../../ports/paired-forwards/paired-port-forwards'
 import {
+  endPairedForwardSession,
+  endPairedForwardSessionOnAbort
+} from '../../../ports/paired-forwards/paired-port-forward-session-end'
+import { abortWhenRendererGone } from '../../renderer-requests/renderer-lifetime-abort'
+import {
   restoredPairedPortForwardMovesPending,
   takeRestoredPairedPortForwardMoves
 } from '../../../ports/paired-forwards/paired-port-forward-saved'
@@ -36,6 +41,7 @@ import { onRuntimeEnvironmentTransportGenerationRetired } from '../connections/r
 const Port = z.number().int().min(1).max(65_535)
 const EnvironmentId = z.string().trim().min(1).max(256)
 const Label = z.string().max(256).optional()
+const Session = z.string().min(1).max(128)
 const ForwardSpec = z.object({
   environmentId: EnvironmentId,
   localPort: Port,
@@ -91,10 +97,24 @@ export function registerRuntimeEnvironmentPortForwardHandlers(options: {
   ipcMain.handle('runtimeEnvironments:removePortForward', (_event, input: unknown) =>
     removePairedPortForward(z.object({ id: z.string().min(1).max(64) }).parse(input).id)
   )
-  ipcMain.handle('runtimeEnvironments:ensurePortForward', (_event, input: unknown) =>
-    ensurePairedPortForward(
-      z.object({ environmentId: EnvironmentId, remotePort: Port, label: Label }).parse(input)
-    )
+  ipcMain.handle('runtimeEnvironments:ensurePortForward', (event, input: unknown) => {
+    const args = z
+      .object({
+        environmentId: EnvironmentId,
+        remotePort: Port,
+        label: Label,
+        session: Session.optional()
+      })
+      .parse(input)
+    if (args.session) {
+      // A window that reloads, crashes or closes ends its sessions, so their forwards close too.
+      const lifetime = abortWhenRendererGone(event.sender)
+      endPairedForwardSessionOnAbort(args.session, lifetime.signal, lifetime.dispose)
+    }
+    return ensurePairedPortForward(args)
+  })
+  ipcMain.handle('runtimeEnvironments:endPortForwardSession', (_event, input: unknown) =>
+    endPairedForwardSession(z.object({ session: Session }).parse(input).session)
   )
   ipcMain.handle('runtimeEnvironments:takeRestoredPortForwardMoves', () =>
     takeRestoredPairedPortForwardMoves()
