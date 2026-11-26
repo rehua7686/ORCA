@@ -3,6 +3,7 @@
 // A shell prompt can look complete even after command-not-found; require fresh agent completion.
 // Status-free panes may finish after startup grace if the shell did not refuse the command.
 import type { AgentStatusIpcPayload } from '../../../shared/agent-status/contracts/agent-status-ipc-payload'
+import { STAGED_STARTUP_COMMAND_PREFIX } from '../../../shared/shell/launch/startup-command-staging'
 
 /** Covers agent spin-up over SSH before an idle pane without agent status is believed. */
 export const AGENT_START_GRACE_MS = 2 * 60 * 1000
@@ -16,6 +17,10 @@ const MISSING_COMMAND_PATTERNS = [
   /unknown command/i,
   /is not recognized as (?:the name of a cmdlet|an internal or external command)/i
 ]
+
+// Input read ahead of the prompt (an rc file's `read`) can eat the launch line's leading `. `; the shell then
+// runs the staged script as a program and refuses it. bash names the path before the reason, zsh after.
+const STAGED_LAUNCH_REFUSAL = /permission denied|no such file or directory/i
 
 export type AgentTurnStatusRow = Pick<
   AgentStatusIpcPayload,
@@ -51,8 +56,10 @@ export function findMissingCommandLine(
   return (
     recent.find(
       (line) =>
-        MISSING_COMMAND_PATTERNS.some((pattern) => pattern.test(line)) &&
-        names.some((name) => line.includes(name))
+        (MISSING_COMMAND_PATTERNS.some((pattern) => pattern.test(line)) &&
+          names.some((name) => line.includes(name))) ||
+        // shortcut: a refusal wrapped before the script name on a narrow pane is missed; match across rows if seen.
+        (STAGED_LAUNCH_REFUSAL.test(line) && line.includes(STAGED_STARTUP_COMMAND_PREFIX))
     ) ?? null
   )
 }
