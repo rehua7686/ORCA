@@ -17,6 +17,7 @@ import { WorkspaceServerContext } from '../worktree/execution-hosts/workspace-se
 import { useSessionTitleCard } from './tabs/use-session-title-card'
 import { useDetailCardScope } from '../components/detail-cards/use-detail-card-scope'
 import { useShellSideRail } from '../layout/use-shell-side-rail'
+import { SessionListLongPressOverride } from '../navigation/session-list-long-press-context'
 
 export function MobileSessionSurface({ controller }: { controller: MobileSessionController }) {
   useMobileColorScheme()
@@ -52,6 +53,13 @@ export function MobileSessionSurface({ controller }: { controller: MobileSession
     controller.showDictationSetup ||
     controller.deleteKeyTarget != null
   )
+  const { requestLeaveToSessionList, setShowQuickCommands, setShowCustomKeyModal } = controller
+  // Dismiss the originating drawer first so the draft prompt can present over it.
+  const leaveToSessionList = useCallback(() => {
+    setShowQuickCommands(false)
+    setShowCustomKeyModal(false)
+    return requestLeaveToSessionList()
+  }, [requestLeaveToSessionList, setShowQuickCommands, setShowCustomKeyModal])
   const details = useSessionTitleCard(besideTabs, obscured)
   const { itemsOnPhone, openBotPanel, openNativeSession, worktreeId, sessionTabs } = controller
   const { switchSessionTab, activeSessionTabId, routeBot } = controller
@@ -96,34 +104,36 @@ export function MobileSessionSurface({ controller }: { controller: MobileSession
   const hostName =
     controller.worktreeHostId === 'local' ? (server ? server.name : controller.hostName) : null
   return (
-    <View ref={setMobileSessionRootRef} style={styles.container}>
-      <View style={styles.kavInner}>
-        <MobileSessionHeader controller={controller} details={details} />
-        <MobileWorkerAutoCloseStrip controller={controller} />
-        {/* A chat's item chips open the item's page in the bot panel. */}
-        <BotItemOpenContext.Provider value={openItem}>
-          <BotChatOpenContext.Provider value={openChat}>
-            <BotPanelOpenContext.Provider value={panelOpener}>
-              <MobileSessionContentRow controller={controller} />
-            </BotPanelOpenContext.Provider>
-          </BotChatOpenContext.Provider>
-        </BotItemOpenContext.Provider>
+    <SessionListLongPressOverride action={leaveToSessionList}>
+      <View ref={setMobileSessionRootRef} style={styles.container}>
+        <View style={styles.kavInner}>
+          <MobileSessionHeader controller={controller} details={details} />
+          <MobileWorkerAutoCloseStrip controller={controller} />
+          {/* A chat's item chips open the item's page in the bot panel. */}
+          <BotItemOpenContext.Provider value={openItem}>
+            <BotChatOpenContext.Provider value={openChat}>
+              <BotPanelOpenContext.Provider value={panelOpener}>
+                <MobileSessionContentRow controller={controller} />
+              </BotPanelOpenContext.Provider>
+            </BotChatOpenContext.Provider>
+          </BotItemOpenContext.Provider>
+        </View>
+        <AnchoredDetailCardLayer
+          card={details}
+          obscured={obscured}
+          title={controller.worktreeName || t('session.header.terminalTitle', 'Terminal')}
+          detail={controller.worktreePath}
+          footer={
+            hostName ? (
+              <>
+                <StatusDot state={controller.connState} verdict={controller.connectionVerdict} />
+                <Text style={styles.sessionMetaText}>{hostName}</Text>
+              </>
+            ) : null
+          }
+        />
+        <MobileSessionSheets controller={controller} />
       </View>
-      <AnchoredDetailCardLayer
-        card={details}
-        obscured={obscured}
-        title={controller.worktreeName || t('session.header.terminalTitle', 'Terminal')}
-        detail={controller.worktreePath}
-        footer={
-          hostName ? (
-            <>
-              <StatusDot state={controller.connState} verdict={controller.connectionVerdict} />
-              <Text style={styles.sessionMetaText}>{hostName}</Text>
-            </>
-          ) : null
-        }
-      />
-      <MobileSessionSheets controller={controller} />
-    </View>
+    </SessionListLongPressOverride>
   )
 }

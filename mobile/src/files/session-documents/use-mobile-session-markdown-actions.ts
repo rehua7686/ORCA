@@ -1,14 +1,15 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import { Keyboard, Platform } from 'react-native'
 import { useClipboardWriter } from '../../platform/clipboard/clipboard'
 import { translate } from '../../i18n/mobile-i18n'
 import { useMobileTranslation } from '../../i18n/use-mobile-translation'
 import { useBackClaim } from '../../navigation/use-back-claim'
+import { returnToHostSessionList } from '../../navigation/session-list-back'
 import { useWorkspaceExecutionHost } from '../../navigation/workspace-execution-host'
 import { useSessionLeaveGuard } from '../../session/session-leave-guard'
 import { markdownTabSave } from './mobile-markdown-tab-operations'
 import { dropDocumentEditDraft, markdownTabDraftKey } from '../../drafts/document-edit-draft-rows'
-import { triggerSuccess, triggerError } from '../../platform/haptics/haptics'
+import { triggerEdgeBump, triggerSuccess, triggerError } from '../../platform/haptics/haptics'
 import type { DirtyMarkdownDraft } from './session-document-state'
 import type { MobileSessionTab } from '../../session/tabs/mobile-session-tabs'
 import type { MobileSessionDiffCommentsModel } from '../../source-control/review/review-notes/use-mobile-session-diff-comments'
@@ -125,7 +126,13 @@ export function useMobileSessionMarkdownActions(scope: MobileSessionMarkdownActi
     return drafts
   }, [markdownDocs, sessionTabs, t])
 
+  const leaveDestination = useRef<'step' | 'list'>('step')
   const leaveSession = useCallback(() => {
+    if (leaveDestination.current === 'list') {
+      leaveDestination.current = 'step'
+      returnToHostSessionList(router, hostId)
+      return
+    }
     // A standalone session has no list beneath; the page's Back hands the exit to the shell.
     if (router.canGoBack() || standalone) {
       router.back()
@@ -146,18 +153,28 @@ export function useMobileSessionMarkdownActions(scope: MobileSessionMarkdownActi
     [draftScope, leaveSession]
   )
 
-  const requestLeaveSession = useCallback(() => {
-    if (holdLeaveForDictation()) {
-      return
-    }
-    const dirtyDrafts = getDirtyMarkdownDrafts()
-    if (dirtyDrafts.length === 0) {
-      leaveSession()
-      return
-    }
-    Keyboard.dismiss()
-    setLeaveDrafts(dirtyDrafts)
-  }, [getDirtyMarkdownDrafts, holdLeaveForDictation, leaveSession])
+  const requestLeave = useCallback(
+    (destination: 'step' | 'list') => {
+      leaveDestination.current = destination
+      if (holdLeaveForDictation()) {
+        leaveDestination.current = 'step'
+        return
+      }
+      const dirtyDrafts = getDirtyMarkdownDrafts()
+      if (dirtyDrafts.length === 0) {
+        leaveSession()
+        return
+      }
+      Keyboard.dismiss()
+      setLeaveDrafts(dirtyDrafts)
+    },
+    [getDirtyMarkdownDrafts, holdLeaveForDictation, leaveSession, setLeaveDrafts]
+  )
+  const requestLeaveSession = useCallback(() => requestLeave('step'), [requestLeave])
+  const requestLeaveToSessionList = useCallback(() => {
+    triggerEdgeBump()
+    requestLeave('list')
+  }, [requestLeave])
 
   // Native always claims Back to avoid root exit; the web shell already pops, so only dirty drafts and dictation need a claim.
   const hasDirtyDraft = getDirtyMarkdownDrafts().length > 0
@@ -288,6 +305,7 @@ export function useMobileSessionMarkdownActions(scope: MobileSessionMarkdownActi
     leaveSession,
     leaveSessionDroppingDrafts,
     requestLeaveSession,
+    requestLeaveToSessionList,
     discardMarkdownLocalContent,
     confirmDiscardMarkdown,
     saveMarkdownTab
