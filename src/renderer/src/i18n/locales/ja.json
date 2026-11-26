@@ -26212,7 +26212,6 @@
       "colorGraphite": "グラファイト",
       "colorInk": "インク",
       "noChatAgents": "このコンピュータで利用できるチャット Agent はありません。",
-      "change": "変更",
       "computer": "コンピュータ",
       "computerHint": "ボットの実行場所です。",
       "computerAccountHint": "ボットの実行場所です。Orca には {{account}} としてサインインしています。",

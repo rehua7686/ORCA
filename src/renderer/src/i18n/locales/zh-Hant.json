@@ -26985,7 +26985,6 @@
       "colorGraphite": "石墨灰",
       "colorInk": "墨黑",
       "noChatAgents": "此電腦上沒有可用的聊天代理程式。",
-      "change": "變更",
       "computer": "電腦",
       "computerHint": "機器人執行的位置。",
       "computerAccountHint": "機器人執行的位置，以 {{account}} 身分登入 Orca。",

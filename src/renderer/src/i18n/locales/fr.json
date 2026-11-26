@@ -25648,7 +25648,6 @@
       "colorGraphite": "Graphite",
       "colorInk": "Encre",
       "noChatAgents": "Aucun agent de chat disponible sur cet ordinateur.",
-      "change": "Modifier",
       "computer": "Ordinateur",
       "computerHint": "Où le bot s’exécute.",
       "computerAccountHint": "Où le bot s’exécute, connecté à Orca en tant que {{account}}.",

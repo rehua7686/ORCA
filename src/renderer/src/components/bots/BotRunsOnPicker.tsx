@@ -1,20 +1,13 @@
-// Where a new bot runs: Computer and Agent side by side in New bot, or the folded "Runs on <host> with
-// <agent>" row in Import from another app.
+// Where a new bot runs: Computer and Agent side by side in New bot, or a quiet "<host> · <agent>" link in
+// Import from another app that opens them in a popover.
 import React, { useEffect, useId, useRef } from 'react'
-import { Trans } from 'react-i18next'
-import { ChevronDown } from 'lucide-react'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Label } from '@/components/ui/label'
-import { i18n } from '@/i18n/i18n'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useTranslate, type Translate } from '@/i18n/use-translate'
 import { cn } from '@/lib/class-names'
-import { AgentIcon } from '@/components/agent/icons/AgentIcon'
-import { HostRowIcon } from '@/components/host-picker/host-row-icon'
 import { type BotAgent, botFolderName, newBotName } from '../../../../shared/bot-types'
 import { useHostBots } from '@/lib/bot-catalog'
 import type { NewTabAgentMenuModel } from '../agent/launch-menu/new-tab-agent-menu-model'
-import { launchModelLabel } from '../agent/AgentLaunchPicker'
-import { usePickedAgentModel } from '../agent/agent-launch-setup-state'
 import { COMBOBOX_FIELD_SHELL } from '../new-workspace/type-ahead/type-ahead-combobox-styles'
 import { BotAgentLaunchPicker, type BotAgentSetup } from './BotAgentLaunchPicker'
 import {
@@ -26,8 +19,6 @@ import {
 import { BotComputerPicker } from './BotComputerPicker'
 import { botAgentLabel, botFolderDisplay } from './bot-presentation'
 import type { BotPermissionIntent } from './use-bot-agent-setup'
-import { nativeChatSessionChoiceShortLabel } from '../../../../shared/native-chat/input/session-options/native-chat-session-option-labels'
-import { sayNativeChatSessionOptionTranslated } from '../native-chat/session/options/controls/native-chat-session-option-labels-text'
 import { useWslHostDistro } from '@/components/wsl-host-mark/WslHostMark'
 import { BotWslSetupCard } from './BotWslSetupCard'
 import { BotWslNoAgentHint } from './BotWslNoAgentHint'
@@ -89,7 +80,7 @@ export function BotRunsOnPicker({
   onAddHost,
   name,
   showSubmitFeedback = false,
-  variant = 'row',
+  variant = 'link',
   agentFieldRef
 }: {
   /** The computer it runs on (`useBotCreateHost`). */
@@ -107,9 +98,9 @@ export function BotRunsOnPicker({
   /** The bot's name, for its folder. */
   name?: string
   showSubmitFeedback?: boolean
-  /** `row` is a boxed summary that opens to the fields; `fields` shows Computer and Agent side by side,
+  /** `link` is a quiet "<host> · <agent>" link that opens the fields; `fields` shows them side by side,
    *  and leaves Use chat defaults to the dialog's footer. */
-  variant?: 'row' | 'fields'
+  variant?: 'link' | 'fields'
   /** The Agent field, for focus to land on (`fields` only). */
   agentFieldRef?: React.Ref<HTMLDivElement>
 }): React.JSX.Element {
@@ -157,48 +148,6 @@ export function BotRunsOnPicker({
   const agentInvalid = showSubmitFeedback && !host.blocked && noAgents && !settingUp
   const findingAgents = showSubmitFeedback && !host.blocked && model.state === 'loading'
   const agentLabel = t('bots.new.agent', 'Agent')
-  const modelId = setup.launch?.model
-  const listed = usePickedAgentModel(chosen, host.hostId, modelId)
-  const effort = setup.launch?.options?.effort
-  const picked = [
-    listed?.label ?? launchModelLabel(chosen, modelId),
-    effort
-      ? nativeChatSessionChoiceShortLabel(
-          { value: effort, label: effort },
-          sayNativeChatSessionOptionTranslated,
-          'effort'
-        )
-      : undefined
-  ]
-    .filter(Boolean)
-    .join(' · ')
-  const runsOn = (
-    <Trans
-      i18n={i18n}
-      defaults={
-        otherAccount
-          ? t('bots.new.runsOnAs', 'Runs on <host/>, as <account/>, with <agent/>')
-          : t('bots.new.runsOn', 'Runs on <host/> with <agent/>')
-      }
-      components={{
-        host: (
-          <span className="inline-flex max-w-full items-center gap-1 font-medium wrap-anywhere text-foreground">
-            <HostRowIcon hostId={host.hostId} />
-            {host.label}
-          </span>
-        ),
-        account: (
-          <span className="min-w-0 break-all font-medium text-foreground">{otherAccount}</span>
-        ),
-        agent: (
-          <span className="inline-flex items-center gap-1 font-medium text-foreground">
-            {noAgents ? null : <AgentIcon agent={chosen} size={14} />}
-            {noAgents ? agentLabel : botAgentLabel(chosen)}
-          </span>
-        )
-      }}
-    />
-  )
   const labelVariant = fields ? 'settings' : undefined
   const controls = (
     <>
@@ -308,26 +257,36 @@ export function BotRunsOnPicker({
       </div>
     )
   }
+  // Full label on hover, since a long host truncates it.
+  const runsOnLabel = t('bots.new.runsOnLink', '{{host}} · {{agent}}', {
+    host: host.label,
+    agent: noAgents ? agentLabel : botAgentLabel(chosen)
+  })
   return (
-    <Collapsible>
-      <div className="rounded-lg border border-border">
-        <CollapsibleTrigger variant="summary">
-          <span className="flex min-w-0 flex-col gap-0.5">
-            <span className="flex min-w-0 flex-wrap items-center gap-x-1.5">{runsOn}</span>
-            {/* Its own line, so the pick always shows in the narrow dialog. */}
-            {picked ? (
-              <span className="truncate text-xs text-muted-foreground">{picked}</span>
-            ) : null}
-          </span>
-          <span className="flex shrink-0 items-center gap-1 text-xs">
-            {t('bots.new.change', 'Change')}
-            <ChevronDown className="size-4 transition-transform group-data-[state=open]:rotate-180 motion-reduce:transition-none" />
-          </span>
-        </CollapsibleTrigger>
-        <CollapsibleContent animation="height">
-          <div className="space-y-3 px-2.5 pt-1 pb-3">{controls}</div>
-        </CollapsibleContent>
-      </div>
-    </Collapsible>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title={runsOnLabel}
+          className="min-w-0 truncate rounded-sm text-left text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-expanded:text-foreground"
+        >
+          {runsOnLabel}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        collisionPadding={8}
+        // Focus the card, not the Computer field, whose list would open on focus.
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          if (event.currentTarget instanceof HTMLElement) {
+            event.currentTarget.focus()
+          }
+        }}
+        className="w-[min(20rem,var(--radix-popover-content-available-width))]"
+      >
+        <div className="space-y-3 p-3">{controls}</div>
+      </PopoverContent>
+    </Popover>
   )
 }

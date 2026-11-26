@@ -27709,7 +27709,6 @@
       "colorGraphite": "흑연색",
       "colorInk": "잉크색",
       "noChatAgents": "이 컴퓨터에서 사용할 수 있는 채팅 에이전트가 없습니다.",
-      "change": "변경",
       "computer": "컴퓨터",
       "computerHint": "봇이 실행되는 위치입니다.",
       "computerAccountHint": "Orca에 {{account}}(으)로 로그인한 상태에서 봇이 실행되는 위치입니다.",
