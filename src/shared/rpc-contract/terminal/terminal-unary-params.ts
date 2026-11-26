@@ -10,6 +10,7 @@ import {
 } from '../../shell/launch/windows-terminal-shell'
 import { OptionalExecutionHostId } from '../workspaces/worktree-params'
 import { AGENT_STATUS_INTERACTIVE_PROMPT_MAX_LENGTH } from '../../agent-status/contracts/agent-status-types'
+import { TerminalLaunchConfigParam } from './terminal-launch-config-param'
 
 // Refuse at the authoritative host boundary instead of returning an opaque relay spawn failure.
 export const WindowsShellOverrideParam = z
@@ -254,18 +255,7 @@ export const TerminalCreateParams = z.object({
   startupCommandDelivery: z.enum(['fast', 'shell-ready']).optional(),
   env: z.record(z.string(), z.string()).optional(),
   envToDelete: z.array(z.string().min(1).max(256)).max(32).optional(),
-  launchConfig: z
-    .object({
-      agentCommand: z.string().optional(),
-      agentArgs: z.string(),
-      agentEnv: z.record(z.string(), z.string()),
-      ompResumeFilePath: z
-        .string()
-        .min(1)
-        .max(32 * 1024)
-        .optional()
-    })
-    .optional(),
+  launchConfig: TerminalLaunchConfigParam.optional(),
   resumeProviderSession: ResumeProviderSessionParam.optional(),
   // Older hosts drop it and resume as before.
   resumeOrigin: z.literal('saved').optional(),

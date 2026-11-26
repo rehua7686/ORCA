@@ -255,11 +255,7 @@ export async function prepareWorkerStart(
     )
   }
   if (helperCreator && !followUp) {
-    assertHelperStartScope(db, helperCreator, {
-      task: existingTask,
-      params,
-      ...(followUp ? { followUp } : {})
-    })
+    assertHelperStartScope(db, helperCreator, { task: existingTask, params })
   }
   if (existingTask) {
     await assertWorkerStartTaskSpecWithinPromptBudget(existingTask.spec)
@@ -292,6 +288,7 @@ export async function prepareWorkerStart(
       ...(placement.agent ? { agent: placement.agent } : {}),
       ...(placement.model ? { model: placement.model } : {}),
       ...(placement.effort ? { effort: placement.effort } : {}),
+      ...(placement.account ? { account: placement.account } : {}),
       spec
     }
     followUp = { ...followUp, reopen: placement.reopen, earlierWork: placement.earlierWork }

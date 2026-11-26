@@ -12,7 +12,11 @@ const StartOptions = lazyZodSchema(() =>
     launch: z
       .looseObject({
         requested: z
-          .looseObject({ model: z.string().nullish(), effort: z.string().nullish() })
+          .looseObject({
+            model: z.string().nullish(),
+            effort: z.string().nullish(),
+            account: z.looseObject({ id: z.string(), email: z.string().nullish() }).nullish()
+          })
           .nullish()
       })
       .nullish()
@@ -40,6 +44,8 @@ export function parseStartOptions(raw: string): {
   agent?: string
   model?: string
   effort?: string
+  account?: string
+  accountEmail?: string
 } {
   const parsed = StartOptions.safeParse(parseJson(raw))
   if (!parsed.success) {
@@ -49,8 +55,19 @@ export function parseStartOptions(raw: string): {
   return {
     agent: isTuiAgent(parsed.data.agent) ? parsed.data.agent : undefined,
     model: requested?.model ?? undefined,
-    effort: requested?.effort ?? undefined
+    effort: requested?.effort ?? undefined,
+    account: requested?.account?.id,
+    accountEmail: requested?.account?.email ?? undefined
   }
+}
+
+/** A resumed conversation lives in the Claude account its worker started on. */
+export function workerStartAccount(
+  db: OrchestrationDb | null,
+  dispatchId: string
+): string | undefined {
+  const startOptions = db?.getWorkerDispatch(dispatchId)?.start_options
+  return startOptions ? parseStartOptions(startOptions).account : undefined
 }
 
 /** The earlier task and report, for a fresh agent that cannot reopen the conversation. */

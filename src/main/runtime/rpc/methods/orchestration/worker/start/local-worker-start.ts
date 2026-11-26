@@ -40,7 +40,7 @@ import {
   releaseRetriedWorkerTerminal
 } from '../release/retried-worker-terminal-release'
 import { requireWorkerAuthority, type WorkerEffect } from './placement/worker-placement-topology'
-import { prepareLocalWorkerStart } from './launch/worker-start-validation'
+import { assertLocalWorktree, prepareLocalWorkerStart } from './launch/worker-start-validation'
 import { deliverAndSettleWorkerStartReadiness } from './readiness/worker-start-readiness-settlement'
 import { handOverWhenReady, wakeReusedSleptAgent } from './readiness/placed-worker-readiness'
 import type { WorkerStartMutation } from './worker-start-mutation'
@@ -108,7 +108,7 @@ export async function startLocalWorker(args: {
     )
   }
 
-  const { agent, launch } = prepareLocalWorkerStart({
+  const { agent, launch, claudeAccount } = prepareLocalWorkerStart({
     params: launchParams,
     createsWorktree,
     runtime,
@@ -122,16 +122,15 @@ export async function startLocalWorker(args: {
     await refuseUnmatchedWorkerSelector(targetLabel, () =>
       resolveExistingWorkerWorkspace(runtime, creationTarget, existingWorktree)
     )
-  if (terminal) {
-    await assertExplicitWorkerUsable({
-      runtime,
-      db,
-      terminal,
-      from: params.from,
-      coordinator,
-      resolvedWorktreeId: resolvedWorktree?.id
-    })
-  }
+  await assertExplicitWorkerUsable({
+    runtime,
+    db,
+    terminal: terminal || null,
+    from: params.from,
+    coordinator,
+    resolvedWorktreeId: resolvedWorktree?.id
+  })
+  await assertLocalWorktree(runtime, claudeAccount && resolvedWorktree?.id)
   const decided = lineageModeForResolvedAgent(runtime, args.mode, { ...args, params, agent })
   const host = { runtime, agent, resolvedWorktree, creationTarget, terminal: params.terminal }
   let mode = chatWorkerMode(await preflightWorkerAgentOnHost({ ...host, mode: decided }), chat)
@@ -206,6 +205,7 @@ export async function startLocalWorker(args: {
       mode,
       agent,
       launch,
+      ...(claudeAccount ? { claudeAccountId: claudeAccount.accountId } : {}),
       effects,
       onStage,
       followUp: args.followUp
