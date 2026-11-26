@@ -12,6 +12,12 @@ import { BotOfferAnswerSchema } from './bots/bot-offer-answers'
 import { BotCancelledWaitSchema } from './bots/bot-cancelled-waits'
 import { BotAvatarColorSchema } from './bots/bot-avatar-color'
 import { BotStoredOutfitSchema } from './bots/bot-avatar-outfit'
+import { BotItemsStaleSchema } from './bots/bot-items-stale'
+export {
+  BOT_ITEMS_STALE_CHOICES,
+  BotItemsStaleSchema,
+  type BotItemsStale
+} from './bots/bot-items-stale'
 import {
   BOT_AGENT_SUCCESSORS,
   BOT_RETIRED_AGENTS,
@@ -163,19 +169,6 @@ export const BOT_MAX_SKILL_PROJECTS = 20
 const BotSlackLinkSchema = BotSlackAppSchema.extend(BotLinkOwner)
 const BotLinearLinkSchema = BotLinearSchema.extend(BotLinkOwner)
 
-export const BotItemsStaleSchema = z.union([
-  z.literal(3),
-  z.literal(5),
-  z.literal(7),
-  z.literal(14),
-  z.literal('never')
-])
-export type BotItemsStale = z.infer<typeof BotItemsStaleSchema>
-/** Its choices in order, as Settings offers them. */
-export const BOT_ITEMS_STALE_CHOICES: readonly BotItemsStale[] = BotItemsStaleSchema.options.map(
-  (option) => option.value
-)
-
 export const BotSchema = z.object({
   id: z.string().min(1),
   name: BotNameSchema,
@@ -223,6 +216,8 @@ export const BotSchema = z.object({
   /** The accounts it may use while `google` is on; absent is every account, now and later. A malformed
    *  list reads as none, never as every account. */
   googleAccounts: z.array(z.string().min(1).max(320)).max(100).optional().catch([]),
+  /** Closes the chats its automation runs opened once each run ended and nothing waits there. Absent is off. */
+  closeEndedRuns: z.boolean().optional().catch(undefined),
   /** Its sessions also take the host's MCP server list (and so its sign-ins); absent is off. Only
    *  bots.tools.setHostMcpServers sets it, never the bot itself. Older hosts drop it. */
   hostMcpServers: z.boolean().optional().catch(undefined),
