@@ -369,7 +369,6 @@
       "addToMessage": "Добавить к сообщению",
       "attachImage": "Прикрепить изображение",
       "cancelEditing": "Отменить редактирование",
-      "placeholder": "Задайте вопрос; @ — файлы, / — команды",
       "saveEditedMessage": "Сохранить изменённое сообщение",
       "sendMessage": "Отправить сообщение",
       "sendQueue": "В очередь",
@@ -379,10 +378,7 @@
       "sendSteerHint": "Попадёт в то, что агент делает сейчас"
     },
     "contextUsage": {
-      "label": "Контекст: {{used}} из {{window}} токенов, использовано {{percent}}%",
-      "title": "Контекст",
-      "estimated": "Оценка по последнему ответу.",
-      "deferredNote": "Загружается по запросу. Не входит в использованный объём."
+      "title": "Контекст"
     },
     "composerAttachments": {
       "attachedImage": "Прикреплённое изображение",
@@ -394,7 +390,6 @@
       "uploadingImage": "Загрузка изображения"
     },
     "composerPlaceholder": {
-      "prompt": "Задайте вопрос; @ — файлы, / — команды",
       "waitingForTerminal": "Ожидание терминала…"
     },
     "diffCard": {
@@ -410,9 +405,7 @@
     },
     "message": {
       "copyMessage": "Копировать сообщение",
-      "forkFromResponse": "Создать ответвление от этого ответа",
-      "scrollMessageToTop": "Прокрутить к началу сообщения",
-      "forkFromResponseHint": "Новый чат со всем этим ответом до конца хода"
+      "forkFromResponse": "Создать ответвление от этого ответа"
     },
     "messageActionsSheet": {
       "clipboardRejected": "Не удалось записать текст в буфер обмена.",
@@ -444,10 +437,8 @@
     },
     "nativeChatToolLine": {
       "added": "Добавлено",
-      "copyCommand": "Копировать команду",
       "deleted": "Удалено",
       "durationHours": "{{hours}} ч {{minutes}} мин {{seconds}} с",
-      "durationMilliseconds": "{{milliseconds}} мс",
       "durationMinutes": "{{minutes}} мин {{seconds}} с",
       "durationSeconds": "{{seconds}} с",
       "edited": "Изменено",
@@ -613,8 +604,6 @@
       "permissionAppliesNextMessageTiming": "Применится к следующему сообщению · сейчас действует {{active}}"
     },
     "sessionOptionPickers": {
-      "agentWorking": "Агент работает",
-      "backToModels": "Назад к моделям",
       "dispatchUnconfirmed": "Отправлено агенту — получение не подтверждено",
       "modelFullAccessLabel": "Модель: {{value}}, полный доступ",
       "modelLabel": "Модель: {{value}}",
@@ -624,17 +613,13 @@
       "workingAnnouncement": "Агент работает. Настройки модели станут доступны после завершения текущего ответа.",
       "applying": "Применяется…",
       "onAttach": "Применится при подключении к чату",
-      "heldPickRefused": "{{picked}} недоступно в этом чате. Оставлено: {{kept}}.",
-      "optionsSection": "Параметры"
+      "heldPickRefused": "{{picked}} недоступно в этом чате. Оставлено: {{kept}}."
     },
     "sessionOptionRows": {
       "defaultMarker": "По умолчанию",
       "notReportedMarker": "Нет данных",
       "moreModels": "Другие модели",
       "fewerModels": "Меньше моделей"
-    },
-    "sessionOptionSegments": {
-      "dispatchUnconfirmed": "Отправлено агенту — получение не подтверждено"
     },
     "stopButton": {
       "stopAgent": "Остановить агента",
@@ -1945,10 +1930,6 @@
         "sentAsGoal": "Отправлено как цель"
       },
       "turnDiff": {
-        "changedFiles_one": "{{count}} изменённый файл",
-        "changedFiles_other": "{{count}} изменённых файла",
-        "changedFiles_few": "{{count}} изменённых файла",
-        "changedFiles_many": "{{count}} изменённых файлов",
         "partial": "Показана часть изменений",
         "showMoreFiles": "Показать ещё {{count}}"
       },
@@ -3625,9 +3606,7 @@
       "loading": "Загрузка документа…"
     },
     "nativeChatAttachActions": {
-      "availableSkills": "Доступно: {{count}}",
       "commands": "Команды",
-      "fileTypes": "PDF, текст, код…",
       "files": "Файлы",
       "photos": "Фото",
       "skills": "Навыки",
@@ -3652,11 +3631,8 @@
     },
     "nativeChatRenderData": {
       "defaultAgentLabel": "агент",
-      "emptySubtitle": "Отправьте запрос: {{agent}} может изучить код, объяснить вывод или внести изменения.",
       "emptyTitle": "Начните чат ({{agent}})",
-      "errorSubtitle": "Не удалось прочитать историю. Вернитесь в терминал, чтобы продолжить работу.",
       "errorTitle": "Не удалось загрузить разговор",
-      "notFoundSubtitle": "Отправьте сообщение, чтобы начать разговор, или откройте терминал и посмотрите, что делает {{agent}}.",
       "notFoundTitle": "Пока не удаётся найти этот разговор"
     },
     "nativeChatToggleAction": {
@@ -8206,7 +8182,6 @@
       "nothingToReport": "Сообщать нечего",
       "mentionPaused": "Приостановлен",
       "mentionOwnChats": "Ваши другие чаты",
-      "mentionPlaceholder": "Спросите что угодно; @ — упомянуть ботов или файлы, / — команды",
       "mentionChatsLoadFailed": "Не удалось загрузить чаты"
     },
     "access": {

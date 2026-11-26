@@ -223,7 +223,6 @@
       "addToMessage": "Ajouter au message",
       "attachImage": "Joindre une image",
       "cancelEditing": "Annuler la modification",
-      "placeholder": "Posez votre question, @ pour référencer des fichiers, / pour les commandes",
       "saveEditedMessage": "Enregistrer le message modifié",
       "sendMessage": "Envoyer le message",
       "sendQueue": "Mettre en file d’attente",
@@ -233,10 +232,7 @@
       "sendSteerHint": "S’ajoute à ce que l’agent fait en ce moment"
     },
     "contextUsage": {
-      "label": "Contexte : {{used}} tokens sur {{window}}, {{percent}} % utilisés",
-      "title": "Contexte",
-      "estimated": "Estimation basée sur la dernière réponse.",
-      "deferredNote": "Chargé à la demande. Non compté dans le total utilisé."
+      "title": "Contexte"
     },
     "composerAttachments": {
       "attachedImage": "Image jointe",
@@ -247,7 +243,6 @@
       "uploadingFile": "Envoi de {{name}}"
     },
     "composerPlaceholder": {
-      "prompt": "Posez votre question, @ pour référencer des fichiers, / pour les commandes",
       "waitingForTerminal": "En attente du terminal…"
     },
     "diffCard": {
@@ -263,9 +258,7 @@
     },
     "message": {
       "copyMessage": "Copier le message",
-      "forkFromResponse": "Créer une branche à partir de cette réponse",
-      "scrollMessageToTop": "Revenir au début du message",
-      "forkFromResponseHint": "Une nouvelle conversation avec toute cette réponse, jusqu’à la fin de son tour"
+      "forkFromResponse": "Créer une branche à partir de cette réponse"
     },
     "messageActionsSheet": {
       "clipboardRejected": "Le presse-papiers a refusé le texte.",
@@ -295,10 +288,8 @@
     },
     "nativeChatToolLine": {
       "added": "A ajouté",
-      "copyCommand": "Copier la commande",
       "deleted": "A supprimé",
       "durationHours": "{{hours}} h {{minutes}} min {{seconds}} s",
-      "durationMilliseconds": "{{milliseconds}} ms",
       "durationMinutes": "{{minutes}} min {{seconds}} s",
       "durationSeconds": "{{seconds}} s",
       "edited": "A modifié",
@@ -449,8 +440,6 @@
       "xhighShort": "Extra"
     },
     "sessionOptionPickers": {
-      "agentWorking": "L'agent travaille",
-      "backToModels": "Retour aux modèles",
       "dispatchUnconfirmed": "Envoyé à l'agent — non confirmé",
       "modelFullAccessLabel": "Modèle, {{value}}, accès complet",
       "modelLabel": "Modèle, {{value}}",
@@ -464,9 +453,6 @@
       "notReportedMarker": "Non communiqué",
       "moreModels": "Plus de modèles",
       "fewerModels": "Moins de modèles"
-    },
-    "sessionOptionSegments": {
-      "dispatchUnconfirmed": "Envoyé à l'agent — non confirmé"
     },
     "stopButton": {
       "stopAgent": "Arrêter l'agent",
@@ -2435,9 +2421,7 @@
       "readOnly": "Lecture seule"
     },
     "nativeChatAttachActions": {
-      "availableSkills": "Disponibles : {{count}}",
       "commands": "Commandes",
-      "fileTypes": "PDF, texte, code…",
       "files": "Fichiers",
       "photos": "Photos",
       "skills": "Skills",
@@ -2462,11 +2446,8 @@
     },
     "nativeChatRenderData": {
       "defaultAgentLabel": "l'agent",
-      "emptySubtitle": "Demandez à {{agent}} d'examiner le code, d'expliquer la sortie ou d'effectuer une modification.",
       "emptyTitle": "Démarrez un chat avec {{agent}}",
-      "errorSubtitle": "La transcription n'a pas pu être lue. Rebasculez sur le terminal pour continuer à travailler.",
       "errorTitle": "Impossible de charger la conversation",
-      "notFoundSubtitle": "Envoyez un message pour en démarrer une, ou ouvrez la vue du terminal pour voir ce que fait {{agent}}.",
       "notFoundTitle": "Conversation introuvable pour le moment"
     },
     "nativeChatToggleAction": {

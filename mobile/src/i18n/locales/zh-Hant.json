@@ -219,7 +219,6 @@
       "addToMessage": "新增至訊息",
       "attachImage": "附加圖片",
       "cancelEditing": "取消編輯",
-      "placeholder": "隨心輸入，@ 引用檔案，/ 使用命令",
       "saveEditedMessage": "儲存編輯後的訊息",
       "sendMessage": "傳送訊息",
       "sendQueue": "加入佇列",
@@ -229,10 +228,7 @@
       "sendSteerHint": "加入代理程式目前正在進行的工作"
     },
     "contextUsage": {
-      "label": "上下文 {{used}}/{{window}} token，已用 {{percent}}%",
-      "title": "上下文",
-      "estimated": "根據上一次回應的估算值。",
-      "deferredNote": "按需載入，不計入已用總量。"
+      "title": "上下文"
     },
     "composerAttachments": {
       "attachedImage": "已附加的圖片",
@@ -243,7 +239,6 @@
       "uploadingFile": "正在上傳 {{name}}"
     },
     "composerPlaceholder": {
-      "prompt": "隨心輸入，@ 引用檔案，/ 使用命令",
       "waitingForTerminal": "等待終端機…"
     },
     "diffCard": {
@@ -259,9 +254,7 @@
     },
     "message": {
       "copyMessage": "複製訊息",
-      "forkFromResponse": "從此回覆建立分支",
-      "scrollMessageToTop": "將此訊息捲動到頂端",
-      "forkFromResponseHint": "新聊天將包含此回合結束前的完整回覆"
+      "forkFromResponse": "從此回覆建立分支"
     },
     "messageActionsSheet": {
       "clipboardRejected": "無法將文字複製到剪貼簿。",
@@ -291,10 +284,8 @@
     },
     "nativeChatToolLine": {
       "added": "新增了",
-      "copyCommand": "複製命令",
       "deleted": "刪除了",
       "durationHours": "{{hours}} 小時 {{minutes}} 分 {{seconds}} 秒",
-      "durationMilliseconds": "{{milliseconds}} 毫秒",
       "durationMinutes": "{{minutes}} 分 {{seconds}} 秒",
       "durationSeconds": "{{seconds}} 秒",
       "edited": "編輯了",
@@ -443,8 +434,6 @@
       "xhighShort": "極高"
     },
     "sessionOptionPickers": {
-      "agentWorking": "代理程式正在執行",
-      "backToModels": "返回模型清單",
       "dispatchUnconfirmed": "已傳送給代理程式 — 尚未確認",
       "modelFullAccessLabel": "模型，{{value}}，完整存取權",
       "modelLabel": "模型，{{value}}",
@@ -458,9 +447,6 @@
       "notReportedMarker": "未回報",
       "moreModels": "更多模型",
       "fewerModels": "較少模型"
-    },
-    "sessionOptionSegments": {
-      "dispatchUnconfirmed": "已傳送給代理程式 — 尚未確認"
     },
     "stopButton": {
       "stopAgent": "停止代理程式",
@@ -2354,9 +2340,7 @@
       "readOnly": "唯讀"
     },
     "nativeChatAttachActions": {
-      "availableSkills": "{{count}} 項可用",
       "commands": "命令",
-      "fileTypes": "PDF、文字、程式碼…",
       "files": "檔案",
       "photos": "照片",
       "skills": "技能",
@@ -2381,11 +2365,8 @@
     },
     "nativeChatRenderData": {
       "defaultAgentLabel": "代理程式",
-      "emptySubtitle": "請 {{agent}} 檢查程式碼、解釋輸出內容，或進行修改。",
       "emptyTitle": "開始與 {{agent}} 聊天",
-      "errorSubtitle": "無法讀取記錄。請切回終端機繼續工作。",
       "errorTitle": "無法載入對話",
-      "notFoundSubtitle": "傳送訊息以開始對話，或開啟終端機檢視，查看 {{agent}} 正在做什麼。",
       "notFoundTitle": "目前還找不到這段對話"
     },
     "nativeChatToggleAction": {
