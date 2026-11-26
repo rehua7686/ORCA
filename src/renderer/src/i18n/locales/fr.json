@@ -900,7 +900,9 @@
         "ownShort": "Skills propres",
         "showMore": "Afficher {{count}} de plus",
         "notLoaded": "Aucun agent ne la charge"
-      }
+      },
+      "memoryAlreadySaved": "Ce fait est déjà en mémoire.",
+      "memoryNoFact": "Ajoutez d’abord quelques mots."
     },
     "automaticUpdates": {
       "title": "Mises à jour automatiques",
