@@ -5,8 +5,26 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { RuntimeClientError } from '../runtime/connection/types'
 import { callAct, SLACK_HANDLERS } from './slack'
+import { safeSlackDownloadName } from './slack-action-files'
 
 const SLACK_REF = 'slack:T1:C1:1.0'
+
+describe('safeSlackDownloadName', () => {
+  it.each([
+    ['CON', '_CON'],
+    ['NUL.txt', '_NUL.txt'],
+    ['NUL .txt', '_NUL .txt'],
+    ['com1.log', '_com1.log'],
+    ['LPT³.tar.gz', '_LPT³.tar.gz'],
+    ['CONSOLE.txt', 'CONSOLE.txt']
+  ])('rewrites Windows device name %s as %s', (name, expected) => {
+    expect(safeSlackDownloadName(name, 'win32')).toBe(expected)
+  })
+
+  it('preserves reserved names on non-Windows platforms', () => {
+    expect(safeSlackDownloadName('CON.txt', 'darwin')).toBe('CON.txt')
+  })
+})
 
 afterEach(() => {
   vi.unstubAllEnvs()

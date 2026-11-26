@@ -62,6 +62,18 @@ const UPLOAD_FAILED = (name: string) =>
     `Slack didn't take ${name}; nothing was posted. Try again in a moment.`
   )
 
+export function safeSlackDownloadName(name: string, platform = process.platform): string {
+  if (platform !== 'win32') {
+    return name
+  }
+  const deviceName = name.split('.')[0].replace(/ +$/, '')
+  return /^(?:CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|CLOCK\$|COM[1-9\u00B9\u00B2\u00B3]|LPT[1-9\u00B9\u00B2\u00B3])$/iu.test(
+    deviceName
+  )
+    ? `_${name}`
+    : name
+}
+
 /** The file's bytes to the source's upload URL, read from disk as they go; the URL itself is the
  *  credential, so nothing else is sent. A file that changed size since staging is refused, as the
  *  slot was cut for the old size. */
@@ -106,7 +118,7 @@ async function openDownload(
     .map((char) => (char < ' ' || '<>:"|?*'.includes(char) ? '_' : char))
     .join('')
     .replace(/[. ]+$/, '')
-  const name = safe || file.id
+  const name = safeSlackDownloadName(safe || file.id)
   const ext = extname(name)
   const stem = name.slice(0, name.length - ext.length)
   for (let n = 1; ; n++) {
