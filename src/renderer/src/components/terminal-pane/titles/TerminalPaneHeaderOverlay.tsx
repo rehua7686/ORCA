@@ -26,6 +26,8 @@ type TerminalPaneHeaderOverlayProps = {
   worktreeId: string
   cwd: string
   showAlwaysOnHeaders: boolean
+  /** Hides the floating action buttons; pane shortcuts and the context menu stay available. */
+  showActionButtons?: boolean
   /** Used by ephemeral one-off command terminals that omit the header affordance. */
   showSplitButton?: boolean
   isTabPinned: boolean
@@ -69,6 +71,7 @@ export default function TerminalPaneHeaderOverlay({
   worktreeId,
   cwd,
   showAlwaysOnHeaders,
+  showActionButtons = true,
   showSplitButton = true,
   isTabPinned,
   paneCount,
@@ -210,7 +213,10 @@ export default function TerminalPaneHeaderOverlay({
               )}
               {showAlwaysOnHeaders && !(isActivePane && canShowTerminal) && chips}
             </div>
-            <div className="pane-title-actions flex shrink-0 items-center">
+            <div
+              className="pane-title-actions flex shrink-0 items-center"
+              style={{ display: showActionButtons ? undefined : 'none' }}
+            >
               {canContinueAgentSessionInNewSession && isActivePane ? (
                 <Tooltip>
                   <TooltipTrigger asChild>
