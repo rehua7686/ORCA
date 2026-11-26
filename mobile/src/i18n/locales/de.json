@@ -4337,6 +4337,13 @@
     "wontFire": "Läuft nicht: braucht den {{connectors}}-Connector"
   },
   "auto": {
+    "lib": {
+      "agent": {
+        "catalog": {
+          "doubao_label": "Doubao"
+        }
+      }
+    },
     "components": {
       "automations": {
         "automation": {

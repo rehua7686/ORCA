@@ -112,6 +112,7 @@ const PROJECT_SKILL_FOLDERS: readonly (readonly [AgentType, string, SkillProvide
   ['copilot', '.github', ['agent-skills']],
   ['qoder', '.qoder', ['agent-skills']],
   ['opencode', '.opencode', ['agent-skills']],
+  ['doubao', '.doubao', ['agent-skills']],
   ['prime-agent', '.prime/agent', ['agent-skills']]
 ]
 
@@ -174,6 +175,14 @@ export function buildSkillDiscoverySources(
       'home',
       ['agent-skills'],
       'opencode'
+    ),
+    source(
+      'home-doubao',
+      'Doubao home',
+      pathApi.join(home, 'Doubao', 'skills'),
+      'home',
+      ['agent-skills'],
+      'doubao'
     ),
     source(
       'home-pi',

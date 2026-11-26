@@ -1021,7 +1021,15 @@
       "undetectedCommandHint": "Wenn die {{agent}}-CLI außerhalb von PATH installiert ist, gib den vollständigen Pfad zu ihrer ausführbaren Datei auf diesem Host ein.",
       "agentActions": "Aktionen für {{agent}}",
       "defaultAutoBadge": "Standard · Auto",
-      "newAgentsTitle": "Neue Agenten"
+      "newAgentsTitle": "Neue Agenten",
+      "doubaoSignIn": {
+        "check": "Anmeldung prüfen",
+        "checking": "Anmeldung wird geprüft…",
+        "verified": "Auf diesem Host angemeldet",
+        "signedOut": "Auf diesem Host anmelden",
+        "unverified": "Anmeldung auf diesem Host konnte nicht geprüft werden",
+        "copy": "Anmeldebefehl kopieren"
+      }
     },
     "followSymlinkedDirectoriesKeywords": {
       "symlink": "Symbolischer Link",
@@ -1668,6 +1676,7 @@
           "fc80296033": "Devin",
           "da41abbdd4": "Ante",
           "060d152fb5": "Trae",
+          "doubao_label": "Doubao",
           "muse_label": "Muse",
           "dsh_label": "DeepSeek Harness",
           "qoder_label": "Qoder CLI",
@@ -25604,6 +25613,12 @@
     }
   },
   "agentPicker": {
+    "doubaoSshModels": {
+      "action": "Doubao-Modelle anzeigen…",
+      "title": "Doubao-Modelle auf diesem SSH-Host",
+      "failed": "Die Doubao-Modelle konnten nicht aufgelistet werden. Prüfe die SSH-Verbindung und die Doubao-CLI auf diesem Host und versuche es erneut.",
+      "empty": "Die Doubao-CLI hat keine Modelle zurückgegeben."
+    },
     "refreshModels": "Modelle aktualisieren",
     "catalogUnsupportedLaunch": "Modelle für {{agent}} sind auf diesem Host nicht verfügbar. Deine aktuelle Auswahl gilt weiterhin.",
     "catalogEmpty": "Für {{agent}} sind keine Modelle verfügbar.",
@@ -25619,6 +25634,9 @@
     "argumentsHint": "Gilt nur für CLI-Starts.",
     "launchChat": "Chat starten",
     "launchTerminal": "Terminal starten",
+    "resumeById": "Sitzung per ID fortsetzen",
+    "doubaoSessionId": "Sitzungs-ID, die Doubao beim Beenden anzeigt",
+    "resumeTerminal": "Fortsetzen",
     "select": "Agent auswählen",
     "promptPlaceholder": "Prompt hinzufügen (optional): / für Skills, @ für Dateien",
     "promptPlaceholderFilesOnly": "Prompt hinzufügen (optional): @ für Dateien",
