@@ -465,29 +465,28 @@ await check('a paired chat command still stops', () =>
   })
 )
 
-await check('Show in dock again restores the acknowledged failure', () =>
-  scene('twentyOpen720', {}, async (page) => {
-    const row = page.locator('[data-worker-dock-row="dock:0"]')
-    await row.hover()
-    await row.locator('[data-worker-dock-action]').click()
-    await row.waitFor({ state: 'detached' })
-    await page.getByRole('button', { name: 'Show in dock again' }).click()
-    // The toast is outside the card, so pressing it folds the card; the row is back on reopening.
-    await page.waitForFunction(() => {
-      const chip = document.querySelector('[data-worker-dock-pill]')
-      return /(^|\D)20(\D|$)/.test(chip?.getAttribute('aria-label') ?? chip?.textContent ?? '')
+await check(
+  'a failed row opens the worker at once, by click, Enter or Space, with no tooltip',
+  () =>
+    scene('failedLong320', {}, async (page) => {
+      const open = page.locator('[data-worker-dock-row="dock:0"] [data-worker-dock-open]')
+      await open.hover()
+      await page.waitForTimeout(900)
+      assert(
+        (await page.locator('[data-slot="tooltip-content"]').count()) === 0,
+        'a tooltip opened'
+      )
+      await open.click()
+      await open.focus()
+      await page.keyboard.press('Enter')
+      await page.keyboard.press('Space')
+      assert((await page.getByRole('dialog').count()) === 0, 'a dialog opened')
+      const opened = (await events(page)).filter((event) => event.action === 'open')
+      assert(
+        opened.length === 3 && opened.every((event) => event.id === 'dock:0'),
+        `opens sent: ${JSON.stringify(opened)}`
+      )
     })
-    if (!(await expanded(page))) {
-      await toggle(page).click()
-    }
-    await row.waitFor()
-    assert(
-      (await events(page)).some(
-        (event) => event.action === 'restore' && event.id === 'ctx_fixture_0'
-      ),
-      'wrong settlement restored'
-    )
-  })
 )
 
 await runLoadingAndLayerChecks({ check, scene, assert, shot })
