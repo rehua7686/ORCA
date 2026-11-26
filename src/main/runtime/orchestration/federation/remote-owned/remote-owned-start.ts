@@ -32,6 +32,8 @@ import {
 import { openRemoteRunLink } from '../../db/remote-owned/remote-run-links'
 import { callRemoteOwnedServer } from './remote-owned-calls'
 import { resolveCrossMachineChildParent } from '../cross-machine-child-parent'
+import { resolveDispatchCreator } from '../../../rpc/methods/orchestration/runs/dispatch-creator'
+import { recordedCreatorIdentity } from '../../db/dispatch-depth'
 import { remoteForwardKey } from './remote-forward-caller'
 import {
   errorData,
@@ -164,6 +166,10 @@ export async function startRemoteOwnedWorker(
     taskId,
     requestKey: forward.key,
     retryOf: params.retryOf,
+    // As a local start's Dispatch records it, so the server's reports go where the start was asked.
+    creator: recordedCreatorIdentity(
+      resolveDispatchCreator(runtime, params.from, ctx.orchestrationCaller)
+    ),
     create: existingTask
       ? undefined
       : {

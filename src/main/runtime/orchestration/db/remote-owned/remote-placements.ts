@@ -20,21 +20,19 @@ import {
   getRemoteDispatch,
   isRemoteDispatchActive,
   isRemoteDispatchTerminal,
+  recordRemoteAttemptCreator,
   type RemoteDispatchRow
 } from './remote-dispatch-records'
 import { getOpenRemoteRunLink, type RemoteRunLinkRow } from './remote-run-links'
-import { getLiveRemotePlacement, type RemotePlacementRow } from './remote-placement-hold'
+import {
+  getLiveRemotePlacement,
+  getRemotePlacement,
+  recordPlacementCreator,
+  resendRemoteReservation,
+  type RemotePlacementRow,
+  type RemoteStartCreator
+} from './remote-placement-hold'
 import { writtenRow } from './written-row'
-
-export function getRemotePlacement(
-  db: OrchestrationDb,
-  taskId: string
-): RemotePlacementRow | undefined {
-  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: SELECT * over this table returns exactly its row shape.
-  return db.db.prepare('SELECT * FROM remote_placements WHERE task_id = ?').get(taskId) as
-    | RemotePlacementRow
-    | undefined
-}
 
 type TaskCreation = Omit<Parameters<OrchestrationDb['createTask']>[0], 'id' | 'runId'>
 
@@ -53,6 +51,8 @@ export function reserveRemotePlacement(
     requestKey: string
     create?: TaskCreation
     retryOf?: string
+    /** Who asked for this attempt; a same-key retry keeps the first ask's. */
+    creator?: RemoteStartCreator
   }
 ): { placement: RemotePlacementRow; task: TaskRow; nothingSent: boolean } {
   const transaction = beginLifecycleWriteTransaction(db.db, 'reserve_remote_placement')
@@ -71,9 +71,7 @@ export function reserveRemotePlacement(
       existing?.request_key === params.requestKey &&
       existing.conversation_id === link.conversation_id
     ) {
-      db.db
-        .prepare('UPDATE remote_placements SET never_sent_at = NULL WHERE task_id = ?')
-        .run(params.taskId)
+      resendRemoteReservation(db, existing, params, params.creator)
       commitLifecycleWriteTransaction(db.db, transaction)
       return {
         placement: { ...existing, never_sent_at: null },
@@ -114,6 +112,7 @@ export function reserveRemotePlacement(
         task.status,
         params.retryOf ?? null
       )
+    recordPlacementCreator(db, task.id, params.creator)
     transitionLifecycleWithDb(db.db, {
       entity: 'task',
       id: task.id,
@@ -206,6 +205,10 @@ export function recordRemoteStart(
             agent: params.agent
           })
         : undefined
+    // This Orca's own receipt of the start it sent: its asker is the attempt's, as a local creator.
+    if (record && placement?.request_key === params.requestKey) {
+      recordRemoteAttemptCreator(db, record.dispatch_id, placement)
+    }
     if (record && params.peerRunId) {
       noteRemoteRunLinkPeerRun(db, params.conversationId, params.peerRunId)
     }

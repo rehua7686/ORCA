@@ -1,6 +1,8 @@
 import { OrchestrationError } from '../../orchestration-error'
 import type { TaskStatus } from '../orchestration-records'
 import type { OrchestrationDb } from '../orchestration-db'
+import type { recordedCreatorIdentity } from '../dispatch-depth'
+import type { OrcaSessionId } from '../../../../../shared/agent-session/identity/orca-session-address'
 
 export type RemotePlacementRow = {
   task_id: string
@@ -13,6 +15,67 @@ export type RemotePlacementRow = {
   dispatch_id: string | null
   created_at: string
   never_sent_at: string | null
+} & RemoteStartCreatorColumns
+
+export type RemoteStartCreator = Pick<
+  ReturnType<typeof recordedCreatorIdentity>,
+  'creatorHandle' | 'creatorOrcaSessionId' | 'creatorTurnSource'
+>
+
+/** A reservation names who asked for it; the attempt this Orca's receipt names copies it. */
+export function recordPlacementCreator(
+  db: OrchestrationDb,
+  taskId: string,
+  creator: RemoteStartCreator | undefined
+): void {
+  db.db
+    .prepare(
+      `UPDATE remote_placements
+       SET creator_handle = ?, creator_orca_session_id = ?, creator_turn_source = ?
+       WHERE task_id = ?`
+    )
+    .run(
+      creator?.creatorHandle ?? null,
+      creator?.creatorOrcaSessionId ?? null,
+      creator?.creatorTurnSource ?? null,
+      taskId
+    )
+}
+
+/** A same-key retry sends again. When nothing under the key left this Orca, it is the first ask the
+ *  server will see, so it names who asks now. Once the server answered the key, a send that still
+ *  starts work there (its receipt gone) is no one's ask that this Orca can prove: it names no one. */
+export function resendRemoteReservation(
+  db: OrchestrationDb,
+  existing: Pick<RemotePlacementRow, 'never_sent_at' | 'state'>,
+  placement: { taskId: string; requestKey: string },
+  creator: RemoteStartCreator | undefined
+): void {
+  if (existing.never_sent_at !== null) {
+    recordPlacementCreator(db, placement.taskId, creator)
+  } else if (existing.state === 'accepted') {
+    recordPlacementCreator(db, placement.taskId, undefined)
+  }
+  db.db
+    .prepare('UPDATE remote_placements SET never_sent_at = NULL WHERE task_id = ?')
+    .run(placement.taskId)
+}
+
+/** The start's creator, as a local Dispatch's creator columns record it. */
+export type RemoteStartCreatorColumns = {
+  creator_handle: string | null
+  creator_orca_session_id: OrcaSessionId | null
+  creator_turn_source: 'connector' | null
+}
+
+export function getRemotePlacement(
+  db: OrchestrationDb,
+  taskId: string
+): RemotePlacementRow | undefined {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: SELECT * over this table returns exactly its row shape.
+  return db.db.prepare('SELECT * FROM remote_placements WHERE task_id = ?').get(taskId) as
+    | RemotePlacementRow
+    | undefined
 }
 
 /**
