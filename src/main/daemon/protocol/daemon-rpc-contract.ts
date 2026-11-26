@@ -10,6 +10,7 @@ import type {
 import type { SpawnIntent } from '../../../shared/terminal/pty/admission/spawn-admission-contract'
 import type { SessionInfo } from './daemon-session-info'
 import type {
+  CancelProcessInspectionRequest,
   ConfirmForegroundProcessRequest,
   ConfirmShellForegroundRequest,
   GetForegroundProcessRequest,
@@ -131,6 +132,8 @@ export type KillRequest = {
     expectedIncarnationId?: string
     requireNoAgentOwner?: boolean
     requireUnattached?: boolean
+    requireIdle?: true
+    idleCheckSinceMs?: number
   }
 }
 
@@ -258,6 +261,7 @@ export type DaemonRequest =
   | GetCwdRequest
   | GetForegroundProcessRequest
   | InspectProcessRequest
+  | CancelProcessInspectionRequest
   | ConfirmForegroundProcessRequest
   | ConfirmShellForegroundRequest
   | TerminalBufferActionRequest

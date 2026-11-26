@@ -15,6 +15,8 @@ export type ListMultiSelection<T> = {
   getItemForKey: (key: string) => T | undefined
   toggleSelection: (item: T) => void
   setAllSelected: (selected: boolean) => void
+  /** Empties the selection; a given item becomes the anchor for a following Shift-click. */
+  clearSelection: (anchor?: T) => void
   /** Returns true for selection-only gestures (Cmd/Ctrl/Shift), which must not navigate. */
   updateSelectionForGesture: (
     event: Pick<React.MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>,
@@ -28,12 +30,20 @@ export type ListMultiSelection<T> = {
 export function useListMultiSelection<T>({
   items,
   getKey,
-  getScope
+  getScope,
+  getRetainedItem,
+  canSelectKey,
+  additiveRange = false
 }: {
   items: readonly T[]
   getKey: (item: T) => string
   /** Pointerdowns outside this element clear the selection. */
   getScope: () => Element | null
+  /** Keeps already selected items when folded away. Ranges still use visible order. */
+  getRetainedItem?: (key: string) => T | undefined
+  /** Prunes temporarily unavailable keys without rebuilding the ordered list. */
+  canSelectKey?: (key: string) => boolean
+  additiveRange?: boolean
 }): ListMultiSelection<T> {
   // Reuse equal ordered-ID arrays so gesture callbacks stay stable and row memoization survives epoch bumps.
   const entryByKey = useMemo(() => {
@@ -53,27 +63,48 @@ export function useListMultiSelection<T>({
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set())
   const [selectionAnchorKey, setSelectionAnchorKey] = useState<string | null>(null)
 
-  const prunedSelection = pruneSelection(selectedKeys, selectionAnchorKey, visibleKeySet)
-  // Why: filters/grouping can hide selected rows; prune during render so nothing sees stale ids for unrendered items.
-  if (!areSelectionsEqual(selectedKeys, prunedSelection.selectedIds)) {
-    setSelectedKeys(prunedSelection.selectedIds)
-  }
-  if (selectionAnchorKey !== prunedSelection.anchorId) {
-    setSelectionAnchorKey(prunedSelection.anchorId)
-  }
+  const prunedSelection = useMemo(() => {
+    const pruned = pruneSelection(
+      selectedKeys,
+      selectionAnchorKey,
+      visibleKeySet,
+      getRetainedItem ? (key) => getRetainedItem(key) !== undefined : undefined,
+      canSelectKey
+    )
+    return {
+      selectedIds: areSelectionsEqual(selectedKeys, pruned.selectedIds)
+        ? selectedKeys
+        : pruned.selectedIds,
+      anchorId: pruned.anchorId
+    }
+  }, [selectedKeys, selectionAnchorKey, visibleKeySet, getRetainedItem, canSelectKey])
+  // Keep stored state synchronized after rendering the pruned projection, without publishing stale rows.
+  useLayoutEffect(() => {
+    if (selectedKeys !== prunedSelection.selectedIds) {
+      setSelectedKeys(prunedSelection.selectedIds)
+    }
+    if (selectionAnchorKey !== prunedSelection.anchorId) {
+      setSelectionAnchorKey(prunedSelection.anchorId)
+    }
+  }, [prunedSelection, selectedKeys, selectionAnchorKey])
 
   // Reuse empty/unchanged selections so context-menu/drag callbacks and row memoization remain stable.
   const selectedItems = useReusedArrayIdentity(
     useMemo(() => {
       const selected: { item: T; index: number }[] = []
-      for (const key of selectedKeys) {
+      for (const key of prunedSelection.selectedIds) {
         const entry = entryByKey.get(key)
         if (entry) {
           selected.push(entry)
+        } else {
+          const retained = getRetainedItem?.(key)
+          if (retained !== undefined) {
+            selected.push({ item: retained, index: Infinity })
+          }
         }
       }
       return selected.sort((a, b) => a.index - b.index).map(({ item }) => item)
-    }, [entryByKey, selectedKeys])
+    }, [entryByKey, prunedSelection.selectedIds, getRetainedItem])
   )
   const getItemForKey = useCallback((key: string) => entryByKey.get(key)?.item, [entryByKey])
 
@@ -100,13 +131,18 @@ export function useListMultiSelection<T>({
   // Why read through a ref: every plain click replaces the selection, and selection-keyed callbacks would re-render every memoized row.
   const latestSelectionRef = useRef({
     visibleKeys,
-    selectedKeys,
-    selectionAnchorKey,
+    selectedKeys: prunedSelection.selectedIds,
+    selectionAnchorKey: prunedSelection.anchorId,
     selectedItems
   })
   useLayoutEffect(() => {
-    latestSelectionRef.current = { visibleKeys, selectedKeys, selectionAnchorKey, selectedItems }
-  })
+    latestSelectionRef.current = {
+      visibleKeys,
+      selectedKeys: prunedSelection.selectedIds,
+      selectionAnchorKey: prunedSelection.anchorId,
+      selectedItems
+    }
+  }, [visibleKeys, prunedSelection, selectedItems])
 
   const updateSelectionForGesture = useCallback(
     (event: Pick<React.MouseEvent, 'metaKey' | 'ctrlKey' | 'shiftKey'>, item: T): boolean => {
@@ -117,14 +153,15 @@ export function useListMultiSelection<T>({
         previousSelectedIds: latest.selectedKeys,
         previousAnchorId: latest.selectionAnchorKey,
         targetId: getKey(item),
-        intent
+        intent,
+        additiveRange
       })
       setSelectedKeys(result.selectedIds)
       setSelectionAnchorKey(result.anchorId)
       // Plain click navigates; modifier gestures are selection-only so a batch can build without switching away.
       return intent !== 'replace'
     },
-    [getKey]
+    [additiveRange, getKey]
   )
 
   const selectForContextMenu = useCallback(
@@ -166,13 +203,23 @@ export function useListMultiSelection<T>({
     [visibleKeys]
   )
 
+  // Stable across visibleKeys changes so memoized rows can hold it.
+  const clearSelection = useCallback(
+    (anchor?: T): void => {
+      setSelectedKeys((previous) => (previous.size === 0 ? previous : new Set()))
+      setSelectionAnchorKey(anchor === undefined ? null : getKey(anchor))
+    },
+    [getKey]
+  )
+
   return {
     visibleKeys,
-    selectedKeys,
+    selectedKeys: prunedSelection.selectedIds,
     selectedItems,
     getItemForKey,
     toggleSelection,
     setAllSelected,
+    clearSelection,
     updateSelectionForGesture,
     selectForContextMenu
   }

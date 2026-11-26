@@ -18,6 +18,7 @@ import type { TerminalHost } from '../terminal-host/terminal-host'
 import { SessionNotFoundError } from '../protocol/daemon-errors'
 import { HOST_LOST_EXIT_CAUSE } from '../../../shared/terminal/pty/lifecycle/terminal-exit-cause'
 import type { DaemonRequest, GetSnapshotRequest } from '../protocol/daemon-rpc-contract'
+import { DaemonProcessInspections } from './daemon-process-inspections'
 
 type DaemonRequestRouterOptions = {
   host: TerminalHost
@@ -35,9 +36,11 @@ type DaemonRequestRouterOptions = {
 
 export class DaemonRequestRouter {
   private readonly health: DaemonHealthRequests
+  private readonly processInspections: DaemonProcessInspections
 
   constructor(private readonly options: DaemonRequestRouterOptions) {
     this.health = new DaemonHealthRequests(options.ptySpawnHealthCheck, options.log)
+    this.processInspections = new DaemonProcessInspections(options.host)
   }
 
   async route(clientId: string, request: DaemonRequest): Promise<unknown> {
@@ -110,6 +113,7 @@ export class DaemonRequestRouter {
         if (
           request.payload.expectedIncarnationId !== undefined ||
           request.payload.requireNoAgentOwner !== undefined ||
+          request.payload.requireIdle !== undefined ||
           request.payload.requireUnattached !== undefined
         ) {
           return handleDaemonFencedTermination(request.payload, this.options)
@@ -128,20 +132,11 @@ export class DaemonRequestRouter {
         return {
           foregroundProcess: this.options.host.getForegroundProcess(request.payload.sessionId)
         }
-      case 'inspectProcess': {
-        const options = {
-          ...(request.payload.foregroundOnly === true ? { foregroundOnly: true } : {}),
-          ...(request.payload.expectedIncarnationId
-            ? { expectedIncarnationId: request.payload.expectedIncarnationId }
-            : {}),
-          ...(request.payload.steadyState === true ? { steadyState: true } : {}),
-          ...(request.payload.jobMembershipOnly === true ? { jobMembershipOnly: true } : {}),
-          ...(request.payload.ignoreDetached === true ? { ignoreDetached: true } : {})
-        }
-        return Object.keys(options).length > 0
-          ? this.options.host.inspectProcess(request.payload.sessionId, options)
-          : this.options.host.inspectProcess(request.payload.sessionId)
-      }
+      case 'inspectProcess':
+        return this.processInspections.inspect(client?.controlSocket, request)
+      case 'cancelProcessInspection':
+        this.processInspections.cancel(client?.controlSocket, request.payload.requestId)
+        return {}
       case 'confirmForegroundProcess':
         return {
           foregroundProcess: await this.options.host.confirmForegroundProcess(
