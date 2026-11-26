@@ -78,6 +78,8 @@ export type AcpStructuredLaunch = StructuredAgentCommand & {
   release?: AcpInstructionsLaunch['release']
   /** The bot's own tools and `spec.ownMcpServers`, opened with each session; absent: none. */
   mcpServers?: McpServer[]
+  /** Carries grants that end with this app (a bot's tool-relay token), so it can't outlive it. */
+  appBoundGrants?: true
   /** The saved model the launch line carries. */
   launchModel?: string
   /** The launched program's version, when its check or managed release names it. */
@@ -209,7 +211,7 @@ export function acpStructuredLaunchPart(
     // PATH may have changed since chat creation.
     const launchVersion = await checkAcpLaunchVersion(
       spec,
-      { command, prefixArgs, cwd, env },
+      { command, prefixArgs, cwd, env, chat: identity.sessionId },
       roots.length > 0,
       deps.probeVersion
     )
@@ -301,6 +303,8 @@ export function acpStructuredLaunchPart(
           : {}),
         ...(instructions?.release ? { release: instructions.release } : {}),
         ...(mcpServers.length > 0 ? { mcpServers } : {}),
+        // A token this app's tool relay issued for this run ends with it, so the agent does too.
+        ...(tools.appBound ? { appBoundGrants: true as const } : {}),
         ...(model ? { launchModel: model } : {}),
         ...(launchedVersion ? { version: launchedVersion } : {}),
         ...(movedHome ? { launchedAccountHome: movedHome } : {}),

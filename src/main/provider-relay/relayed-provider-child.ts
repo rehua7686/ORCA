@@ -69,6 +69,8 @@ export class RelayedProviderChild extends EventEmitter implements ProviderChild 
   outcomeLost?: boolean
   /** What the first attach reported: request id floor, cached initialize answer, stderr, exit. */
   attachResult: ProviderRelayAttachResult | null = null
+  /** The cursor this child last attached from. */
+  attachedFrom = 0
   private state: RelayState = 'attaching'
   /** An end that came while output was held; it runs once the output is released. */
   private parkedEnd: { exit: ProviderRelayExit; lost: boolean } | null = null
@@ -134,6 +136,11 @@ export class RelayedProviderChild extends EventEmitter implements ProviderChild 
     return this.output.initializeLine
   }
 
+  /** Lines the daemon kept for this relay, by the seq they were spooled at; names are in `attachResult.kept`. */
+  get kept(): RelayedProviderOutput['kept'] {
+    return this.output.kept
+  }
+
   /** Handed to the daemon, or being handed: a close meanwhile must not stop what quit keeps. */
   get handedOff(): boolean {
     return this.state === 'detached' || this.handingOff
@@ -141,7 +148,7 @@ export class RelayedProviderChild extends EventEmitter implements ProviderChild 
 
   /** Attaches from `fromSeq`; the spool after it and unanswered requests then arrive as stdout. */
   async start(fromSeq: number): Promise<ProviderRelayAttachResult> {
-    this.output.restartAt(fromSeq)
+    this.output.restartAt((this.attachedFrom = fromSeq))
     this.unbind = this.options.channel.bind(this.relayId, {
       line: (event, seq, line) => this.output.line(event, seq, line),
       ackWanted: (seq) => void this.output.settle(true, seq),
@@ -149,8 +156,10 @@ export class RelayedProviderChild extends EventEmitter implements ProviderChild 
       disconnected: () => void this.reattach()
     })
     try {
-      const result = await this.options.channel.attach(this.relayId, fromSeq, this.options.policy())
-      await this.output.awaitPreamble(result.initializeResultSent, result.pending, PREAMBLE_WAIT_MS)
+      const { channel } = this.options
+      const kept = this.output.kept.wanted(this.output.holding)
+      const result = await channel.attach(this.relayId, fromSeq, this.options.policy(), kept)
+      await this.output.awaitPreamble(result, PREAMBLE_WAIT_MS, kept)
       this.output.deliveredPending.forgetSettled(fromSeq, result.pending)
       this.attachResult = result
       const { continuation } = this.options
@@ -250,10 +259,7 @@ export class RelayedProviderChild extends EventEmitter implements ProviderChild 
         await this.send(data.slice(at, at + RELAY_WRITE_CHUNK_CHARS))
       }
     })
-    this.writing = sent.then(
-      () => {},
-      () => {}
-    )
+    this.writing = sent.catch(() => {})
     sent.then(
       () => callback(),
       (error: unknown) => callback(error instanceof Error ? error : new Error(String(error)))
