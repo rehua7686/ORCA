@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { refuseWslHostWindowsDrivePath } from '../terminal/launch/wsl-host-windows-drive-guard'
 import { mkdir } from 'node:fs/promises'
+import { homedir } from 'node:os'
 import { DEFAULT_REPO_BADGE_COLOR } from '../../../shared/repository/appearance/repo-badge-color'
 import {
   LOCAL_EXECUTION_HOST_ID,
@@ -8,6 +9,7 @@ import {
 } from '../../../shared/execution-host/execution-host'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { isFolderRepo } from '../../../shared/repository/repo-kind'
+import { resolveDefaultCloneDestination } from '../../../shared/git/repo-default-locations'
 import { getGitCloneFailureMessage } from '../../../shared/git/remotes/git-clone-failure-message'
 import {
   cleanupClaimedCloneTarget,
@@ -63,15 +65,18 @@ export class RuntimeRepositoryCloneController {
   constructor(private readonly deps: RuntimeRepositoryCloneDependencies) {}
 
   async checkTarget(
-    args: CloneTargetArgs,
+    args: Omit<CloneTargetArgs, 'destination'> & { destination?: string | undefined },
     executionHostId?: ExecutionHostId | null
   ): Promise<CloneTargetCheck> {
     const store = this.deps.getStore()
     if (!store) {
       throw new Error('runtime_unavailable')
     }
+    // Why: repo.checkCloneTarget shares RepoClone's params, so a mobile caller may omit the
+    // destination; resolve it with the same default policy clone itself uses.
+    const destination = (args.destination ?? '').trim() || this.defaultDestination(store)
     return checkCloneTarget(
-      { ...args, url: args.url.trim(), destination: args.destination.trim() },
+      { ...args, url: args.url.trim(), destination },
       (pathKeys) => findRegistrationCandidateAt(store, pathKeys, executionHostId),
       LOCAL_EXECUTION_HOST_ID
     )
@@ -79,18 +84,16 @@ export class RuntimeRepositoryCloneController {
 
   async clone(
     url: string,
-    destination: string,
+    destination: string | undefined,
     executionHostId?: ExecutionHostId | null,
     folderName?: string
   ): Promise<Repo> {
-    if (!this.deps.getStore()) {
+    const store = this.deps.getStore()
+    if (!store) {
       throw new Error('runtime_unavailable')
     }
     const trimmedUrl = url.trim()
-    const trimmedDestination = destination.trim()
-    if (!trimmedDestination) {
-      throw new Error('Clone destination is required')
-    }
+    const trimmedDestination = (destination ?? '').trim() || this.defaultDestination(store)
     const clonePath = deriveValidatedClonePath({
       url: trimmedUrl,
       destination: trimmedDestination,
@@ -119,6 +122,12 @@ export class RuntimeRepositoryCloneController {
         this.inFlightByPath.delete(clonePathKey)
       }
     }
+  }
+
+  // Why: mobile callers cannot type host paths; an absent destination resolves to
+  // the same default policy the desktop Add Repo clone flow uses.
+  private defaultDestination(store: RuntimeStore): string {
+    return resolveDefaultCloneDestination({ settings: store.getSettings(), home: homedir() })
   }
 
   private async cloneAfterPathLock(

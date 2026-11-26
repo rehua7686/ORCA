@@ -7,6 +7,7 @@ import {
   parseExecutionHostId,
   type ExecutionHostId
 } from '../../../shared/execution-host/execution-host'
+import { getDefaultCreateProjectParent } from './default-create-project-parent'
 import type { Repo } from '../../../shared/repository/repo-types'
 import { gitExecFileAsync } from '../../git/command-runner/git-exec-file'
 import { awaitWindowsHostGitEnvironmentReady } from '../../git/command-runner/host-routing/windows-host-git-environment'
@@ -37,7 +38,6 @@ import {
   repoCreateFailure,
   type RepoCreateFailure
 } from '../../../shared/repository/creation/repo-create-failure-copy'
-import { getDefaultCreateProjectParent } from './default-create-project-parent'
 
 type RuntimeRepositoryRegistrationDependencies = {
   getStore: () => RuntimeStore | null
@@ -154,7 +154,7 @@ export class RuntimeRepositoryRegistrationController {
   }
 
   async create(
-    parentPath: string,
+    parentPath: string | undefined,
     name: string,
     kind: 'git' | 'folder' = 'git'
   ): Promise<
@@ -162,7 +162,6 @@ export class RuntimeRepositoryRegistrationController {
   > {
     const store = this.requireStore()
     const trimmedName = name.trim()
-    const trimmedParentPath = parentPath.trim()
     const repoKind: 'git' | 'folder' = kind === 'folder' ? 'folder' : 'git'
     if (!trimmedName) {
       return repoCreateFailure('nameEmpty')
@@ -170,6 +169,11 @@ export class RuntimeRepositoryRegistrationController {
     if (/[\\/]/.test(trimmedName) || trimmedName === '.' || trimmedName === '..') {
       return repoCreateFailure('nameInvalid')
     }
+    // Why: mobile callers cannot type host paths; an absent parent resolves to
+    // the same default policy the desktop create flow uses.
+    const trimmedParentPath = (
+      (parentPath ?? '').trim() || getDefaultCreateProjectParent(store.getSettings())
+    ).trim()
     if (!trimmedParentPath) {
       return repoCreateFailure('parentRequired')
     }
