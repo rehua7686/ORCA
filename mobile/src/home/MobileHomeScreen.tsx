@@ -10,6 +10,7 @@ import { ActionSheetModal } from '../components/sheets/ActionSheetModal'
 import { ConfirmModal } from '../components/sheets/ConfirmModal'
 import { getHostListActionSheetActions } from '../host-list-action-sheet-actions'
 import { triggerMediumImpact } from '../platform/haptics/haptics'
+import { HomeTabPane } from './HomeTabPane'
 import { useAgentListRowActions } from '../agents/use-agent-list-row-actions'
 import { useOpenMobileTasks } from '../tasks/use-open-mobile-tasks'
 import { useOpenMobileAutomations } from '../automations/use-open-mobile-automations'
@@ -79,6 +80,15 @@ export function MobileHomeScreen() {
     setTab(next)
     setVisitedTabs((visited) => (visited.has(next) ? visited : new Set([...visited, next])))
   }, [])
+
+  // A screen pushed over Home leaves it mounted; its working loops stop until Home is back.
+  const [focused, setFocused] = useState(true)
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true)
+      return () => setFocused(false)
+    }, [])
+  )
 
   // Android Back from another tab returns to Feed before it leaves the app.
   useFocusEffect(
@@ -214,7 +224,13 @@ export function MobileHomeScreen() {
         <View style={styles.fill}>
           {HOME_TABS.map((id) =>
             visitedTabs.has(id) ? (
-              <View key={id} style={id === tab ? styles.fill : styles.hidden}>
+              <HomeTabPane
+                key={id}
+                shown={id === tab}
+                covered={!focused}
+                // Agents rows draw only what the tab hands them: no clocks or subscriptions to outlive a removal.
+                freezeHidden={id === 'agents'}
+              >
                 {id === 'feed' ? (
                   <MobileHomeFeedTab
                     data={data}
@@ -262,7 +278,7 @@ export function MobileHomeScreen() {
                     onHostChange={setAutomationsHostId}
                   />
                 )}
-              </View>
+              </HomeTabPane>
             ) : null
           )}
         </View>
@@ -346,6 +362,5 @@ export function MobileHomeScreen() {
 
 const styles = themedStyleSheet(() => ({
   container: { flex: 1, backgroundColor: colors.bgBase },
-  fill: { flex: 1 },
-  hidden: { display: 'none' }
+  fill: { flex: 1 }
 }))
