@@ -53,16 +53,83 @@ function splitBlockquotePrefix(line: string): { depth: number; rest: string } {
   return { depth, rest: line.slice(prefix.length) }
 }
 
+type TableContainer = number | 'quote'
+
+const TABLE_QUOTE_PREFIX = /^ {0,3}>[ \t]?/
+const TABLE_LIST_PREFIX = /^( {0,3}(?:[*+-]|\d{1,9}[.)]))([ \t]+)/
+
+function tableHeaderContent(line: string): { containers: TableContainer[]; rest: string } {
+  const containers: TableContainer[] = []
+  let rest = line
+  for (;;) {
+    const quote = TABLE_QUOTE_PREFIX.exec(rest)
+    if (quote) {
+      containers.push('quote')
+      rest = rest.slice(quote[0].length)
+      continue
+    }
+    const list = TABLE_LIST_PREFIX.exec(rest)
+    if (!list) {
+      return { containers, rest }
+    }
+    const markerWidth = list[1].length
+    let width = markerWidth
+    for (const character of list[2]) {
+      width += character === '\t' ? 4 - (width % 4) : 1
+    }
+    // As marked does, excess padding leaves an indented code block after one space.
+    if (width - markerWidth > 4) {
+      containers.push(markerWidth + 1)
+      rest = ' '.repeat(width - markerWidth - 1) + rest.slice(list[0].length)
+    } else {
+      containers.push(width)
+      rest = rest.slice(list[0].length)
+    }
+  }
+}
+
+function tableContainerContent(
+  line: string,
+  containers: TableContainer[],
+  allowLazy = true
+): string | null {
+  let rest = line
+  for (const container of containers) {
+    if (container === 'quote') {
+      const quote = TABLE_QUOTE_PREFIX.exec(rest)
+      if (!quote) {
+        return null
+      }
+      rest = rest.slice(quote[0].length)
+      continue
+    }
+    let width = 0
+    let end = 0
+    while (end < rest.length && width < container && /[ \t]/.test(rest[end])) {
+      width += rest[end] === '\t' ? 4 : 1
+      end += 1
+    }
+    // List items may contain lazy continuation lines with less indentation.
+    if (width >= container) {
+      rest = ' '.repeat(width - container) + rest.slice(end)
+    } else if (!allowLazy) {
+      return null
+    }
+  }
+  return rest
+}
+
 function findTableDelimiterAhead(
   content: string,
-  start: number
-): { depth: number; rest: string } | null {
+  start: number,
+  containers: TableContainer[]
+): string | null {
   if (start >= content.length) {
     return null
   }
   const next = content.slice(start, findMarkdownLineEnd(content, start))
-  const quote = splitBlockquotePrefix(next)
-  return TABLE_DELIMITER_ROW.test(quote.rest) ? quote : null
+  const rest = tableContainerContent(next, containers)
+  return rest !== null && TABLE_DELIMITER_ROW.test(rest) ? rest : null
 }
 
 function isEscapedAt(content: string, index: number, lineStart: number): boolean {
@@ -99,46 +166,107 @@ export function createMarkdownCodeSpanScanner(content: string): MarkdownCodeSpan
   const escaped: boolean[] = []
   const runsByLength = new Map<number, number[]>()
 
-  const fence = createMarkdownFenceTracker()
+  let fence = createMarkdownFenceTracker()
   let blockId = 0
   let previousWasBoundary = true
   let previousQuoteDepth = 0
   let insideTable = false
   let insideTableCells = false
+  let tableContainers: TableContainer[] | null = null
+  let listContainers: TableContainer[] = []
+  let fenceContainers: TableContainer[] = []
+  let previousListBoundary = true
 
   forEachMarkdownLine(content, (lineStart, lineEnd, nextLineStart) => {
     const line = content.slice(lineStart, lineEnd)
-    const wasInsideFence = fence.insideFence
-    const isFenceBoundary = fence.consume(line) || wasInsideFence
+    let wasInsideFence = fence.insideFence
+    const continuedFence = wasInsideFence
+      ? tableContainerContent(line, fenceContainers, false)
+      : null
+    if (wasInsideFence && continuedFence === null && !BLANK_LINE.test(line)) {
+      fence = createMarkdownFenceTracker()
+      wasInsideFence = false
+      listContainers = []
+    }
+    const activeRow =
+      insideTableCells && tableContainers !== null
+        ? tableContainerContent(line, tableContainers)
+        : null
+    const keepsOrderedRow = activeRow !== null && TABLE_BODY_ORDERED_ITEM.test(activeRow)
+    let header = tableHeaderContent(line)
+    if (keepsOrderedRow && activeRow !== null && tableContainers !== null) {
+      header = { containers: tableContainers, rest: activeRow }
+    }
+    if (!wasInsideFence && !keepsOrderedRow && !BLANK_LINE.test(header.rest)) {
+      let continued =
+        listContainers.length > 0 ? tableContainerContent(line, listContainers, false) : null
+      if (
+        continued === null &&
+        !previousListBoundary &&
+        header.containers.length === 0 &&
+        !SINGLE_LINE_BLOCK.test(header.rest) &&
+        !LEAF_BLOCK_START.test(header.rest) &&
+        !/^ {0,3}(?:`{3,}|~{3,})/.test(header.rest)
+      ) {
+        continued = tableContainerContent(line, listContainers)
+      }
+      if (continued !== null) {
+        const nested = tableHeaderContent(continued)
+        header = { containers: [...listContainers, ...nested.containers], rest: nested.rest }
+      } else {
+        listContainers = []
+      }
+      if (header.containers.some((container) => typeof container === 'number')) {
+        listContainers = header.containers
+      }
+    }
+    const isFenceBoundary =
+      fence.consume(wasInsideFence ? (continuedFence ?? '') : header.rest) || wasInsideFence
+    if (!wasInsideFence && fence.insideFence) {
+      fenceContainers = header.containers
+    }
     const lineQuote = isFenceBoundary ? null : splitBlockquotePrefix(line)
-    const isBoundary = isFenceBoundary || (lineQuote !== null && BLANK_LINE.test(lineQuote.rest))
+    const isBoundary = isFenceBoundary || BLANK_LINE.test(header.rest)
+    previousListBoundary =
+      isBoundary || SINGLE_LINE_BLOCK.test(header.rest) || /^(?: {4}| {0,3}\t)/.test(header.rest)
     if (isBoundary) {
       insideTable = false
     }
     const quote = isBoundary ? null : lineQuote
     const quoteDepth = quote ? quote.depth : previousQuoteDepth
-    const isDelimiterRow = quote !== null && TABLE_DELIMITER_ROW.test(quote.rest)
-    const delimiter = quote !== null ? findTableDelimiterAhead(content, nextLineStart) : null
+    const tableRest =
+      tableContainers === null
+        ? (quote?.rest ?? null)
+        : tableContainerContent(line, tableContainers)
+    const isDelimiterRow = tableRest !== null && TABLE_DELIMITER_ROW.test(tableRest)
+    const delimiter = !isBoundary
+      ? findTableDelimiterAhead(content, nextLineStart, header.containers)
+      : null
     const isTableHeader = delimiter !== null
     const blocksTableHeader =
-      quote !== null &&
-      (SINGLE_LINE_BLOCK.test(quote.rest) ||
-        LEAF_BLOCK_START.test(quote.rest) ||
-        /^(?: {4}| {0,3}\t)/.test(quote.rest))
+      SINGLE_LINE_BLOCK.test(header.rest) ||
+      LEAF_BLOCK_START.test(header.rest) ||
+      /^(?: {4}| {0,3}\t)/.test(header.rest)
     const interruptsTable =
-      blocksTableHeader && quote !== null && !TABLE_BODY_ORDERED_ITEM.test(quote.rest)
-    if (isBoundary || quoteDepth !== previousQuoteDepth || interruptsTable) {
+      tableRest !== null &&
+      (SINGLE_LINE_BLOCK.test(tableRest) ||
+        LEAF_BLOCK_START.test(tableRest) ||
+        /^(?: {4}| {0,3}[\t>])/.test(tableRest)) &&
+      !TABLE_BODY_ORDERED_ITEM.test(tableRest)
+    if (isBoundary || tableRest === null || interruptsTable) {
       insideTableCells = false
+      tableContainers = null
     }
     // A delimiter can interrupt a paragraph even when mismatched columns prevent a table.
     if (
-      quote !== null &&
+      !isBoundary &&
+      header.rest.trim().length > 0 &&
       delimiter !== null &&
       !blocksTableHeader &&
-      quote.depth === delimiter.depth &&
-      countTableCells(quote.rest) === countTableCells(delimiter.rest)
+      countTableCells(header.rest) === countTableCells(delimiter)
     ) {
       insideTableCells = true
+      tableContainers = header.containers
     }
     insideTable = insideTable || isDelimiterRow
     // marked parses every cell on its own; rows end the current inline context too.

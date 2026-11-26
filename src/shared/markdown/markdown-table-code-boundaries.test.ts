@@ -53,3 +53,48 @@ it('recognizes delimiter-shaped headers before scanning table cells', () => {
   const table = '---|---\n---|---\n| first ` | second ` |\n'
   expect(createMarkdownCodeSpanScanner(table).findSpanEnd(table.indexOf('`'))).toBeNull()
 })
+
+it.each([
+  ['- ', '  '],
+  ['123. ', '     '],
+  ['- - ', '    '],
+  ['> - ', '>   '],
+  ['- > ', '  > '],
+  ['-\t', '\t'],
+  ['- ', '']
+])('keeps list-contained table cells separate after %j', (prefix, continuation) => {
+  const table = `${prefix}| a | b |\n${continuation}|---|---|\n${continuation}| first \` | second \` |\n`
+  expect(createMarkdownCodeSpanScanner(table).findSpanEnd(table.indexOf('`'))).toBeNull()
+})
+
+it('keeps list interruptions and excess list padding out of table cells', () => {
+  for (const paragraph of [
+    '- | a | b |\n  |---|---|\n- ordinary `a|b`\n',
+    '123. | a | b |\n     |---|---|\n     \n     ordinary `a|b`\n',
+    '-     ordinary `a|b`\n      |---|---|\n'
+  ]) {
+    const opener = paragraph.indexOf('`')
+    expect(createMarkdownCodeSpanScanner(paragraph).findSpanEnd(opener)).toBe(
+      paragraph.indexOf('`', opener + 1) + 1
+    )
+  }
+})
+
+it.each([
+  ['123. parent\n\n', '     '],
+  ['- outer\n  - inner\n\n', '    '],
+  ['123. first\n123. second\n\n', '     ']
+])('recognizes a table after list continuation %j', (prefix, indent) => {
+  const table = `${prefix}${indent}| a | b |\n${indent}|---|---|\n${indent}| first \` | second \` |\n`
+  expect(createMarkdownCodeSpanScanner(table).findSpanEnd(table.indexOf('`'))).toBeNull()
+})
+
+it('leaves a completed list or its fenced block before scanning a following paragraph', () => {
+  for (const paragraph of [
+    '123. parent\n\nordinary `a|b`\n',
+    '123. parent\n     ```\n     content\n     ```\nordinary `a|b`\n'
+  ]) {
+    const opener = paragraph.indexOf('`a|b`')
+    expect(createMarkdownCodeSpanScanner(paragraph).findSpanEnd(opener)).toBe(opener + 5)
+  }
+})
