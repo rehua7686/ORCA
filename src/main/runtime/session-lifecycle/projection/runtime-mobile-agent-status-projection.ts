@@ -95,7 +95,10 @@ export function renewRuntimeMobileAgentStatusFromPtyTitle(
   if (!titleConfirmsState) {
     // A repaint of the idle interval preceding this hook is not a new turn boundary.
     if (workingHookOwnsIdleTitleInterval(status, agentStatusAuthorityObservedAt(status), pty)) {
-      return status
+      const updatedAt = Math.max(status.updatedAt, ptyStatusEvidenceAt(pty, titleEvidenceAt))
+      return updatedAt === status.updatedAt
+        ? status
+        : { ...status, updatedAt, evidenceObservedAt: agentStatusAuthorityObservedAt(status) }
     }
     if (
       richStatusCanOwnTitleInterval &&
