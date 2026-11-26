@@ -166,7 +166,10 @@ async function isGhAuthenticated(probe: CommandRuntime): Promise<boolean> {
   try {
     await (probe.wslTarget
       ? execCommandInWslOrThrow(probe.wslTarget, `${quotePosixShell('gh')} auth status`)
-      : execLocalPreflightCommandOrThrow(probe.binary ?? 'gh', ['auth', 'status']))
+      : execLocalPreflightCommandOrThrow(probe.binary ?? 'gh', ['auth', 'status'], {
+          // `auth status` validates the token against the GitHub API, so it needs the Settings proxy too.
+          env: withConfiguredProxyEnv(buildLocalPreflightEnv())
+        }))
     return true
   } catch (error) {
     // Some nonzero auth results retain success markers; preserve compatibility with partial output.
