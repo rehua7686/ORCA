@@ -56,7 +56,10 @@ import {
   removeManagedStatusLine,
   type ClaudeCompatibleHookSettings
 } from './hooks/hook-settings'
-import { claudeAcceptsExecFormHooks } from './cli-capabilities/claude-hook-event-versions'
+import {
+  claudeAcceptsAsyncHooks,
+  claudeAcceptsExecFormHooks
+} from './cli-capabilities/claude-hook-event-versions'
 import { getManagedEventHook } from './hooks/claude-managed-event-hook'
 import {
   getClaudeManagedHookPlan,
@@ -72,13 +75,8 @@ type ClaudeHookServiceOptions = {
   hookPlan?: ClaudeManagedHookPlan
 }
 
-type ClaudeHookInstallOptions = {
-  claudeVersion?: string
-}
-
-type ClaudeHookTargetOptions = ClaudeHookInstallOptions & {
-  configDir?: string
-}
+type ClaudeHookInstallOptions = { claudeVersion?: string }
+type ClaudeHookTargetOptions = ClaudeHookInstallOptions & { configDir?: string }
 
 const DEFAULT_CLAUDE_HOOK_SERVICE_OPTIONS: ClaudeHookServiceOptions = {
   agent: 'claude',
@@ -114,13 +112,13 @@ export class ClaudeHookService {
       : (this.options.hookPlan ?? OPENCLAUDE_MANAGED_HOOK_PLAN)
   }
 
-  private unparsableSettings(configPath: string): AgentHookInstallStatus {
+  private unparsableSettings(configPath: string, remote = false): AgentHookInstallStatus {
     return {
       agent: this.options.agent,
       state: 'error',
       configPath,
       managedHooksPresent: false,
-      detail: `Could not parse ${this.options.displayName} settings.json`
+      detail: `Could not parse ${remote ? 'remote ' : ''}${this.options.displayName} settings.json`
     }
   }
 
@@ -139,10 +137,12 @@ export class ClaudeHookService {
     // Count either Windows launcher form: installation falls back to .cmd when the exe cannot be placed.
     const exePath = this.usesWindowsEntry ? getWindowsClaudeHookExecutablePath(scriptPath) : null
     const events = this.managedHookPlan(options).install.map((event) => event.eventName)
+    // Match every installable form: the .cmd fallback, the exec form (proves the CLI accepted it), and the legacy string command.
     const { missing, matchedForms } = findManagedEventHookForms(config, events, (eventName) =>
-      [null, exePath].map((path) =>
-        // An installed exec form proves its CLI accepted it, whatever the probe now reports.
-        getManagedEventHook(eventName, scriptPath, this.options.settings, path, { execForm: true })
+      [null, exePath, exePath].map((path, index) =>
+        getManagedEventHook(eventName, scriptPath, this.options.settings, path, {
+          execForm: index !== 2
+        })
       )
     )
     const presentCount = matchedForms.length
@@ -161,7 +161,7 @@ export class ClaudeHookService {
     }
     const status = { agent: this.options.agent, state, configPath, managedHooksPresent, detail }
     return this.usesWindowsEntry
-      ? getWindowsClaudeHookFileStatus(status, scriptPath, matchedForms.includes(1))
+      ? getWindowsClaudeHookFileStatus(status, scriptPath, matchedForms.some(Boolean))
       : status
   }
 
@@ -203,10 +203,14 @@ export class ClaudeHookService {
     const plan = this.managedHookPlan(options)
     const exePath = this.usesWindowsEntry ? installWindowsClaudeHookExecutable(scriptPath) : null
     const execForm = claudeAcceptsExecFormHooks(options.claudeVersion)
+    const asyncObservational = claudeAcceptsAsyncHooks(options.claudeVersion)
     let nextConfig = applyManagedHooks(
       config,
       (eventName) =>
-        getManagedEventHook(eventName, scriptPath, this.options.settings, exePath, { execForm }),
+        getManagedEventHook(eventName, scriptPath, this.options.settings, exePath, {
+          execForm,
+          asyncObservational
+        }),
       getManagedScriptFileName(this.options.settings),
       plan,
       process.platform !== 'win32'
@@ -248,13 +252,7 @@ export class ClaudeHookService {
     try {
       const config = await readHooksJsonRemote(sftp, remoteConfigPath)
       if (!config) {
-        return {
-          agent: this.options.agent,
-          state: 'error',
-          configPath: remoteConfigPath,
-          managedHooksPresent: false,
-          detail: `Could not parse remote ${this.options.displayName} settings.json`
-        }
+        return this.unparsableSettings(remoteConfigPath, true)
       }
 
       // Settings resolve HOME at runtime; SFTP writes to the discovered remote home.
