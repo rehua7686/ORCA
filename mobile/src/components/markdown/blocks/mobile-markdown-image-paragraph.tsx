@@ -2,8 +2,9 @@ import type { Image, PhrasingContent } from 'mdast'
 import { Fragment, type ReactNode } from 'react'
 import { View } from 'react-native'
 import { MarkdownText } from '../mobile-markdown-text'
-import { renderInline } from '../parsing/mobile-markdown-inline'
+import { openMarkdownHref, renderInline } from '../parsing/mobile-markdown-inline'
 import { styles } from '../mobile-markdown-styles'
+import { mobileMarkdownParagraphImage } from './mobile-markdown-image-placement'
 import type { MarkdownBlockContext, ParagraphText } from './mobile-markdown-blocks'
 
 function isBlankInline(node: PhrasingContent): boolean {
@@ -37,9 +38,16 @@ export function renderImageParagraph(
     run = []
   }
   for (const child of children) {
+    const source = mobileMarkdownParagraphImage(child, ctx.documentImages)
+    const linkHref = child.type === 'link' ? child.url : source?.data?.linkHref
     const image =
-      child.type === 'image' && eligibleImages.has(child)
-        ? renderImage(child.url, child.alt ?? '', child.data?.width)
+      source && eligibleImages.has(source)
+        ? renderImage(
+            source.url,
+            source.alt ?? '',
+            source.data?.width,
+            linkHref ? () => openMarkdownHref(linkHref, ctx) : undefined
+          )
         : null
     if (image === null || image === undefined) {
       run.push(child)
