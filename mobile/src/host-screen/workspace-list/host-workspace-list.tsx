@@ -37,6 +37,9 @@ import { useSlowPendingKeys } from './use-slow-pending-keys'
 import { useHostMutationDrafts } from '../../query/host-mutation-drafts'
 import { workspaceRenameDraftKey } from '../workspace-actions/workspace-rename-sheet'
 import type { HostScreenController } from '../use-host-screen-controller'
+import { sidebarSessionAction } from '../sidebar-session-action'
+import { useSelectableSidebarSessions } from '../selectable-sidebar-sessions'
+import { useSharedNow } from '../../hooks/use-now'
 
 export function HostWorkspaceList({
   controller,
@@ -50,6 +53,8 @@ export function HostWorkspaceList({
   pageTitle?: { element: ReactElement; collapsing: CollapsingTitle }
 }) {
   const colorScheme = useMobileColorScheme()
+  const selectableSessions = useSelectableSidebarSessions()
+  const now = useSharedNow(30_000)
   const {
     actions,
     activeWorktreeScroll,
@@ -117,7 +122,13 @@ export function HostWorkspaceList({
   const { collapsedGroups } = controller
   const { groupBy, agentActivityDisplayMode } = state.view
   const { toggleCollapsed, toggleWorktreeLineage } = settings
-  const { setActionTarget } = state
+  const { setActionTarget, setSessionAction } = state
+  const openSessionMenu = useCallback(
+    (item: Worktree, paneKey: string) => {
+      setSessionAction(sidebarSessionAction(item, paneKey, now))
+    },
+    [now, setSessionAction]
+  )
   const { openWorktreeSession } = actions
   const statusLive = connState === 'connected'
 
@@ -174,9 +185,11 @@ export function HostWorkspaceList({
           agentActivityDisplayMode={agentActivityDisplayMode}
           onPress={openWorktreeSession}
           onAgentPress={openWorktreeSession}
+          selectableSessions={selectableSessions}
           statusLive={statusLive && !view.hostContextHealthLabel}
           // A bot's home goes through the bot's own delete, not the workspace menu.
           onLongPress={item.botHome === true || view.botFacts ? undefined : setActionTarget}
+          onSessionLongPress={openSessionMenu}
           onToggleLineage={toggleWorktreeLineage}
           unsavedName={unsavedRename(renameDrafts, hostId, item)}
           pairedHostId={hostId ?? null}
@@ -192,8 +205,10 @@ export function HostWorkspaceList({
       groupBy,
       agentActivityDisplayMode,
       openWorktreeSession,
+      selectableSessions,
       statusLive,
       setActionTarget,
+      openSessionMenu,
       toggleWorktreeLineage
     ]
   )
