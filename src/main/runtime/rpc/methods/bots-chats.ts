@@ -5,7 +5,7 @@ import type { BotChatRow } from '../../../../shared/bots/bot-chat-row'
 import type { AgentSessionConversationView } from '../../../../shared/agent-session/lifecycle/leases/agent-session-conversation-view'
 import type { BotRosterEntry } from '../../../../shared/bot-roster'
 import { botOfHomeWorkspace } from '../../../../shared/bots/bot-homes'
-import { BotChats, BotChatsSeen } from '../../../../shared/rpc-contract/bots-params'
+import { BotChats, BotChatsSeen } from '../../../../shared/rpc-contract/bot-chats-params'
 import {
   formatOrcaSessionAddress,
   isOrcaSessionId

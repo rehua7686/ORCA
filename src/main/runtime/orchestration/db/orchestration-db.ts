@@ -141,6 +141,19 @@ class OrchestrationDbCore {
       CREATE INDEX IF NOT EXISTS idx_messages_native_direct_work
         ON messages(to_handle, type)
         WHERE read = 0 AND delivered_at IS NULL AND delivery_contract <> 'audit_only';
+      CREATE INDEX IF NOT EXISTS idx_messages_bot_request_sender
+        ON messages(from_handle) WHERE type IN ('question', 'handoff');
+      CREATE TABLE IF NOT EXISTS peer_handoffs_out (
+        message_id        TEXT PRIMARY KEY,
+        conversation_id   TEXT NOT NULL,
+        environment_id    TEXT NOT NULL,
+        peer_fingerprint  TEXT NOT NULL,
+        asker             TEXT NOT NULL,
+        thread_id         TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_peer_handoffs_out_asker ON peer_handoffs_out(asker);
+      CREATE INDEX IF NOT EXISTS idx_peer_questions_out_asker_awaiting
+        ON peer_questions_out(asker) WHERE awaiting = 1;
       CREATE INDEX IF NOT EXISTS idx_messages_stop_reports
         ON messages(run_id) WHERE id LIKE 'msg\\_stop\\_%' ESCAPE '\\';
     `)
