@@ -13,6 +13,10 @@ export const AgentShowParams = z.object({
   id: requiredString('Missing agent ID')
 })
 
+export const AgentCloseParams = z.object({
+  id: requiredString('Missing agent ID')
+})
+
 export const AgentReadParams = z.object({
   id: requiredString('Missing agent ID'),
   limit: z.number().int().positive().max(AGENT_READ_MAX_LIMIT).optional()

@@ -116,7 +116,12 @@ import {
   AgentActivityOrchestrationParams,
   AgentActivitySetReadParams
 } from './agent-activity/agent-activity-params'
-import { AgentListParams, AgentReadParams, AgentShowParams } from './agent-conversation-params'
+import {
+  AgentCloseParams,
+  AgentListParams,
+  AgentReadParams,
+  AgentShowParams
+} from './agent-conversation-params'
 import { AgentLaunch, AgentLaunchReplay } from './agent-launch/agent-launch-params'
 import { AgentLaunchSettingsMutation } from './agent-launch/agent-launch-settings-params'
 import {
@@ -1174,6 +1179,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'accounts.zcodePlanClearApiKey': null,
   'accounts.zcodePlanCredentialsStatus': null,
   'accounts.zcodePlanSaveApiKey': UsageCredentialApiKeyParams,
+  'agent.close': AgentCloseParams,
   'agent.launch': AgentLaunch,
   'agent.launchReplay': AgentLaunchReplay,
   'agent.list': AgentListParams,
